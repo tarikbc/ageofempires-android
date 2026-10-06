@@ -1,0 +1,89 @@
+# The ntdll patches were never loaded
+
+This is the most important finding of the investigation so far, and it invalidates conclusions drawn
+across multiple earlier sessions.
+
+## The measurement
+
+`tools/ntdllcheck.c` reads the patch sites out of its **own mapped** `ntdll.dll` and compares them with
+the file on disk:
+
+```
+=== mapped ntdll build ===
+base=0000006FFF9A0000
+
+rva 0xEC050 (invoke patch site): 0x4c  -> PRISTINE
+   bytes: 4c 89 54 24 08
+rva 0xCDA74 (waitq site stub_U1): 0x885ffd1f  -> PRISTINE
+rva 0xCDA00 (waitq site stub_L1): 0x885ffd0c  -> PRISTINE
+
+system32 file @0xEC050: e9 ab 00 00 00     <- the FILE is patched (0xE9 = jmp)
+```
+
+**The file is patched. The mapped image is pristine.** So the patches in
+`patches/proton-arm64ec-ntdll/apply.py` are not in effect, no matter how carefully their output was
+installed into `C:\windows\system32`.
+
+## Why
+
+Wine does not load `C:\windows\system32\ntdll.dll`. logcat shows the loader opening its own copy:
+
+```
+avc: granted { execute } for
+  path="/data/user/0/app.gamenative/files/imagefs_shared/proton/
+        proton-11.0-99-arm64ec/lib/wine/aarch64-windows/ntdll.dll"
+```
+
+That tree's `ntdll.dll` hashes to `606d0a2fb197d37b…` — `apply.py`'s `PRISTINE`. The prefix's
+`system32` copy is a **separate file** (it is not a symlink: writing the patch there did not change the
+tree's copy, and the two hashes differ).
+
+So:
+- **`invoke_arm64ec_syscall` has never run.** Wine's x64 syscall stub still clobbers
+  `rdx/r8/r9/r10/rflags`, which is exactly the defect that patch was written to fix.
+- **The `--waitq` spinlock fix has never run either.** The earlier note that it "did not stop the AoE IV
+  freeze" therefore means nothing — it was never exercised.
+
+## Why this matters
+
+The clobbering stub corrupts syscall arguments. A corrupted socket handle is `WSAENOTSOCK` — and the
+game's log says `TlsConnection::Shutdown … errno=10038`, i.e. exactly that, followed by the WebSocket
+closing `1006` and every later request failing `12157`. That chain was traced in
+[SESSION-LOSS.md](SESSION-LOSS.md) and is the best-supported cause of the session degradation. **The fix
+for it exists and has simply never been loaded.**
+
+It also means several "applied and verified" claims in this repo were verified *against the wrong file*.
+Verifying a patch needs `ntdllcheck.exe`-style evidence from a **mapped** image, not a hash of a file
+on disk.
+
+## Getting the fix in
+
+The previous session built a custom Proton containing the fix and it is still installed:
+
+```
+proton-11.0-1-arm64ec-aoefix-1
+  description: "Proton 11.0-1 arm64ec + ntdll fix: direct x64 syscalls keep
+                rdx/r8/r9/r10/rflags like Windows (AoE IV Aegis)"
+```
+
+Selecting it hangs: GameNative stalls at `Uploading configuration_user` at 0% CPU, and after a forced
+restart the game reports "Does Not Open". The container was reverted to `proton-11.0-99-arm64ec-1`.
+
+Two ways forward, in order of preference:
+
+1. **Repack 11.0-99 with the patched ntdll** — the supported route. The `.wcp` is `type: "Proton"` with
+   `files: []` and a `wine` block (`binPath`, `libPath`, `prefixPack`), so it carries a whole tree
+   (365 MB); the current tree's `ntdll.dll` would be replaced by the `invoke` + `--waitq` build, then
+   imported through the Wine/Proton Manager.
+2. **Write the tree's `ntdll.dll` directly** while no session holds it. It lives under
+   `imagefs_shared/proton/...`, which is app-private, so this needs a write path that does not go
+   through Wine itself.
+
+Either way, confirm success with `ntdllcheck.exe` **reading the mapped image** — `rva 0xEC050 == 0xE9`
+and the `waitq` sites branching — before drawing any conclusion from a game run.
+
+## Also worth knowing
+
+`C:\windows\system32` in this setup is not the source of Wine's builtin DLLs, so any future patch aimed
+at Wine internals must target the Proton tree. The FEX patch is unaffected: `xtajit64.dll` *is* loaded
+from `system32` and that one is genuinely live, which is why the CPUID change was measurable.
