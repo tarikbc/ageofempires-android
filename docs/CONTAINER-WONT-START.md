@@ -197,3 +197,62 @@ Also noted: the launch goes through Box64 (`[BOX64] Wine64 detected`) even thoug
 `appliedWineVersion` is an ARM64EC Proton build. That is not necessarily wrong — Box64 is the launcher
 here — but combined with the missing binary it suggests the container is being assembled for a tree that
 is not present, rather than failing to find a file inside a present one.
+
+
+---
+
+# RESOLVED: the container was pointed at a Wine version with no tree
+
+**This is what it actually was, and it is worth reading before the diagnosis above.**
+
+The container's **Wine Version** was set to **`proton-11.0-1-arm64ec-aoefix-1`** — a bundle imported
+earlier in the session that never worked. `Z:\opt\` showed only `proton-11.0-99-arm64ec-1`, so the
+container was naming a Wine version **whose tree did not exist**. Box64 then looked for the `wine` binary
+and found nothing:
+
+```
+[BOX64] Binary search path: ./:bin/:…/imagefs/opt/wine/bin/:…/usr/bin/
+[BOX64] Looking for wine
+[BOX64] Error: File is not found. (wine)
+```
+
+**The fix:** container → General → **Wine Version** → select **`proton-11.0-99-arm64ec-1`** → Save.
+
+Immediately afterwards the container booted and everything downstream worked:
+
+- `wineserver`, `services.exe`, `winedevice`, `plugplay`, `explorer`, `winhandler` all started
+- the game launched and wrote a real `warnings.log`
+- `smctest` could finally be run — which is what confirmed the SMC trap
+  ([SMC-CONFIRMED.md](SMC-CONFIRMED.md))
+
+Selection is what matters, not importing: `proton-11.0-99-arm64ec-1` was **already installed** (it is the
+original `proton-11.0-99-arm64ec.wcp` still on the device, the `-1` being its versionCode). Re-importing
+it would have changed nothing.
+
+## What this cost, and the lesson
+
+Roughly ten rounds were spent on this, and two confident diagnoses along the way were **wrong**:
+
+1. **"The container is wedged"** (rounds 19, 26) — the device was simply on its **secure lock screen**, so
+   every tap went to the keyguard. `adb shell ls /sdcard/` failing is the tell: user storage is not
+   decrypted until the first unlock after a boot.
+2. **"needsUnpacking: true means it is unpacking"** — it was not. The app sat at 23% CPU with **zero**
+   container threads; that was Java and telemetry work. Measuring the thread list rather than the CPU
+   figure is what showed it.
+
+The root cause was my own change: an earlier attempt to switch Proton versions left the container
+pointing at a tree that was never installed.
+
+## Also learned here: renaming beats overwriting
+
+`C:\windows\system32\libarm64ecfex.dll` cannot be overwritten while the container runs — it is mapped,
+and `copy` fails with **"Sharing violation"**. But a mapped file **can be renamed**:
+
+```
+move /y "C:\windows\system32\libarm64ecfex.dll" "C:\windows\system32\libarm64ecfex.stock.dll"
+copy /y D:\libarm64ecfex.patched.dll "C:\windows\system32\libarm64ecfex.dll"
+```
+
+That is how the patched FEX was swapped in and out without stopping the container. Note the swap only
+takes effect for **newly started** processes; already-running ones keep the old mapping, so a container
+restart is needed for it to apply.
