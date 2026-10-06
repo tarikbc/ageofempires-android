@@ -74,3 +74,52 @@ verified — may not be what stands between here and a playable game.
 **Next:** find out why the X connection drops. Candidates: the X server's request handling under FEX,
 resource exhaustion, or the game's own window/display setup. Worth checking whether `killConnection`
 correlates with a specific request, and whether it happens at the same point in the load every time.
+
+
+## Correction: the X error is a consequence, not the cause
+
+One round later, the full stack trace showed I had read it backwards. Read top-down:
+
+```
+WindowManager.destroyWindow
+  -> WindowManager.removeAllSubwindowsAndWindow
+    -> Window.sendEvent -> EventListener.sendEvent
+      -> DestroyNotify.send
+        -> XOutputStream.flush -> ClientSocket.write
+          -> "Failed to write data"
+```
+
+and the frame below it:
+
+```
+XClient.freeResources
+  -> XClientConnectionHandler.handleConnectionShutdown
+    -> XConnectorEpoll.killConnection
+      -> XConnectorEpoll.handleExistingConnection
+        -> XConnectorEpollNative.doEpollIndefinitely
+```
+
+**The client disconnected first.** The server noticed (`handleExistingConnection`), began tearing the
+client down (`killConnection` → `handleConnectionShutdown` → `freeResources`), destroyed its windows, and
+then failed to *write* a `DestroyNotify` to a socket that had already gone — which is exactly what a
+socket write to a closed connection does, and is harmless.
+
+So "the X connection drops" is **not** a cause of the game's death. It is what the server does *after* the
+client goes away. The plausible reading is the reverse of what was written above: **the game process exits
+first, and the X cleanup follows.**
+
+That also removes the tension with the measurement, which stands unchanged: the thread states show
+ordinary activity right up to the exit, with no suspension and no spinner — so whatever ends the run is
+neither the kill's signature nor a struggling display connection.
+
+## Where that leaves the cause
+
+Back to the load failing on its own. The two candidates still standing:
+
+1. **The `MapGen` validation** — an info-level data-authoring message, but it is the last thing logged in
+   the runs that get that far, and nothing is logged after it before the process exits.
+2. **An incomplete install** — `!m_texturePath.empty()` is an empty texture path, which is what missing
+   game data looks like. The install reports 45.31 GiB; a full AoE IV with expansions is larger.
+
+**Both point at the same cheap test: Steam → verify integrity of game files.** That is a UI action and it
+would settle whether data is missing, without any further emulation work.
