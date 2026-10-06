@@ -66,3 +66,61 @@ The session-loss chain was already shown not to cause the kill
 does change is leverage: **`envVars` is now an editable channel** for anything FEX or Wine reads from
 the environment — `FEX_TSOENABLED`, `FEX_MULTIBLOCK`, `FEX_X87REDUCEDPRECISION`, `BOX64_*`, `WINEDEBUG` —
 and `extraData` names the Wine version and FEXCore content the container uses.
+
+## Editing workflow, and what the tree looks like
+
+Re-pulling before editing matters: an earlier attempt failed because I patched a stale local copy while
+the live file had already moved on. `tools/cfgedit.py OLD NEW` now does pull → patch → push in one step
+and prints what actually landed.
+
+```
+python3 tools/cfgedit.py "WINEDEBUG=+winhttp,+timestamp,+tid" "WINEDEBUG=+thread,+sync,+virtual,+timestamp,+tid"
+```
+
+The Wine versions are plain directories, and they are **read-only**:
+
+```
+Z:\opt\  apps  mono-gecko-offline  proton-11.0-99-arm64ec-1  wine  winetricks
+Z:\opt\proton-11.0-99-arm64ec-1\  bin/  lib/  share/  prefixPack.txz  profile.json
+  copy out the ntdll          -> works
+  echo test > writetest.txt   -> fails (file not found)
+```
+
+So the Proton tree cannot be patched in place from Wine. `extraData.appliedWineVersion` names one of
+these directories and GameNative builds `WINELOADER` from it (`…/lib/wine/aarch64-unix/wine`), so
+arbitrary paths will not work either — changing the loaded ntdll still requires a `Proton`-type `.wcp`
+and therefore an import.
+
+## What the verbose channels showed (round 17)
+
+With `WINEDEBUG=+thread,+sync,+virtual,+timestamp,+tid` and `adb logcat` streaming to a file (the buffer
+rolls immediately at these volumes — the capture reached **1.0 GB**):
+
+| pattern | count |
+|---|---|
+| `NtQueryVirtualMemory` | 35,248 |
+| `NtSetInformationThread` | 39 |
+| `SuspendThread` / `NtSuspendThread` | **0** |
+| `ThreadHideFromDebugger` / `HideFromDebugger` | **0** |
+
+The kill itself is invisible in these channels — no suspend lines at all — and nothing named
+`HideFromDebugger`, so this does not settle round 5's question about
+`NtSetInformationThread(ThreadHideFromDebugger)`.
+
+**But the tail of the log is the interesting part.** The last lines before the process died are a storm
+of:
+
+```
+2041932.587:00f0:trace:sync:RtlWakeAddressAll
+2041932.587:00f0:trace:sync:RtlWakeAddressAll      (repeated many times per millisecond)
+2041932.587:00f0:trace:virtual:NtMapViewOfSection
+2041932.588:00f0:trace:virtual:NtQueryVirtualMemory
+```
+
+That is the Wine `RtlWaitOnAddress` / `RtlWakeAddress` pathology this repo has a patch for
+(`patches/proton-arm64ec-ntdll/waitq_fix.s`), and **that patch has never been loaded** — the deployed
+ntdll is pristine ([NTDLL-NEVER-LOADED.md](NTDLL-NEVER-LOADED.md)). The earlier note that it "did not
+stop the AoE IV freeze" is therefore worthless, and the kill correlating with this storm means the
+waitq fix is genuinely untested rather than disproved.
+
+**That is a better lead than the module-name question, and it is now the priority.**
