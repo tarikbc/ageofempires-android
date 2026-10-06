@@ -138,3 +138,17 @@ is not viable; the list must be located through Aegis's own code or its decrypte
 
 - `samples/aegis/Aegis_RelicCardinal.log` — the log verbatim.
 - `samples/aegis/CodeSignSummary-*.md` — the code-signing summary shipped beside it.
+
+## Breakpoint attempt on the kill path (partial)
+
+[`tools/bpguard.c`](../tools/bpguard.c) attaches as a debugger, plants `int3` at the two
+`SuspendThread` call sites (`0x1449065a1`, `0x14490699d`) and dumps the thread context plus the
+stack's return addresses on each hit. See
+[`samples/aegis/bp_breakpoints_run.txt`](../samples/aegis/bp_breakpoints_run.txt).
+
+Result so far: attach succeeded (71 modules, both `ff` bytes replaced with `CC`), **no breakpoint
+fired**, and the game **stalled at 0 % CPU without ever being killed**. Whether that stall came from
+the 1-byte code write (Aegis reacting to a modified byte) or just from the debugger being attached is
+**not yet determined** — the no-breakpoint control run failed to launch before the pause. If the
+control reaches the normal kill, the stall is attributable to the modified byte, which would be
+direct evidence that Aegis's kill is an integrity response.
