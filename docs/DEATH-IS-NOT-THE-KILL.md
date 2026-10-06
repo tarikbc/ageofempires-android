@@ -123,3 +123,36 @@ Back to the load failing on its own. The two candidates still standing:
 
 **Both point at the same cheap test: Steam → verify integrity of game files.** That is a UI action and it
 would settle whether data is missing, without any further emulation work.
+
+
+## Retraction: the thread-state method cannot detect this kill at all
+
+The measurement that this document is built on is **invalid**, and the title is wrong.
+
+**Wine's `SuspendThread` does not put a thread into the Linux `T` state.** `T` is job-control stop
+(`SIGSTOP`). A thread suspended through the Windows API stays in `S` as far as `/proc/<pid>/task/*/stat`
+is concerned — it is parked inside the Wine server, not stopped by the kernel.
+
+So "no mass suspension, no spinner" is exactly what a *successful* Aegis kill would also look like. The
+sampling could not distinguish "healthy" from "every thread suspended". Both the table above and the
+conclusion drawn from it must be disregarded.
+
+The timing is consistent with the kill, which is what I should have weighted: the log goes silent at
+`[Property Bag Manager]`, and the process dies about **2.5 minutes later**, ~4 minutes into the run —
+inside the documented 2–4.5 minute window.
+
+## The correct instrument
+
+`tools/probes/suspinfo.c` reads the **Windows** suspend count of every thread, which is the actual
+signature:
+
+- **kill fired** — every thread but one has a suspend count of 1, and the remaining one is spinning
+- **healthy** — suspend counts of 0
+
+It is built and on the device as `/sdcard/Download/suspinfo.exe`, driven by `D:\susp.bat`, which appends
+each sample to `D:\aoe\susp_hist.txt` so a whole run can be read back afterwards.
+
+**What is still true:** the X11 messages are a consequence of the process exiting, not a cause — the stack
+trace shows the server reacting to a client that had already gone.
+
+**What is not established by this document:** anything about whether the kill fired in that run.
