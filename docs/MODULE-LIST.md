@@ -82,3 +82,37 @@ and offline"* is probably conflating two different failures: the characterized k
 early network-init exit (offline). Worth not re-testing offline again for this purpose.
 
 Network was restored afterwards (wifi back on, `ping 8.8.8.8` OK).
+
+## Where the emulator's module name actually comes from
+
+Dumping the session environment (`tools/envdump.c`) shows there is **no variable selecting the
+emulator** — only tuning (`FEX_TSOENABLED`, `FEX_X87REDUCEDPRECISION`, `BOX64_DYNAREC*`, …), plus
+`SteamAppId=1466860` and paths like `WINELOADER=…/proton-11.0-99-arm64ec/lib/wine/aarch64-unix/wine`
+and `WINEDLLDIR0=…/lib/wine`. The name is the registry value:
+
+```
+HKLM\Software\Microsoft\Wow64\amd64 = libarm64ecfex.dll
+```
+
+**And GameNative re-applies that value at session start.** I set it to `xtajit64.dll`, reverted
+`wine.inf` back to `xtajit64.dll`, verified both — and after the next launch it was `libarm64ecfex.dll`
+again. So neither the registry nor `wine.inf` is the durable source: **the FEXCore content's manifest
+is**, and the registry follows it.
+
+That also means the `namefix` bundle I built earlier was wrong. It lists `libarm64ecfex.dll` (first) and
+`xtajit64.dll` (second), so it would leave the FEX-branded name in place. My "first target wins"
+inference rests on a single data point and the previous session's bundle contradicts it (it lists only
+`libarm64ecfex.dll`, yet the game then loaded `xtajit64.dll` — because their `wine.inf` said so and
+nothing in their manifest overrode it).
+
+So the unambiguous version is one that never mentions `libarm64ecfex.dll` at all:
+
+```
+/sdcard/Download/fexcore-2610-aoe-xtajitonly.wcp     (FEXCore, 2610-aoe-xtajitonly, versionCode 7)
+  files: xtajit64.dll       -> ${system32}/xtajit64.dll
+         libwow64fex.dll    -> ${system32}/libwow64fex.dll
+```
+
+Whatever rule GameNative uses to pick the value, the answer is `xtajit64.dll`. **Import this one, not
+`namefix` (code 5).** Verify afterwards with `tools/modlist.c`: the emulator entry should read
+`C:\windows\system32\xtajit64.dll`.
