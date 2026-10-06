@@ -45,6 +45,23 @@ the kill *suspends* the threads and leaves the process hung, so `ps` still shows
 | Locked device → "container will not start" (rounds 19, 26) | **MISDIAGNOSED.** The device was on a secure lock screen, so taps went to the keyguard. The container was never broken. Check `dumpsys trust \| grep deviceLocked` first |
 | Hardware tracing (ETM/CoreSight) on the Thor | Needs root: `enable_source` is root-owned, `perf_event_paranoid=3`, `simpleperf` rejects `task-clock`. Bootloader is unlocked, so rooting is possible but not free. |
 
+## The one that unblocked everything
+
+| Problem | Fix |
+|---|---|
+| **Container would not start.** Box64: `Error: File is not found. (wine)`, searching `…/imagefs/opt/wine/bin/`. Nothing else worked: no Wine process at all, for ~10 rounds. | The container's **Wine Version** was `proton-11.0-1-arm64ec-aoefix-1`, a bundle imported earlier that never worked, and `Z:\opt\` only ever showed `proton-11.0-99-arm64ec-1` — so it named a tree that did not exist. Set Wine Version to **`proton-11.0-99-arm64ec-1`**, Save. It booted immediately, and everything downstream (the game log, `smctest`, the whole SMC investigation) became possible. See [CONTAINER-WONT-START.md](CONTAINER-WONT-START.md). |
+
+**Two diagnoses made along the way were wrong, and both looked convincing:**
+
+- **"The container is wedged"** (rounds 19, 26) — the device was on its **secure lock screen** and every
+  tap went to the keyguard. Tell: `adb shell ls /sdcard/` fails, because user storage is not decrypted
+  until the first unlock after a boot.
+- **"`needsUnpacking: true` means it is unpacking"** — it was not. The app sat at 23% CPU with **zero**
+  container threads; that was Java and telemetry. Check the thread list, not the CPU figure.
+
+**And the root cause was self-inflicted:** an earlier attempt to switch Proton versions left the container
+pointing at a tree that was never installed.
+
 ## Fixed along the way
 
 | Problem | Fix |
