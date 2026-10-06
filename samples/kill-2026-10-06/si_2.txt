@@ -1,0 +1,7 @@
+tid 0138 suspend=1 user=64710ms start=RelicCardinal.exe+4fb0884 name=[Game/Main Thread]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=41f0a0 rax=0 rcx=41bf20 rdx=0
+tid 0154 suspend=1 user=40ms start=RelicCardinal.exe+3f8eb04 name=[]
+   rip=6fffa66448 (ntdll.dll+c6448) rsp=2c6fe60 rax=7e9c00ea40 rcx=7ea00533c0 rdx=1
+tid 0170 suspend=1 user=0ms start=RelicCardinal.exe+3e8051c name=[]
+   rip=6fffa66480 (ntdll.dll+c6480) rsp=488fe60 rax=6fff720000 rcx=493e0 rdx=143e8051c
+tid 0174 suspend=1 user=51030ms start=RelicCardinal.exe+3e69304 name=[]

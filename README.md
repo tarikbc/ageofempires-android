@@ -10,6 +10,7 @@ Sessions: 5–6 Oct 2026.
 - The game starts, renders, reaches the menu and logs in online.
 - The game freezes or exits 2 to 4.5 minutes after launch. This happens online and offline.
 - The freeze comes from the copy protection, not from a setting. It is still open. The user owns the game so the goal is to implement the proper changes to make that protection understand the game is legit.
+- The protection's kill thread is now identified: a launch-time thread with entry `RelicCardinal.exe+0x3e69304` that suspends every other thread ~1 min after the network socket closes, then spins at 100 % CPU. See [`docs/KILL-ANALYSIS.md`](docs/KILL-ANALYSIS.md).
 
 ## What is in this repo
 
@@ -20,6 +21,9 @@ Sessions: 5–6 Oct 2026.
 | [`patches/gamenative/`](patches/gamenative) | GameNative: write a fresh Steam ticket on every launch. Not built or tested. |
 | [`tools/probes/`](tools/probes) | Small Windows programs that read thread, stack and lock state of a running process. |
 | [`tools/winhandler_exec.py`](tools/winhandler_exec.py) | Starts a Windows program in a running GameNative session over adb. |
+| [`tools/gn_nav.py`](tools/gn_nav.py) | Drives the GameNative UI over adb (launch a game without touching the screen). |
+| [`tools/run_experiment.py`](tools/run_experiment.py) + [`tools/thor/`](tools/thor) | Watches the game for the network trigger and samples thread state in the kill window. |
+| [`docs/KILL-ANALYSIS.md`](docs/KILL-ANALYSIS.md) | The captured kill: which thread suspends the others, and where the protection code lives. |
 
 ## Setup that works best
 

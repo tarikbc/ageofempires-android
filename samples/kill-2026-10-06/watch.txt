@@ -1,0 +1,596 @@
+RelicCardinal started at 2026-10-06 07:41 [Argentina Standard Time UTC -03:00]
+OS Win 10.0.19045.0, 15255MB Physical Memory, 8611 Physical Available, 19351 Virtual Total, 11030 Virtual Available, 4096 Page file.
+RUN-OPTIONS []
+WORKING-DIR [A:\]
+USER [xuser]
+COMPUTER [LOCALHOST]
+LOCALE [en-US]
+
+(I) [07:41:55.234] [000000312]: Version.cpp - translation info queried modulefilename C:\Program Files (x86)\Steam\steamapps\common\Age of Empires IV\RelicCardinal.exe, len 1564
+(I) [07:41:55.237] [000000312]: Version [16.3.11308.0] Info [[Cardinal][cardinal][release_16_3_0][rtm][4178464]]
+(I) [07:41:58.038] [000000312]: Loading step: [Additional crash information]
+(I) [07:41:58.039] [000000312]: Loading step: [Platform]
+(I) [07:41:58.045] [000000312]: Loading step: [Early Free RAM Check]
+(I) [07:41:58.045] [000000312]: Loading step: [Single Instance Check]
+(I) [07:41:58.046] [000000312]: Loading step: [Async IO Queue]
+(I) [07:41:58.048] [000000312]: Loading step: [Config File]
+(I) [07:41:58.429] [000000312]: GAME -- Current Steam name is [tarikbc]
+(I) [07:41:58.430] [000000312]: GAME -- steam returned language 'english'
+(I) [07:41:58.431] [000000312]: GAME -- [Age of Empires IV] set to language [en]
+(I) [07:41:58.431] [000000312]: Loading step: [Render Window]
+(I) [07:41:58.432] [000000312]: Loading step: [Statgraph]
+(I) [07:41:58.432] [000000312]: Loading step: [StatGraph Stats]
+(I) [07:41:58.433] [000000312]: Loading step: [MathBox]
+(I) [07:41:58.434] [000000312]: MATHBOX -- Mode=SSE
+(I) [07:41:58.434] [000000312]: Loading step: [ArchiveManager]
+(I) [07:41:58.434] [000000312]: Loading step: [IOThrottler]
+(I) [07:41:58.434] [000000312]: Loading step: [Filesystem]
+(I) [07:41:58.435] [000000312]: Using [C:\users\xuser\Documents\My Games\Age of Empires IV\] as base writable folder
+(I) [07:41:58.435] [000000312]: Using [C:\users\xuser\Documents\My Games\Age of Empires IV\] as base transient writable folder
+(I) [07:41:58.437] [000000312]: Loading step: [Place Debug Session File]
+(I) [07:41:58.441] [000000312]: Loading step: [Load Scheduler]
+(I) [07:41:58.441] [000000312]: Loading step: [FileLogger]
+(I) [07:41:58.441] [000000312]: Loading step: [Lua GameBinding Traits]
+(I) [07:41:58.442] [000000312]: Loading step: [Lua Libraries]
+(I) [07:41:58.442] [000000312]: Loading step: [System Config]
+(I) [07:41:58.474] [000000312]: System detected as Desktop
+(I) [07:41:58.487] [000000312]: Loading step: [User Folder Unloader]
+(I) [07:41:58.487] [000000312]: Loading step: [Load/Save Config Settings]
+(I) [07:41:58.492] [000000312]: Loading step: [Warnings]
+(I) [07:41:58.495] [000000312]: Loading step: [Load Debug Symbols]
+(I) [07:41:58.496] [000000312]: Loading step: [MemoryEnvironment]
+(I) [07:41:58.505] [000000408]: SymInitialize will attempt to load symbols from [C:\Program Files (x86)\Steam\steamapps\common\Age of Empires IV\].
+(I) [07:41:58.536] [000000312]: Loading step: [InitReflectSystem]
+(I) [07:41:58.750] [000000312]: Loading step: [InitStateTreeManager]
+(I) [07:41:58.751] [000000312]: Loading step: [Prerequisite Manager]
+(I) [07:41:58.751] [000000312]: Loading step: [Prerequisite Entries]
+(I) [07:41:58.752] [000000312]: Loading step: [GameModule Pre Mod Interface Init]
+(I) [07:41:58.752] [000000312]: Loading step: [ModManager]
+(I) [07:41:58.753] [000000312]: MODULE -- Creating module 'RelicGame'.
+(I) [07:41:58.836] [000000312]: ARC -- a:\cardinal\archives\attrib.sga 100739100 B [ID:ee47be61ca96024d4a4e1ec86642ee0d] [Ver:ac80dff97f660878e121a6c12571736e] [Sig:8230467250282822602]
+(I) [07:41:58.996] [000000312]: ARC -- a:\engine\archives\data.sga 510956 B [ID:16c0f95516b6bd76239a8a743a290dba] [Ver:28cd86b8c07eac0ff3c53e73b1054efd] [Sig:17569798057028531529]
+(I) [07:41:59.008] [000000312]: ARC -- a:\common\archives\data.sga 33220 B [ID:16c0f95516b6bd76239a8a743a290dba] [Ver:8d2ac4dbfc1bc9c4f5a4f5aa268b9d82] [Sig:5245408353539552599]
+(I) [07:41:59.018] [000000312]: ARC -- a:\engine\archives\ui.sga 1129058 B [ID:09480279ef1f221e1467f0feeeb28aa2] [Ver:ec33bc27b67ef2b248dbc24a27f4ce54] [Sig:9598038045816838209]
+(I) [07:41:59.042] [000000312]: ARC -- a:\cardinal\archives\art.sga 59485649 B [ID:d99ddc3bf2a59ab33b5a50ec14f1256c] [Ver:fd833e7a8887fced3f2f447e42bec0c1] [Sig:11551774692266972463]
+(I) [07:41:59.068] [000000312]: ARC -- a:\cardinal\archives\artcivilizations.sga 78145204 B [ID:a1848b38e5518cdbdf39590d559fac83] [Ver:ebc56d36669f8195a9bc22dedc8a24ec] [Sig:8775277007172887350]
+(I) [07:41:59.089] [000000312]: ARC -- a:\cardinal\archives\artenvironment.sga 904682 B [ID:a7a407191c6a9c6d7922e5be93c9c0ab] [Ver:40f4dcb46e20cfebf42e5264e84e1670] [Sig:8516316817872172348]
+(I) [07:41:59.107] [000000312]: ARC -- a:\cardinal\archives\artscenarios.sga 32764919 B [ID:8c73975de44dd6c1a48fcb04421475c4] [Ver:a0a3b2a1d1917c12d822d5294d721206] [Sig:12778390542777042821]
+(I) [07:41:59.131] [000000312]: ARC -- a:\cardinal\archives\ui.sga 110630703 B [ID:c00215033d7a6362a23396b8a85b673e] [Ver:9fe7ccc6b3c36266d9e4d6edad461589] [Sig:4030386567326197862]
+(I) [07:41:59.156] [000000312]: ARC -- a:\cardinal\archives\uiart.sga 1766722682 B [ID:e9e119548401f6f9cb7ccf6351516a15] [Ver:fdedc513907dba9ce35581dcf6679c71] [Sig:283403006424666490]
+(I) [07:41:59.194] [000000312]: ARC -- a:\cardinal\archives\artcampaign.sga 502107 B [ID:6412a87b29f706d21c1052453db9f82a] [Ver:c025a1a600451772013383b8a5304a96] [Sig:10483050567255040468]
+(I) [07:41:59.216] [000000312]: ARC -- a:\cardinal\archives\artcampaignxp3.sga 83350 B [ID:8f384fa2caed9e8f8e85792455ae986a] [Ver:bf0ca294a64f9ef9ccf008e160c401d7] [Sig:7954704967286726370]
+(I) [07:41:59.236] [000000312]: ARC -- a:\cardinal\archives\artabbasids.sga 4101498 B [ID:0e00db2440f4d006b08b650c273d8060] [Ver:f22786ceea59a3bedbb653325a7620a1] [Sig:3753572523861621674]
+(I) [07:41:59.256] [000000312]: ARC -- a:\cardinal\archives\artchinese.sga 9123054 B [ID:82a6adbd840c98202bc87fef753b5d65] [Ver:b7f6995b28fb6f1764a3df7dc3ce48bf] [Sig:6405859710106363386]
+(I) [07:41:59.276] [000000312]: ARC -- a:\cardinal\archives\artenglish.sga 8624498 B [ID:f1edd63d3e0732b474dd114b8cefbe0a] [Ver:84464ef553b553938668e4960cd23b4d] [Sig:3372008782055200196]
+(I) [07:41:59.303] [000000312]: ARC -- a:\cardinal\archives\artfrench.sga 7082205 B [ID:10e6ba5b8cd559550c78b750c102d365] [Ver:7d4e99637f1759df87860f2ca5274cce] [Sig:253167904842630805]
+(I) [07:41:59.323] [000000312]: ARC -- a:\cardinal\archives\artgaia.sga 478902 B [ID:13f9b459d59202d5c9505386a400343a] [Ver:4ec19707c7d3b6ac26e08650f8ca3dd2] [Sig:3049116051670450180]
+(I) [07:41:59.345] [000000312]: ARC -- a:\cardinal\archives\arthre.sga 8372116 B [ID:2cd9426f658c78085b3c9636b688a407] [Ver:02fc17d25c60e40eb8094b15aee025cc] [Sig:3343451346258623324]
+(I) [07:41:59.364] [000000312]: ARC -- a:\cardinal\archives\artmalian.sga 4656301 B [ID:29b136611af96e3635aa69db7924f371] [Ver:1a11a6c7ec9125e6797aaa56e5d86cb0] [Sig:323242097620252176]
+(I) [07:41:59.384] [000000312]: ARC -- a:\cardinal\archives\artmongols.sga 6556343 B [ID:fbe36b2d57b65570e87e63a23c830eca] [Ver:40774b59a79037c3e12f238d58581509] [Sig:10843999298727538960]
+(I) [07:41:59.407] [000000312]: ARC -- a:\cardinal\archives\artottoman.sga 4640479 B [ID:f37ca7234f3b5f87a626cbdba675408f] [Ver:968ebab405e315a4fef9b44f078839d5] [Sig:10021171719225757404]
+(I) [07:41:59.425] [000000312]: ARC -- a:\cardinal\archives\artrus.sga 8539253 B [ID:147955ba60fa5b6f1f9d3f1d30dac006] [Ver:bd5f8f61d7eddc6d3259acf1fbc091d9] [Sig:7574053126552823461]
+(I) [07:41:59.447] [000000312]: ARC -- a:\cardinal\archives\artsultanate.sga 8655201 B [ID:18eda33163592da2ba61529ce754b445] [Ver:3a3deaab6c5848b2aad9646c0b408fdd] [Sig:16584714519130950092]
+(I) [07:41:59.468] [000000312]: ARC -- a:\cardinal\archives\artbyzantine.sga 4639535 B [ID:99d546706d1ba0d1a59bf4833cb4661d] [Ver:0bcb38999c4d2fc24b414c34c8d081e7] [Sig:13760367908505780753]
+(I) [07:41:59.489] [000000312]: ARC -- a:\cardinal\archives\artjapanese.sga 3987658 B [ID:dd88fab63357b735ba035134eb9672ad] [Ver:f67244e00e9c43293e83e026b1a23018] [Sig:8821475256460664686]
+(I) [07:41:59.510] [000000312]: ARC -- a:\cardinal\archives\artabbasidsha.sga 14352 B [ID:bb0fde22dcf139c14805221868a5ee75] [Ver:7e8cc88c005c3a40167660b5316cdd1e] [Sig:8655686374011660512]
+(I) [07:41:59.532] [000000312]: ARC -- a:\cardinal\archives\artchineseha.sga 605235 B [ID:ca7c89f93f3278313b22559273fa8306] [Ver:54875acf824fc8cadf46b3419ce9a04f] [Sig:5323865205146501925]
+(I) [07:41:59.553] [000000312]: ARC -- a:\cardinal\archives\artfrenchha.sga 37325 B [ID:e591dc96989f57d502ab6fae14a588dc] [Ver:35d04504bac2ddc91b53ecdfb393682c] [Sig:5946354417964699505]
+(I) [07:41:59.573] [000000312]: ARC -- a:\cardinal\archives\arthreha.sga 137339 B [ID:595a5ec4937a8a313ab9f06dcaea285e] [Ver:0dc525f585ff57b41853c7b89f612892] [Sig:5129214241075909098]
+(I) [07:41:59.593] [000000312]: ARC -- a:\cardinal\archives\arttemplar.sga 6262936 B [ID:3c20477da3c8b79085488204434d035f] [Ver:3574a0688959e3547866d876cf2bffa4] [Sig:107351582766359499]
+(I) [07:41:59.612] [000000312]: ARC -- a:\cardinal\archives\artlancaster.sga 433499 B [ID:3731bf29387ed36fe4a6e288a9ea1ef6] [Ver:40457c105c200be675f85ac5bf7ead5f] [Sig:6319936066355266534]
+(I) [07:41:59.630] [000000312]: ARC -- a:\cardinal\archives\artjapaneseha.sga 580372 B [ID:7be3985f380bb914b661411cf89ba4bb] [Ver:2f2d630ff6e40855beb0d4f0dca3a90b] [Sig:3575089942877467881]
+(I) [07:41:59.648] [000000312]: ARC -- a:\cardinal\archives\artmongolsha.sga 200608 B [ID:a1f4098626c97e577b13118c1ad32ece] [Ver:ce3b2b536a4a90153c2563a7e09287ef] [Sig:6279996988202389925]
+(I) [07:41:59.667] [000000312]: ARC -- a:\cardinal\archives\artsultanateha.sga 664398 B [ID:d29fc37b3d5b3192f1aade624c8e8b73] [Ver:c74550a19fa94bff9b9d014b48c933e6] [Sig:17751615121749568627]
+(I) [07:41:59.686] [000000312]: ARC -- a:\cardinal\archives\artbyzantineha.sga 349168 B [ID:c40caa99031cac133c456b59dfb93d66] [Ver:ad5bb6c1dc96f4b831ad5f59080801d2] [Sig:1092196903439145315]
+(I) [07:41:59.706] [000000312]: ARC -- a:\cardinal\archives\artjin.sga 8267177 B [ID:b86d5d5617890de0985b5b5ea44ce7b7] [Ver:5df9164f8ebd563522bea1b56f8265af] [Sig:1208139491177786916]
+(I) [07:41:59.716] [000000312]: ARC -- a:\tools\archives\data.sga 1852 B [ID:94195021539650ebc2111161f08a5693] [Ver:46c96a6efa0e1a0bbb05963daa12fd12] [Sig:16740000036278800819]
+(I) [07:41:59.730] [000000312]: Archive [DevOnly] is [missing]! [Skipping.]
+(I) [07:41:59.761] [000000312]: Archive [DevOnly] is [missing]! [Skipping.]
+(I) [07:41:59.797] [000000312]: Archive [OTAPatchAssets] is [missing]! [Skipping.]
+(I) [07:41:59.815] [000000312]: ARC -- a:\cardinal\archives\tensorflow.sga 1673550 B [ID:a90e31fb9bdbd9d1907690832455739e] [Ver:db5eb8f80aaf06682fa0936d56575a40] [Sig:11036465588156211247]
+(I) [07:41:59.834] [000000312]: ARC -- a:\cardinal\archives\campaigntensorflow.sga 1184909 B [ID:a29737bb04597fc31394a66f2c121ff4] [Ver:0c298e86a4eba7f962c2b29d3dfb2cc1] [Sig:12464512030553846394]
+(I) [07:41:59.844] [000000312]: ARC -- a:\engine\archives\datarrtex.sga 10815944 B [ID:2621dfd56f5c247f82dd02723974d115] [Ver:a0f4cf328f5f8bf017ad7969030b5acb] [Sig:263084267478123689]
+(I) [07:41:59.878] [000000312]: ARC -- a:\cardinal\archives\data.sga 38593962 B [ID:f4b1338f05099577586aca4849e71887] [Ver:a50c0ccf9b8f577c12c0e2056d447b5b] [Sig:17377807432128983462]
+(I) [07:41:59.942] [000000312]: ARC -- a:\cardinal\archives\campaigndata.sga 5804808 B [ID:3153ae39a848ec5c99fe004f4363e020] [Ver:b196d2e28ad7ad349cdb84473bb8646d] [Sig:15476365334771139761]
+(I) [07:41:59.960] [000000312]: ARC -- a:\cardinal\archives\scenarios.sga 201562079 B [ID:14a8a0e59b40c543e6087f69fee1f85e] [Ver:6a856d02399c9fde4cc4ae7a6f66ef03] [Sig:15002301278801712538]
+(I) [07:41:59.979] [000000312]: ARC -- a:\cardinal\archives\scenariossp.sga 370060484 B [ID:660d975e8673cc3f148c18157ca51349] [Ver:8d428b5ff85b365d79d6006850bb1c85] [Sig:11399188246550852580]
+(I) [07:42:00.003] [000000312]: ARC -- a:\cardinal\archives\scenariosspxp3.sga 65678846 B [ID:08a258d97ba61a4e75a494dd25eb9f50] [Ver:03453bf091338e9ae4ada1f39e523d0d] [Sig:892526690823107619]
+(I) [07:42:00.026] [000000312]: ARC -- a:\cardinal\archives\xp3data.sga 8583772 B [ID:8e868036ec177df4e44fd24536cbb19c] [Ver:f6fe98b8afb1196eda9992911b3e3550] [Sig:17022236900633738589]
+(I) [07:42:00.045] [000000312]: ARC -- a:\cardinal\archives\xp3tensorflow.sga 1184894 B [ID:57fa5b4a6dd79e4c7f410ef07d631053] [Ver:c0d1e61d78ddacfe6ab6e6ce6492d8ea] [Sig:7078484262931189540]
+(I) [07:42:00.063] [000000312]: ARC -- a:\cardinal\archives\cordobadata.sga 16208506 B [ID:9fc085ffe6a8137ed40389b4a9449008] [Ver:16385893868f3d9463159f42755249f7] [Sig:15519099209432504473]
+(I) [07:42:00.080] [000000312]: ARC -- a:\cardinal\archives\cordobatensorflow.sga 1673630 B [ID:6914fdccb0b8d2fd1d5d490f224251a8] [Ver:f902bc17c3f0293a1068f6d9ed5eb26f] [Sig:16143668982530517502]
+(I) [07:42:00.090] [000000312]: ARC -- a:\engine\archives\arthigh.sga 4265 B [ID:e8f87e4ac202807565d2b4980453804d] [Ver:e208ab107fd5a4a822bbd1d247bac549] [Sig:14839946367307866860]
+(I) [07:42:00.112] [000000312]: ARC -- a:\cardinal\archives\arthigh.sga 345033672 B [ID:99da1b8f8572c24ec631e9f73acb000d] [Ver:8c5195ea5316d5a5c30a9536ad7f86f3] [Sig:4877439060428711766]
+(I) [07:42:00.151] [000000312]: ARC -- a:\cardinal\archives\localeenglish.sga 748200 B [ID:7c016c99df8f6c8651bc31c70aa32076] [Ver:dd5390640fa972342c7f4e16351ee4c6] [Sig:17134483543848855148]
+(I) [07:42:00.163] [000000312]: ARC -- a:\engine\archives\reflect.sga 1487111 B [ID:cf317ce4d037d959d1f61ec4ba4b95da] [Ver:235e7c1731d8c5fc177f7c05923ea45b] [Sig:17003319202691311369]
+(I) [07:42:00.164] [000000312]: Loading step: [Localization]
+(I) [07:42:00.246] [000000312]: Loading step: [Game]
+(I) [07:42:00.246] [000000312]: Loading step: [SimStaticApp]
+(I) [07:42:00.250] [000000312]: Loading step: [Family Manager]
+(I) [07:42:00.281] [000000312]: Loading step: [Initialize Resource Types]
+(I) [07:42:00.282] [000000312]: Loading step: [SimApp]
+(I) [07:42:00.285] [000000312]: Loading step: [Property Bag Registration]
+(I) [07:42:00.493] [000000312]: Loading step: [Sound - Rtpc Event Database Init]
+(I) [07:42:00.494] [000000312]: Loading step: [Property Bag Manager]
+(I) [07:42:05.961] [000000312]: MapGen - Failed to validate: !m_texturePath.empty()Failed to validate an attribute data field for map generation. If you are authoring data, please check to see that your data is consistent with the constraint above.
+(I) [07:42:09.118] [000000312]: UTIL -- Throwing 'Unable to open file' exception on 'data:art\fx\fx_objects\fx_campfire\fx_campfire.simbox'
+(I) [07:42:09.122] [000000312]: UTIL -- Failed to Load BinaryConfig file: 'data:art\fx\fx_objects\fx_campfire\fx_campfire.simbox', error: 'Unable to open file!'
+(I) [07:42:23.718] [000000312]: PropertyBagManager Loaded in 23.224001s
+(I) [07:42:23.718] [000000312]: Loading step: [Sim State Tree Manager]
+(I) [07:42:24.501] [000000312]: Loading step: [PBG PostLoad]
+(I) [07:42:24.740] [000000312]: PropertyBagManager post loaded in 0.240000s
+(I) [07:42:24.740] [000000312]: Loading step: [Modifier Callbacks Initialize]
+(I) [07:42:24.742] [000000312]: Loading step: [HandleIndex Manager]
+(I) [07:42:24.743] [000000312]: Loading step: [EntityBlueprintManager]
+(I) [07:42:24.763] [000000312]: Loading step: [ReflectPostExternalSystemsInited]
+(I) [07:42:24.791] [000000312]: Loading step: [ModPackManager]
+(I) [07:42:24.792] [000000312]: Loading step: [ModDllSetup]
+(I) [07:42:24.792] [000000312]: Loading step: [FilePath Filter]
+(I) [07:42:24.792] [000000312]: Loading step: [Locale System]
+(I) [07:42:24.792] [000000312]: Loading step: [Compatible Architecture Check]
+(I) [07:42:24.793] [000000312]: Loading step: [Compatible OS Check]
+(I) [07:42:24.793] [000000312]: Loading step: [Multicore Check]
+(I) [07:42:24.794] [000000312]: Loading step: [Running in compatibility mode check]
+(I) [07:42:24.797] [000000312]: Loading step: [Free RAM Check]
+(I) [07:42:24.797] [000000312]: Loading step: [Parental Control]
+(I) [07:42:24.808] [000000312]: Loading step: [NetworkGlobal]
+(I) [07:42:33.620] [000000312]: Initializing Server Settings: server=dr-activerelease1, title=age4
+(E) [07:42:34.477] [000000312]: Telemetry routing enabled
+(I) [07:42:34.582] [000000312]: WorldwideLoginService::WorldwideLoginService - initializing
+(I) [07:42:34.748] [000000312]: SystemCertsWin: Opened the CA system store.
+(I) [07:42:34.757] [000000312]: WindowsCertificates: Adding certificate; subject=/C=GR/O=Hellenic Academic and Research Institutions Cert. Authority/CN=Hellenic Academic and Research Institutions RootCA 2011 issuer=/C=GR/O=Hellenic Academic and Research Institutions Cert. Authority/CN=Hellenic Academic and Research Institutions RootCA 2011
+(I) [07:42:34.758] [000000312]: WindowsCertificates: Adding certificate; subject=/C=RO/O=certSIGN/OU=certSIGN ROOT CA issuer=/C=RO/O=certSIGN/OU=certSIGN ROOT CA
+(I) [07:42:34.759] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=AffirmTrust/CN=AffirmTrust Commercial issuer=/C=US/O=AffirmTrust/CN=AffirmTrust Commercial
+(I) [07:42:34.768] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=Amazon/CN=Amazon Root CA 4 issuer=/C=US/O=Amazon/CN=Amazon Root CA 4
+(I) [07:42:34.768] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=DigiCert Inc/OU=www.digicert.com/CN=DigiCert Assured ID Root G3 issuer=/C=US/O=DigiCert Inc/OU=www.digicert.com/CN=DigiCert Assured ID Root G3
+(I) [07:42:34.768] [000000312]: WindowsCertificates: Adding certificate; subject=/C=IT/L=Milan/O=Actalis S.p.A./03358520967/CN=Actalis Authentication Root CA issuer=/C=IT/L=Milan/O=Actalis S.p.A./03358520967/CN=Actalis Authentication Root CA
+(I) [07:42:34.769] [000000312]: WindowsCertificates: Adding certificate; subject=/C=ES/O=FNMT-RCM/OU=AC RAIZ FNMT-RCM issuer=/C=ES/O=FNMT-RCM/OU=AC RAIZ FNMT-RCM
+(I) [07:42:34.769] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/ST=Illinois/L=Chicago/O=Trustwave Holdings, Inc./CN=Trustwave Global ECC P384 Certification Authority issuer=/C=US/ST=Illinois/L=Chicago/O=Trustwave Holdings, Inc./CN=Trustwave Global ECC P384 Certification Authority
+(I) [07:42:34.769] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/OU=emSign PKI/O=eMudhra Inc/CN=emSign Root CA - C1 issuer=/C=US/OU=emSign PKI/O=eMudhra Inc/CN=emSign Root CA - C1
+(I) [07:42:34.770] [000000312]: WindowsCertificates: Adding certificate; subject=/C=CN/O=China Financial Certification Authority/CN=CFCA EV ROOT issuer=/C=CN/O=China Financial Certification Authority/CN=CFCA EV ROOT
+(I) [07:42:34.770] [000000312]: WindowsCertificates: Adding certificate; subject=/C=PL/O=Krajowa Izba Rozliczeniowa S.A./CN=SZAFIR ROOT CA2 issuer=/C=PL/O=Krajowa Izba Rozliczeniowa S.A./CN=SZAFIR ROOT CA2
+(I) [07:42:34.770] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=Google Trust Services LLC/CN=GTS Root R1 issuer=/C=US/O=Google Trust Services LLC/CN=GTS Root R1
+(I) [07:42:34.770] [000000312]: WindowsCertificates: Adding certificate; subject=/C=CH/O=WISeKey/OU=OISTE Foundation Endorsed/CN=OISTE WISeKey Global Root GC CA issuer=/C=CH/O=WISeKey/OU=OISTE Foundation Endorsed/CN=OISTE WISeKey Global Root GC CA
+(I) [07:42:34.771] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=IdenTrust/CN=IdenTrust Commercial Root CA 1 issuer=/C=US/O=IdenTrust/CN=IdenTrust Commercial Root CA 1
+(I) [07:42:34.771] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=DigiCert Inc/OU=www.digicert.com/CN=DigiCert Global Root G2 issuer=/C=US/O=DigiCert Inc/OU=www.digicert.com/CN=DigiCert Global Root G2
+(I) [07:42:34.772] [000000312]: WindowsCertificates: Adding certificate; subject=/C=BM/O=QuoVadis Limited/OU=Root Certification Authority/CN=QuoVadis Root Certification Authority issuer=/C=BM/O=QuoVadis Limited/OU=Root Certification Authority/CN=QuoVadis Root Certification Authority
+(I) [07:42:34.772] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=DigiCert Inc/OU=www.digicert.com/CN=DigiCert Trusted Root G4 issuer=/C=US/O=DigiCert Inc/OU=www.digicert.com/CN=DigiCert Trusted Root G4
+(I) [07:42:34.772] [000000312]: WindowsCertificates: Adding certificate; subject=/C=NO/O=Buypass AS-983163327/CN=Buypass Class 3 Root CA issuer=/C=NO/O=Buypass AS-983163327/CN=Buypass Class 3 Root CA
+(I) [07:42:34.772] [000000312]: WindowsCertificates: Adding certificate; subject=/O=Digital Signature Trust Co./CN=DST Root CA X3 issuer=/O=Digital Signature Trust Co./CN=DST Root CA X3
+(I) [07:42:34.773] [000000312]: WindowsCertificates: Adding certificate; subject=/C=NL/O=Staat der Nederlanden/CN=Staat der Nederlanden Root CA - G3 issuer=/C=NL/O=Staat der Nederlanden/CN=Staat der Nederlanden Root CA - G3
+(I) [07:42:34.773] [000000312]: WindowsCertificates: Adding certificate; subject=/C=CH/O=SwissSign AG/CN=SwissSign Gold CA - G2 issuer=/C=CH/O=SwissSign AG/CN=SwissSign Gold CA - G2
+(I) [07:42:34.773] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=AffirmTrust/CN=AffirmTrust Premium issuer=/C=US/O=AffirmTrust/CN=AffirmTrust Premium
+(I) [07:42:34.774] [000000312]: WindowsCertificates: Adding certificate; subject=/C=HK/O=Hongkong Post/CN=Hongkong Post Root CA 1 issuer=/C=HK/O=Hongkong Post/CN=Hongkong Post Root CA 1
+(I) [07:42:34.774] [000000312]: WindowsCertificates: Adding certificate; subject=/OU=GlobalSign Root CA - R3/O=GlobalSign/CN=GlobalSign issuer=/OU=GlobalSign Root CA - R3/O=GlobalSign/CN=GlobalSign
+(I) [07:42:34.774] [000000312]: WindowsCertificates: Adding certificate; subject=/C=IE/O=Baltimore/OU=CyberTrust/CN=Baltimore CyberTrust Root issuer=/C=IE/O=Baltimore/OU=CyberTrust/CN=Baltimore CyberTrust Root
+(I) [07:42:34.775] [000000312]: WindowsCertificates: Adding certificate; subject=/C=PL/O=Unizeto Technologies S.A./OU=Certum Certification Authority/CN=Certum Trusted Network CA 2 issuer=/C=PL/O=Unizeto Technologies S.A./OU=Certum Certification Authority/CN=Certum Trusted Network CA 2
+(I) [07:42:34.775] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=Google Trust Services LLC/CN=GTS Root R2 issuer=/C=US/O=Google Trust Services LLC/CN=GTS Root R2
+(I) [07:42:34.775] [000000312]: WindowsCertificates: Adding certificate; subject=/C=GB/ST=Greater Manchester/L=Salford/O=Comodo CA Limited/CN=AAA Certificate Services issuer=/C=GB/ST=Greater Manchester/L=Salford/O=Comodo CA Limited/CN=AAA Certificate Services
+(I) [07:42:34.776] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/ST=New Jersey/L=Jersey City/O=The USERTRUST Network/CN=USERTrust ECC Certification Authority issuer=/C=US/ST=New Jersey/L=Jersey City/O=The USERTRUST Network/CN=USERTrust ECC Certification Authority
+(I) [07:42:34.776] [000000312]: WindowsCertificates: Adding certificate; subject=/C=TW/O=TAIWAN-CA/OU=Root CA/CN=TWCA Root Certification Authority issuer=/C=TW/O=TAIWAN-CA/OU=Root CA/CN=TWCA Root Certification Authority
+(I) [07:42:34.777] [000000312]: WindowsCertificates: Adding certificate; subject=/DC=com/DC=microsoft/CN=Microsoft Root Certificate Authority issuer=/DC=com/DC=microsoft/CN=Microsoft Root Certificate Authority
+(I) [07:42:34.777] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=Internet Security Research Group/CN=ISRG Root X1 issuer=/C=US/O=Internet Security Research Group/CN=ISRG Root X1
+(I) [07:42:34.777] [000000312]: WindowsCertificates: Adding certificate; subject=/C=BM/O=QuoVadis Limited/CN=QuoVadis Root CA 2 issuer=/C=BM/O=QuoVadis Limited/CN=QuoVadis Root CA 2
+(I) [07:42:34.778] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/ST=Texas/L=Houston/O=SSL Corporation/CN=SSL.com Root Certification Authority ECC issuer=/C=US/ST=Texas/L=Houston/O=SSL Corporation/CN=SSL.com Root Certification Authority ECC
+(I) [07:42:34.778] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=IdenTrust/CN=IdenTrust Public Sector Root CA 1 issuer=/C=US/O=IdenTrust/CN=IdenTrust Public Sector Root CA 1
+(I) [07:42:34.778] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=AffirmTrust/CN=AffirmTrust Premium ECC issuer=/C=US/O=AffirmTrust/CN=AffirmTrust Premium ECC
+(I) [07:42:34.779] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/OU=www.xrampsecurity.com/O=XRamp Security Services Inc/CN=XRamp Global Certification Authority issuer=/C=US/OU=www.xrampsecurity.com/O=XRamp Security Services Inc/CN=XRamp Global Certification Authority
+(I) [07:42:34.779] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/ST=Texas/L=Houston/O=SSL Corporation/CN=SSL.com Root Certification Authority RSA issuer=/C=US/ST=Texas/L=Houston/O=SSL Corporation/CN=SSL.com Root Certification Authority RSA
+(I) [07:42:34.780] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/OU=emSign PKI/O=eMudhra Inc/CN=emSign ECC Root CA - C3 issuer=/C=US/OU=emSign PKI/O=eMudhra Inc/CN=emSign ECC Root CA - C3
+(I) [07:42:34.780] [000000312]: WindowsCertificates: Adding certificate; subject=/C=SK/L=Bratislava/O=Disig a.s./CN=CA Disig Root R2 issuer=/C=SK/L=Bratislava/O=Disig a.s./CN=CA Disig Root R2
+(I) [07:42:34.781] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/ST=Arizona/L=Scottsdale/O=Starfield Technologies, Inc./CN=Starfield Root Certificate Authority - G2 issuer=/C=US/ST=Arizona/L=Scottsdale/O=Starfield Technologies, Inc./CN=Starfield Root Certificate Authority - G2
+(I) [07:42:34.781] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/ST=Illinois/L=Chicago/O=Trustwave Holdings, Inc./CN=Trustwave Global ECC P256 Certification Authority issuer=/C=US/ST=Illinois/L=Chicago/O=Trustwave Holdings, Inc./CN=Trustwave Global ECC P256 Certification Authority
+(I) [07:42:34.782] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=Entrust, Inc./OU=www.entrust.net/CPS is incorporated by reference/OU=(c) 2006 Entrust, Inc./CN=Entrust Root Certification Authority issuer=/C=US/O=Entrust, Inc./OU=www.entrust.net/CPS is incorporated by reference/OU=(c) 2006 Entrust, Inc./CN=Entrust Root Certification Authority
+(I) [07:42:34.782] [000000312]: WindowsCertificates: Adding certificate; subject=/C=BE/O=GlobalSign nv-sa/OU=Root CA/CN=GlobalSign Root CA issuer=/C=BE/O=GlobalSign nv-sa/OU=Root CA/CN=GlobalSign Root CA
+(I) [07:42:34.782] [000000312]: WindowsCertificates: Adding certificate; subject=/C=FR/O=Dhimyotis/CN=Certigna issuer=/C=FR/O=Dhimyotis/CN=Certigna
+(I) [07:42:34.783] [000000312]: WindowsCertificates: Adding certificate; subject=/C=GB/ST=Greater Manchester/L=Salford/O=COMODO CA Limited/CN=COMODO RSA Certification Authority issuer=/C=GB/ST=Greater Manchester/L=Salford/O=COMODO CA Limited/CN=COMODO RSA Certification Authority
+(I) [07:42:34.783] [000000312]: WindowsCertificates: Adding certificate; subject=/C=ES/CN=Autoridad de Certificacion Firmaprofesional CIF A62634068 issuer=/C=ES/CN=Autoridad de Certificacion Firmaprofesional CIF A62634068
+(I) [07:42:34.783] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=Starfield Technologies, Inc./OU=Starfield Class 2 Certification Authority issuer=/C=US/O=Starfield Technologies, Inc./OU=Starfield Class 2 Certification Authority
+(I) [07:42:34.783] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=DigiCert Inc/OU=www.digicert.com/CN=DigiCert Global Root CA issuer=/C=US/O=DigiCert Inc/OU=www.digicert.com/CN=DigiCert Global Root CA
+(I) [07:42:34.784] [000000312]: WindowsCertificates: Adding certificate; subject=/OU=Copyright (c) 1997 Microsoft Corp./OU=Microsoft Corporation/CN=Microsoft Root Authority issuer=/OU=Copyright (c) 1997 Microsoft Corp./OU=Microsoft Corporation/CN=Microsoft Root Authority
+(I) [07:42:34.784] [000000312]: WindowsCertificates: Adding certificate; subject=/C=CN/O=UniTrust/CN=UCA Extended Validation Root issuer=/C=CN/O=UniTrust/CN=UCA Extended Validation Root
+(I) [07:42:34.784] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=DigiCert Inc/OU=www.digicert.com/CN=DigiCert Assured ID Root G2 issuer=/C=US/O=DigiCert Inc/OU=www.digicert.com/CN=DigiCert Assured ID Root G2
+(I) [07:42:34.785] [000000312]: WindowsCertificates: Adding certificate; subject=/C=GR/L=Athens/O=Hellenic Academic and Research Institutions Cert. Authority/CN=Hellenic Academic and Research Institutions ECC RootCA 2015 issuer=/C=GR/L=Athens/O=Hellenic Academic and Research Institutions Cert. Authority/CN=Hellenic Academic and Research Institutions ECC RootCA 2015
+(I) [07:42:34.785] [000000312]: WindowsCertificates: Adding certificate; subject=/C=GB/ST=Greater Manchester/L=Salford/O=COMODO CA Limited/CN=COMODO ECC Certification Authority issuer=/C=GB/ST=Greater Manchester/L=Salford/O=COMODO CA Limited/CN=COMODO ECC Certification Authority
+(I) [07:42:34.785] [000000312]: WindowsCertificates: Adding certificate; subject=/C=TW/O=TAIWAN-CA/OU=Root CA/CN=TWCA Global Root CA issuer=/C=TW/O=TAIWAN-CA/OU=Root CA/CN=TWCA Global Root CA
+(I) [07:42:34.786] [000000312]: WindowsCertificates: Adding certificate; subject=/C=CH/O=SwissSign AG/CN=SwissSign Silver CA - G2 issuer=/C=CH/O=SwissSign AG/CN=SwissSign Silver CA - G2
+(I) [07:42:34.786] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=Microsoft Corporation/CN=Microsoft ECC Root Certificate Authority 2017 issuer=/C=US/O=Microsoft Corporation/CN=Microsoft ECC Root Certificate Authority 2017
+(I) [07:42:34.786] [000000312]: WindowsCertificates: Adding certificate; subject=/C=DE/O=D-Trust GmbH/CN=D-TRUST Root Class 3 CA 2 EV 2009 issuer=/C=DE/O=D-Trust GmbH/CN=D-TRUST Root Class 3 CA 2 EV 2009
+(I) [07:42:34.786] [000000312]: WindowsCertificates: Adding certificate; subject=/CN=ACCVRAIZ1/OU=PKIACCV/O=ACCV/C=ES issuer=/CN=ACCVRAIZ1/OU=PKIACCV/O=ACCV/C=ES
+(I) [07:42:34.786] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/ST=Arizona/L=Scottsdale/O=Starfield Technologies, Inc./CN=Starfield Services Root Certificate Authority - G2 issuer=/C=US/ST=Arizona/L=Scottsdale/O=Starfield Technologies, Inc./CN=Starfield Services Root Certificate Authority - G2
+(I) [07:42:34.787] [000000312]: WindowsCertificates: Adding certificate; subject=/C=KR/O=NAVER BUSINESS PLATFORM Corp./CN=NAVER Global Root Certification Authority issuer=/C=KR/O=NAVER BUSINESS PLATFORM Corp./CN=NAVER Global Root Certification Authority
+(I) [07:42:34.787] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/ST=Washington/L=Redmond/O=Microsoft Corporation/CN=Microsoft Root Certificate Authority 2011 issuer=/C=US/ST=Washington/L=Redmond/O=Microsoft Corporation/CN=Microsoft Root Certificate Authority 2011
+(I) [07:42:34.787] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=Amazon/CN=Amazon Root CA 1 issuer=/C=US/O=Amazon/CN=Amazon Root CA 1
+(I) [07:42:34.788] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=GeoTrust Inc./OU=(c) 2007 GeoTrust Inc. - For authorized use only/CN=GeoTrust Primary Certification Authority - G2 issuer=/C=US/O=GeoTrust Inc./OU=(c) 2007 GeoTrust Inc. - For authorized use only/CN=GeoTrust Primary Certification Authority - G2
+(I) [07:42:34.788] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=Entrust, Inc./OU=See www.entrust.net/legal-terms/OU=(c) 2009 Entrust, Inc. - for authorized use only/CN=Entrust Root Certification Authority - G2 issuer=/C=US/O=Entrust, Inc./OU=See www.entrust.net/legal-terms/OU=(c) 2009 Entrust, Inc. - for authorized use only/CN=Entrust Root Certification Authority - G2
+(I) [07:42:34.788] [000000312]: WindowsCertificates: Adding certificate; subject=/C=IN/OU=emSign PKI/O=eMudhra Technologies Limited/CN=emSign Root CA - G1 issuer=/C=IN/OU=emSign PKI/O=eMudhra Technologies Limited/CN=emSign Root CA - G1
+(I) [07:42:34.789] [000000312]: WindowsCertificates: Adding certificate; subject=/C=HU/L=Budapest/O=Microsec Ltd./CN=Microsec e-Szigno Root CA 2009/emailAddress=info@e-szigno.hu issuer=/C=HU/L=Budapest/O=Microsec Ltd./CN=Microsec e-Szigno Root CA 2009/emailAddress=info@e-szigno.hu
+(I) [07:42:34.789] [000000312]: WindowsCertificates: Adding certificate; subject=/C=HU/L=Budapest/O=Microsec Ltd./organizationIdentifier=VATHU-23584497/CN=e-Szigno Root CA 2017 issuer=/C=HU/L=Budapest/O=Microsec Ltd./organizationIdentifier=VATHU-23584497/CN=e-Szigno Root CA 2017
+(I) [07:42:34.790] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=SecureTrust Corporation/CN=SecureTrust CA issuer=/C=US/O=SecureTrust Corporation/CN=SecureTrust CA
+(I) [07:42:34.790] [000000312]: WindowsCertificates: Adding certificate; subject=/OU=GlobalSign Root CA - R6/O=GlobalSign/CN=GlobalSign issuer=/OU=GlobalSign Root CA - R6/O=GlobalSign/CN=GlobalSign
+(I) [07:42:34.790] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=MSFT/CN=Microsoft Authenticode(tm) Root Authority issuer=/C=US/O=MSFT/CN=Microsoft Authenticode(tm) Root Authority
+(I) [07:42:34.790] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=DigiCert Inc/OU=www.digicert.com/CN=DigiCert Global Root G3 issuer=/C=US/O=DigiCert Inc/OU=www.digicert.com/CN=DigiCert Global Root G3
+(I) [07:42:34.791] [000000312]: WindowsCertificates: Adding certificate; subject=/C=EU/L=Madrid (see current address at www.camerfirma.com/address)/serialNumber=A82743287/O=AC Camerfirma S.A./CN=Chambers of Commerce Root - 2008 issuer=/C=EU/L=Madrid (see current address at www.camerfirma.com/address)/serialNumber=A82743287/O=AC Camerfirma S.A./CN=Chambers of Commerce Root - 2008
+(I) [07:42:34.791] [000000312]: WindowsCertificates: Adding certificate; subject=/C=NL/O=Staat der Nederlanden/CN=Staat der Nederlanden EV Root CA issuer=/C=NL/O=Staat der Nederlanden/CN=Staat der Nederlanden EV Root CA
+(I) [07:42:34.791] [000000312]: WindowsCertificates: Adding certificate; subject=/OU=GlobalSign Root CA - R2/O=GlobalSign/CN=GlobalSign issuer=/OU=GlobalSign Root CA - R2/O=GlobalSign/CN=GlobalSign
+(I) [07:42:34.791] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=Network Solutions L.L.C./CN=Network Solutions Certificate Authority issuer=/C=US/O=Network Solutions L.L.C./CN=Network Solutions Certificate Authority
+(I) [07:42:34.792] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/ST=Texas/L=Houston/O=SSL Corporation/CN=SSL.com EV Root Certification Authority RSA R2 issuer=/C=US/ST=Texas/L=Houston/O=SSL Corporation/CN=SSL.com EV Root Certification Authority RSA R2
+(I) [07:42:34.793] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=Microsoft Corporation/CN=Microsoft RSA Root Certificate Authority 2017 issuer=/C=US/O=Microsoft Corporation/CN=Microsoft RSA Root Certificate Authority 2017
+(I) [07:42:34.793] [000000312]: WindowsCertificates: Adding certificate; subject=/OU=GlobalSign ECC Root CA - R4/O=GlobalSign/CN=GlobalSign issuer=/OU=GlobalSign ECC Root CA - R4/O=GlobalSign/CN=GlobalSign
+(I) [07:42:34.793] [000000312]: WindowsCertificates: Adding certificate; subject=/C=TW/O=Chunghwa Telecom Co., Ltd./OU=ePKI Root Certification Authority issuer=/C=TW/O=Chunghwa Telecom Co., Ltd./OU=ePKI Root Certification Authority
+(I) [07:42:34.794] [000000312]: WindowsCertificates: Adding certificate; subject=/C=GB/ST=Greater Manchester/L=Salford/O=COMODO CA Limited/CN=COMODO Certification Authority issuer=/C=GB/ST=Greater Manchester/L=Salford/O=COMODO CA Limited/CN=COMODO Certification Authority
+(I) [07:42:34.794] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=DigiCert Inc/OU=www.digicert.com/CN=DigiCert High Assurance EV Root CA issuer=/C=US/O=DigiCert Inc/OU=www.digicert.com/CN=DigiCert High Assurance EV Root CA
+(I) [07:42:34.794] [000000312]: WindowsCertificates: Adding certificate; subject=/O=Cybertrust, Inc/CN=Cybertrust Global Root issuer=/O=Cybertrust, Inc/CN=Cybertrust Global Root
+(I) [07:42:34.794] [000000312]: WindowsCertificates: Adding certificate; subject=/C=JP/O=SECOM Trust Systems CO.,LTD./OU=Security Communication RootCA2 issuer=/C=JP/O=SECOM Trust Systems CO.,LTD./OU=Security Communication RootCA2
+(I) [07:42:34.795] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=Amazon/CN=Amazon Root CA 2 issuer=/C=US/O=Amazon/CN=Amazon Root CA 2
+(I) [07:42:34.795] [000000312]: WindowsCertificates: Adding certificate; subject=/C=DE/O=T-Systems Enterprise Services GmbH/OU=T-Systems Trust Center/CN=T-TeleSec GlobalRoot Class 2 issuer=/C=DE/O=T-Systems Enterprise Services GmbH/OU=T-Systems Trust Center/CN=T-TeleSec GlobalRoot Class 2
+(I) [07:42:34.795] [000000312]: WindowsCertificates: Adding certificate; subject=/C=DE/O=D-Trust GmbH/CN=D-TRUST Root Class 3 CA 2 2009 issuer=/C=DE/O=D-Trust GmbH/CN=D-TRUST Root Class 3 CA 2 2009
+(I) [07:42:34.795] [000000312]: WindowsCertificates: Adding certificate; subject=/C=HK/ST=Hong Kong/L=Hong Kong/O=Hongkong Post/CN=Hongkong Post Root CA 3 issuer=/C=HK/ST=Hong Kong/L=Hong Kong/O=Hongkong Post/CN=Hongkong Post Root CA 3
+(I) [07:42:34.795] [000000312]: WindowsCertificates: Adding certificate; subject=/C=DE/O=T-Systems Enterprise Services GmbH/OU=T-Systems Trust Center/CN=T-TeleSec GlobalRoot Class 3 issuer=/C=DE/O=T-Systems Enterprise Services GmbH/OU=T-Systems Trust Center/CN=T-TeleSec GlobalRoot Class 3
+(I) [07:42:34.796] [000000312]: WindowsCertificates: Adding certificate; subject=/O=Entrust.net/OU=www.entrust.net/CPS_2048 incorp. by ref. (limits liab.)/OU=(c) 1999 Entrust.net Limited/CN=Entrust.net Certification Authority (2048) issuer=/O=Entrust.net/OU=www.entrust.net/CPS_2048 incorp. by ref. (limits liab.)/OU=(c) 1999 Entrust.net Limited/CN=Entrust.net Certification Authority (2048)
+(I) [07:42:34.796] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/ST=Texas/L=Houston/O=SSL Corporation/CN=SSL.com EV Root Certification Authority ECC issuer=/C=US/ST=Texas/L=Houston/O=SSL Corporation/CN=SSL.com EV Root Certification Authority ECC
+(I) [07:42:34.796] [000000312]: WindowsCertificates: Adding certificate; subject=/C=EU/L=Madrid (see current address at www.camerfirma.com/address)/serialNumber=A82743287/O=AC Camerfirma S.A./CN=Global Chambersign Root - 2008 issuer=/C=EU/L=Madrid (see current address at www.camerfirma.com/address)/serialNumber=A82743287/O=AC Camerfirma S.A./CN=Global Chambersign Root - 2008
+(I) [07:42:34.796] [000000312]: WindowsCertificates: Adding certificate; subject=/C=NO/O=Buypass AS-983163327/CN=Buypass Class 2 Root CA issuer=/C=NO/O=Buypass AS-983163327/CN=Buypass Class 2 Root CA
+(I) [07:42:34.796] [000000312]: WindowsCertificates: Adding certificate; subject=/C=BM/O=QuoVadis Limited/CN=QuoVadis Root CA 3 G3 issuer=/C=BM/O=QuoVadis Limited/CN=QuoVadis Root CA 3 G3
+(I) [07:42:34.797] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/ST=Arizona/L=Scottsdale/O=GoDaddy.com, Inc./CN=Go Daddy Root Certificate Authority - G2 issuer=/C=US/ST=Arizona/L=Scottsdale/O=GoDaddy.com, Inc./CN=Go Daddy Root Certificate Authority - G2
+(I) [07:42:34.797] [000000312]: WindowsCertificates: Adding certificate; subject=/O=TeliaSonera/CN=TeliaSonera Root CA v1 issuer=/O=TeliaSonera/CN=TeliaSonera Root CA v1
+(I) [07:42:34.797] [000000312]: WindowsCertificates: Adding certificate; subject=/C=JP/O=Japan Certification Services, Inc./CN=SecureSign RootCA11 issuer=/C=JP/O=Japan Certification Services, Inc./CN=SecureSign RootCA11
+(I) [07:42:34.797] [000000312]: WindowsCertificates: Adding certificate; subject=/C=GB/O=Trustis Limited/OU=Trustis FPS Root CA issuer=/C=GB/O=Trustis Limited/OU=Trustis FPS Root CA
+(I) [07:42:34.798] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/ST=Washington/L=Redmond/O=Microsoft Corporation/CN=Microsoft Root Certificate Authority 2010 issuer=/C=US/ST=Washington/L=Redmond/O=Microsoft Corporation/CN=Microsoft Root Certificate Authority 2010
+(I) [07:42:34.798] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=SecureTrust Corporation/CN=Secure Global CA issuer=/C=US/O=SecureTrust Corporation/CN=Secure Global CA
+(I) [07:42:34.798] [000000312]: WindowsCertificates: Adding certificate; subject=/C=FI/O=Sonera/CN=Sonera Class2 CA issuer=/C=FI/O=Sonera/CN=Sonera Class2 CA
+(I) [07:42:34.798] [000000312]: WindowsCertificates: Adding certificate; subject=/C=JP/O=SECOM Trust.net/OU=Security Communication RootCA1 issuer=/C=JP/O=SECOM Trust.net/OU=Security Communication RootCA1
+(I) [07:42:34.799] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 2008 VeriSign, Inc. - For authorized use only/CN=VeriSign Universal Root Certification Authority issuer=/C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 2008 VeriSign, Inc. - For authorized use only/CN=VeriSign Universal Root Certification Authority
+(I) [07:42:34.799] [000000312]: WindowsCertificates: Adding certificate; subject=/C=TR/L=Gebze - Kocaeli/O=Turkiye Bilimsel ve Teknolojik Arastirma Kurumu - TUBITAK/OU=Kamu Sertifikasyon Merkezi - Kamu SM/CN=TUBITAK Kamu SM SSL Kok Sertifikasi - Surum 1 issuer=/C=TR/L=Gebze - Kocaeli/O=Turkiye Bilimsel ve Teknolojik Arastirma Kurumu - TUBITAK/OU=Kamu Sertifikasyon Merkezi - Kamu SM/CN=TUBITAK Kamu SM SSL Kok Sertifikasi - Surum 1
+(I) [07:42:34.799] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=Google Trust Services LLC/CN=GTS Root R3 issuer=/C=US/O=Google Trust Services LLC/CN=GTS Root R3
+(I) [07:42:34.800] [000000312]: WindowsCertificates: Adding certificate; subject=/C=IN/OU=emSign PKI/O=eMudhra Technologies Limited/CN=emSign ECC Root CA - G3 issuer=/C=IN/OU=emSign PKI/O=eMudhra Technologies Limited/CN=emSign ECC Root CA - G3
+(I) [07:42:34.800] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/ST=Illinois/L=Chicago/O=Trustwave Holdings, Inc./CN=Trustwave Global Certification Authority issuer=/C=US/ST=Illinois/L=Chicago/O=Trustwave Holdings, Inc./CN=Trustwave Global Certification Authority
+(I) [07:42:34.800] [000000312]: WindowsCertificates: Adding certificate; subject=/C=ES/O=IZENPE S.A./CN=Izenpe.com issuer=/C=ES/O=IZENPE S.A./CN=Izenpe.com
+(I) [07:42:34.801] [000000312]: WindowsCertificates: Adding certificate; subject=/C=FR/O=Dhimyotis/OU=0002 48146308100036/CN=Certigna Root CA issuer=/C=FR/O=Dhimyotis/OU=0002 48146308100036/CN=Certigna Root CA
+(I) [07:42:34.801] [000000312]: WindowsCertificates: Adding certificate; subject=/CN=Atos TrustedRoot 2011/O=Atos/C=DE issuer=/CN=Atos TrustedRoot 2011/O=Atos/C=DE
+(I) [07:42:34.801] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/ST=New Jersey/L=Jersey City/O=The USERTRUST Network/CN=USERTrust RSA Certification Authority issuer=/C=US/ST=New Jersey/L=Jersey City/O=The USERTRUST Network/CN=USERTrust RSA Certification Authority
+(I) [07:42:34.802] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=Google Trust Services LLC/CN=GTS Root R4 issuer=/C=US/O=Google Trust Services LLC/CN=GTS Root R4
+(I) [07:42:34.802] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=AffirmTrust/CN=AffirmTrust Networking issuer=/C=US/O=AffirmTrust/CN=AffirmTrust Networking
+(I) [07:42:34.802] [000000312]: WindowsCertificates: Adding certificate; subject=/C=CN/O=UniTrust/CN=UCA Global G2 Root issuer=/C=CN/O=UniTrust/CN=UCA Global G2 Root
+(I) [07:42:34.803] [000000312]: WindowsCertificates: Adding certificate; subject=/C=ES/O=Agencia Catalana de Certificacio (NIF Q-0801176-I)/OU=Serveis Publics de Certificacio/OU=Vegeu https://www.catcert.net/verarrel (c)03/OU=Jerarquia Entitats de Certificacio Catalanes/CN=EC-ACC issuer=/C=ES/O=Agencia Catalana de Certificacio (NIF Q-0801176-I)/OU=Serveis Publics de Certificacio/OU=Vegeu https://www.catcert.net/verarrel (c)03/OU=Jerarquia Entitats de Certificacio Catalanes/CN=EC-ACC
+(I) [07:42:34.803] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=The Go Daddy Group, Inc./OU=Go Daddy Class 2 Certification Authority issuer=/C=US/O=The Go Daddy Group, Inc./OU=Go Daddy Class 2 Certification Authority
+(I) [07:42:34.803] [000000312]: WindowsCertificates: Adding certificate; subject=/C=RO/O=CERTSIGN SA/OU=certSIGN ROOT CA G2 issuer=/C=RO/O=CERTSIGN SA/OU=certSIGN ROOT CA G2
+(I) [07:42:34.803] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=Entrust, Inc./OU=See www.entrust.net/legal-terms/OU=(c) 2012 Entrust, Inc. - for authorized use only/CN=Entrust Root Certification Authority - EC1 issuer=/C=US/O=Entrust, Inc./OU=See www.entrust.net/legal-terms/OU=(c) 2012 Entrust, Inc. - for authorized use only/CN=Entrust Root Certification Authority - EC1
+(I) [07:42:34.804] [000000312]: WindowsCertificates: Adding certificate; subject=/C=BM/O=QuoVadis Limited/CN=QuoVadis Root CA 3 issuer=/C=BM/O=QuoVadis Limited/CN=QuoVadis Root CA 3
+(I) [07:42:34.804] [000000312]: WindowsCertificates: Adding certificate; subject=/OU=GlobalSign ECC Root CA - R5/O=GlobalSign/CN=GlobalSign issuer=/OU=GlobalSign ECC Root CA - R5/O=GlobalSign/CN=GlobalSign
+(I) [07:42:34.805] [000000312]: WindowsCertificates: Adding certificate; subject=/C=BM/O=QuoVadis Limited/CN=QuoVadis Root CA 1 G3 issuer=/C=BM/O=QuoVadis Limited/CN=QuoVadis Root CA 1 G3
+(I) [07:42:34.805] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=Entrust, Inc./OU=See www.entrust.net/legal-terms/OU=(c) 2015 Entrust, Inc. - for authorized use only/CN=Entrust Root Certification Authority - G4 issuer=/C=US/O=Entrust, Inc./OU=See www.entrust.net/legal-terms/OU=(c) 2015 Entrust, Inc. - for authorized use only/CN=Entrust Root Certification Authority - G4
+(I) [07:42:34.805] [000000312]: WindowsCertificates: Adding certificate; subject=/C=CH/O=WISeKey/OU=OISTE Foundation Endorsed/CN=OISTE WISeKey Global Root GB CA issuer=/C=CH/O=WISeKey/OU=OISTE Foundation Endorsed/CN=OISTE WISeKey Global Root GB CA
+(I) [07:42:34.806] [000000312]: WindowsCertificates: Adding certificate; subject=/C=CN/O=GUANG DONG CERTIFICATE AUTHORITY CO.,LTD./CN=GDCA TrustAUTH R5 ROOT issuer=/C=CN/O=GUANG DONG CERTIFICATE AUTHORITY CO.,LTD./CN=GDCA TrustAUTH R5 ROOT
+(I) [07:42:34.806] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=Amazon/CN=Amazon Root CA 3 issuer=/C=US/O=Amazon/CN=Amazon Root CA 3
+(I) [07:42:34.806] [000000312]: WindowsCertificates: Adding certificate; subject=/C=BM/O=QuoVadis Limited/CN=QuoVadis Root CA 2 G3 issuer=/C=BM/O=QuoVadis Limited/CN=QuoVadis Root CA 2 G3
+(I) [07:42:34.807] [000000312]: WindowsCertificates: Adding certificate; subject=/C=PL/O=Unizeto Technologies S.A./OU=Certum Certification Authority/CN=Certum Trusted Network CA issuer=/C=PL/O=Unizeto Technologies S.A./OU=Certum Certification Authority/CN=Certum Trusted Network CA
+(I) [07:42:34.807] [000000312]: WindowsCertificates: Adding certificate; subject=/C=HU/L=Budapest/O=NetLock Kft./OU=Tan\xC3\xBAs\xC3\xADtv\xC3\xA1nykiad\xC3\xB3k (Certification Services)/CN=NetLock Arany (Class Gold) F\xC5\x91tan\xC3\xBAs\xC3\xADtv\xC3\xA1ny issuer=/C=HU/L=Budapest/O=NetLock Kft./OU=Tan\xC3\xBAs\xC3\xADtv\xC3\xA1nykiad\xC3\xB3k (Certification Services)/CN=NetLock Arany (Class Gold) F\xC5\x91tan\xC3\xBAs\xC3\xADtv\xC3\xA1ny
+(I) [07:42:34.808] [000000312]: WindowsCertificates: Adding certificate; subject=/C=US/O=DigiCert Inc/OU=www.digicert.com/CN=DigiCert Assured ID Root CA issuer=/C=US/O=DigiCert Inc/OU=www.digicert.com/CN=DigiCert Assured ID Root CA
+(I) [07:42:34.808] [000000312]: WindowsCertificates: Adding certificate; subject=/C=GR/L=Athens/O=Hellenic Academic and Research Institutions Cert. Authority/CN=Hellenic Academic and Research Institutions RootCA 2015 issuer=/C=GR/L=Athens/O=Hellenic Academic and Research Institutions Cert. Authority/CN=Hellenic Academic and Research Institutions RootCA 2015
+(I) [07:42:34.808] [000000312]: SystemCertsWin: 130 certificates loaded
+(I) [07:42:34.907] [000000312]: AutomatchInternal: Instantiating
+(I) [07:42:35.006] [000000312]: NetworkLoadCallback not able to open file CloudFileMetadataCache-age4-dr-activerelease1.dat
+(I) [07:42:35.010] [000000312]: WindowsCertificates: Adding certificate; subject=/C=CA/ST=British Columbia/L=Vancouver/O=Relic Entertainment/CN=RelicLink Root CA issuer=/C=CA/ST=British Columbia/L=Vancouver/O=Relic Entertainment/CN=RelicLink Root CA
+(I) [07:42:35.144] [000000312]: XAL_TELEMETRY: AppActivation Version="2024.02.20240220.000"
+(I) [07:42:35.159] [000000312]: Loading step: [CrossplaySettingListener]
+(I) [07:42:35.160] [000000312]: Loading step: [Telemetry]
+(I) [07:42:35.304] [000000312]: Loading step: [Lua Libraries]
+(E) [07:42:37.097] [000000476]: HTTPCLIENT: HCHttpCallPerform [ID 2] [TID 476l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=1 dwError=12152
+(I) [07:42:37.674] [000000312]: Loading step: [Lua Tools]
+(I) [07:42:37.807] [000000312]: Loading step: [System Tests]
+(I) [07:42:37.811] [000000312]: Loading step: [Command DB]
+(I) [07:42:37.903] [000000312]: Loading step: [InitGameActivator]
+(I) [07:42:37.903] [000000312]: Loading step: [InitThreadingModel]
+(I) [07:42:37.907] [000000312]: Primary CPU is a 2016MHz [Cortex-A510] running at 2016MHz
+(I) [07:42:37.907] [000000312]: Architecture [9], Level [6], Revision [42497].
+(I) [07:42:37.907] [000000312]: 8 logical processor(s) detected.
+(I) [07:42:37.907] [000000312]: 8 physical processor(s) detected.
+(I) [07:42:37.907] [000000312]: 1 processor(s) nodes detected.
+(I) [07:42:38.054] [000000312]: Threading system initialized to [8]/[8] cores
+(I) [07:42:38.058] [000000312]: Loading step: [InitComponentFactory]
+(I) [07:42:38.064] [000000312]: Loading step: [Inventory]
+(I) [07:42:38.067] [000000312]: Loading step: [Autodetect Settings]
+(I) [07:42:38.224] [000000312]: Enumerating Graphics Adapters
+(I) [07:42:38.515] [000000312]: Choosing first adapter
+(I) [07:42:38.516] [000000312]: Adapter: Wrapper(Turnip Adreno (TM) 740) video dedicated: 11997072384 shared: 11997072384 system dedicated: 0
+(I) [07:42:38.519] [000000312]: Chosen adapter: Wrapper(Turnip Adreno (TM) 740) video dedicated: 11997072384 shared: 11997072384 system dedicated: 0
+(I) [07:42:38.520] [000000312]: Enumerating Graphics Adapters
+(I) [07:42:38.671] [000000312]: Choosing first adapter
+(I) [07:42:38.671] [000000312]: Adapter: Wrapper(Turnip Adreno (TM) 740) video dedicated: 11997072384 shared: 11997072384 system dedicated: 0
+(I) [07:42:38.671] [000000312]: Chosen adapter: Wrapper(Turnip Adreno (TM) 740) video dedicated: 11997072384 shared: 11997072384 system dedicated: 0
+(I) [07:42:38.758] [000000312]: Graphics Auto-Detect: Hardware type 0 (Desktop)
+(I) [07:42:38.759] [000000312]: Graphics Auto-Detect: CPU core count detected as 8C/8T.
+(I) [07:42:38.762] [000000312]: Graphics Auto-Detect: CPU Frequency detected as 2016 MHz.
+(I) [07:42:38.762] [000000312]: Graphics Auto-Detect: CPU Score calculated as 16128.
+(I) [07:42:38.762] [000000312]: Graphics Auto-Detect: RAM size detected as 15255 MB
+(I) [07:42:38.763] [000000312]: Graphics Auto-Detect: GPU performance level calculated as 0 (Gen7 Only), performance score 0.000000
+(I) [07:42:38.767] [000000312]: Graphics Auto-Detect: VRAM size detected as 11441 MB
+(I) [07:42:38.777] [000000312]: Graphics Auto-Detect: Overriding defaults for these settings groups: autoconfig_gen7, autoconfig_audio_low
+(I) [07:42:38.831] [000000312]: ARC -- a:\cardinal\archives\soundspeechcampaignleaders.sga 4026980 B [ID:7965640ab0c1bf7ba2373a19d2e7b069] [Ver:00710704aac2eb066d6d7641a83d51dd] [Sig:9778984940799653023]
+(I) [07:42:38.873] [000000312]: ARC -- a:\cardinal\archives\soundspeechchinese.sga 309655970 B [ID:e19627d267be517bf5392c2e6014c423] [Ver:1341763aebf36944f1499d0251617f55] [Sig:12764097569712532542]
+(I) [07:42:38.978] [000000312]: ARC -- a:\cardinal\archives\soundspeechenglish.sga 288475759 B [ID:feaf97340d27ade41677b3c3df1ba56f] [Ver:fa737288404947297e55d316fbb77dc9] [Sig:12107641221237261204]
+(I) [07:42:39.064] [000000312]: ARC -- a:\cardinal\archives\soundspeechfrench.sga 275866805 B [ID:bb0a6805c37931642df8dfc59ace3577] [Ver:b3518addefc388a6d693577268ec9a49] [Sig:1114318825139388170]
+(I) [07:42:39.154] [000000312]: ARC -- a:\cardinal\archives\soundspeechhre.sga 267815661 B [ID:b9b7b1c4746a5da164c4122c43af789d] [Ver:7a642987e09a6b91054166acd9d520f4] [Sig:1053406962797851544]
+(I) [07:42:39.231] [000000312]: ARC -- a:\cardinal\archives\soundspeechmisc.sga 2365100 B [ID:e4c186b521460161f56ea8bd2b98da2b] [Ver:d27e40627b1f9ae331530925c2b5212a] [Sig:7710416283972117561]
+(I) [07:42:39.265] [000000312]: ARC -- a:\cardinal\archives\soundspeechmongols.sga 330547847 B [ID:05c84958f92c54139e30273e08245a4d] [Ver:440515c36d22f937177d3502b670cc02] [Sig:14276426608469628689]
+(I) [07:42:39.382] [000000312]: ARC -- a:\cardinal\archives\soundspeechrus.sga 317132347 B [ID:571a52b40cc6bc0ea9986dde60365cd8] [Ver:2d9b429f93cb5f12b3aa414dae87c225] [Sig:1943781344602485715]
+(I) [07:42:39.476] [000000312]: ARC -- a:\cardinal\archives\soundspeechsultanate.sga 248334431 B [ID:89b1937c7703937f5844dc4ec15f22f9] [Ver:6b18a9787a422cdabbf287591a5328a8] [Sig:5320005402447518411]
+(I) [07:42:39.540] [000000312]: ARC -- a:\cardinal\archives\soundspeechabbasid.sga 353720911 B [ID:762a11281de7ccf41b2c9854c76b0870] [Ver:8662b4db32f6fbba950e0d230e741994] [Sig:5512199611676468533]
+(I) [07:42:39.637] [000000312]: ARC -- a:\cardinal\archives\soundspeechmalian.sga 199992843 B [ID:29d538156ec209da74ba454e6a0b589c] [Ver:b4c7cd64a7d639670e447bb9fe03cec8] [Sig:7261636489305388131]
+(I) [07:42:39.702] [000000312]: ARC -- a:\cardinal\archives\soundspeechottoman.sga 214285612 B [ID:a785e43d2b6f581274e33dcaa7a2048e] [Ver:e305d172bbe7f7006d60407b9b0b47ae] [Sig:17848682699058885847]
+(I) [07:42:39.765] [000000312]: ARC -- a:\cardinal\archives\soundspeechbyzantine.sga 103841948 B [ID:a4b2db8f64cf9b559a73e75663595a33] [Ver:a579a7e0a477fdebc955369772a6b4ed] [Sig:17222082278395025076]
+(I) [07:42:39.799] [000000312]: ARC -- a:\cardinal\archives\soundspeechjapanese.sga 124246912 B [ID:4c8f551c1a9bb01657cc9776ea1d626f] [Ver:eb5e74852a039e91e645bb2b464d5277] [Sig:2808518091847209109]
+(I) [07:42:39.837] [000000312]: ARC -- a:\cardinal\archives\soundspeechcampaignlocalizedenglish.sga 62991742 B [ID:b97ee6c9ada021e3cbc5b0d8d8a44c40] [Ver:87f042a5b376484b2f9323a2bbfd304d] [Sig:9687609996755273546]
+(I) [07:42:39.854] [000000312]: ARC -- a:\cardinal\archives\soundspeechcampaignlocalizedenglishxp3.sga 19091540 B [ID:8b39ce2530a5fcc56eecb4b3d350d5a3] [Ver:0c3723a0d4ef712f34e73292a87eb9f4] [Sig:9963994668519273795]
+(I) [07:42:39.856] [000000312]: Loading step: [ModManager (RR deferred)]
+(I) [07:42:39.863] [000000312]: ARC -- a:\engine\archives\gen7shadersandedfs.sga 59614 B [ID:1abe0e29d7b50f69ccb5447fb747b1ba] [Ver:4c8698a68faa7198ea752ec83ec7f488] [Sig:13271141323456609288]
+(I) [07:42:39.870] [000000312]: ARC -- a:\engine\archives\gen7assets.sga 10148879 B [ID:0f5cb99facdcd8c4e676d445f436da8f] [Ver:3094e17b7b5fd8df9ee0adc98ef73c0a] [Sig:13757617366169730814]
+(I) [07:42:39.881] [000000312]: ARC -- a:\common\archives\gen7shadersandedfs.sga 3296177 B [ID:3f162f3447dafbcea17086abbfa3bba1] [Ver:db31c5e77587cab7960f53b82cb38b67] [Sig:10682257800422610491]
+(I) [07:42:39.890] [000000312]: ARC -- a:\common\archives\gen7assets.sga 1294479 B [ID:baffebcbc517c2e0a98b9076a772cf32] [Ver:4873d913b76651c003dfb5d2e5f4ff02] [Sig:4404885105491353193]
+(I) [07:42:39.908] [000000312]: ARC -- a:\cardinal\archives\gen7shadersandedfs.sga 8119278 B [ID:638ae993bb936b6b6ce50faa4f804482] [Ver:ea3b78628965729c6fa072e1059732ed] [Sig:5828551296221612325]
+(I) [07:42:39.927] [000000312]: ARC -- a:\cardinal\archives\gen7assetsartgen7.sga 328322398 B [ID:cd29148f2ad50e6022534f30337756ee] [Ver:3eac825c8c8c87eb611156e9387ac710] [Sig:1607477336051825115]
+(I) [07:42:39.957] [000000312]: ARC -- a:\cardinal\archives\gen7assetsgeometry.sga 160556529 B [ID:cd29148f2ad50e6022534f30337756ee] [Ver:18184a380c3db46d280960611d9c8116] [Sig:285505880304986379]
+(I) [07:42:39.984] [000000312]: ARC -- a:\cardinal\archives\gen7assetsgeometrylods1.sga 8658070 B [ID:cd29148f2ad50e6022534f30337756ee] [Ver:194a1b402e08bb171ac3ddc7cf3e532a] [Sig:15169298532637560160]
+(I) [07:42:40.003] [000000312]: ARC -- a:\cardinal\archives\gen7assetsgeometrylods2.sga 1966394 B [ID:cd29148f2ad50e6022534f30337756ee] [Ver:a1d43fa33ca454a2c5f9604bc5a0529c] [Sig:13609375942970972027]
+(I) [07:42:40.021] [000000312]: ARC -- a:\cardinal\archives\gen7assetsgeometrylods3.sga 2625017 B [ID:cd29148f2ad50e6022534f30337756ee] [Ver:0022e9a8579890a95fc6c5aa698de0d1] [Sig:2968547890606774118]
+(I) [07:42:40.058] [000000312]: ARC -- a:\cardinal\archives\gen7assetsmaterials.sga 2454953221 B [ID:cd29148f2ad50e6022534f30337756ee] [Ver:9417f698e05dd06da6b944adea5ba669] [Sig:15706008095724922324]
+(I) [07:42:40.202] [000000312]: Loading step: [Graphics driver check]
+(I) [07:42:40.232] [000000312]: Loading step: [AI subsystem]
+(I) [07:42:40.233] [000000312]: Loading step: [Game Hooks]
+(I) [07:42:40.233] [000000312]: Loading step: [Game Modules Init]
+(I) [07:42:40.242] [000000312]: Loading step: [User Data Shutdown]
+(I) [07:42:40.242] [000000312]: Loading step: [dbImGui]
+(I) [07:42:40.242] [000000312]: Loading step: [App Init Complete]
+(I) [07:42:40.301] [000000312]: Registered essence thread: [Main_Thread] usesRcssWorkerThreads: [true]
+(I) [07:42:40.303] [000000536]: Registered essence thread: [Simulation_Thread] usesRcssWorkerThreads: [true]
+(I) [07:42:40.393] [000000312]: -------- Display Adapter Driver Information --------
+(I) [07:42:40.393] [000000312]: Vendor: Unknown (0x5143)
+(I) [07:42:40.393] [000000312]: Installed Driver Version: Unknown Vendor ID (0)
+(I) [07:42:40.393] [000000312]: Required Driver Version: Unknown (0)
+(I) [07:42:40.393] [000000312]: ----------------------------------------------------
+(I) [07:42:40.393] [000000312]: GPU Performance Class: Gen7 Only
+(I) [07:42:40.500] [000000504]: Enumerating Graphics Adapters
+(I) [07:42:40.639] [000000504]: Choosing first adapter
+(I) [07:42:40.639] [000000504]: Adapter: Wrapper(Turnip Adreno (TM) 740) video dedicated: 11997072384 shared: 11997072384 system dedicated: 0
+(I) [07:42:40.639] [000000504]: Chosen adapter: Wrapper(Turnip Adreno (TM) 740) video dedicated: 11997072384 shared: 11997072384 system dedicated: 0
+(I) [07:42:40.780] [000000504]: -------- GPU and Output INFO --------
+(I) [07:42:40.780] [000000504]: Wrapper(Turnip Adreno (TM) 740) -- 11441MB dedicated video memory, 0MB dedicated system memory and 11441MB shared system memory available.
+(I) [07:42:40.807] [000000504]: Primary Output Device is \\.\DISPLAY1, Resolution is 1280x720
+(E) [07:42:41.207] [000000440]: HTTPCLIENT: HCHttpCallPerform [ID 3] [TID 440l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=1 dwError=12152
+(I) [07:42:41.372] [000000312]: Loading step: [Render Anim]
+(I) [07:42:41.373] [000000312]: Loading step: [Havok]
+(I) [07:42:41.378] [000000588]: Registered essence thread: [Render_Thread] usesRcssWorkerThreads: [true]
+(I) [07:42:41.530] [000000312]: Loading step: [Alias]
+(I) [07:42:41.530] [000000312]: Loading step: [Hotswapping]
+(I) [07:42:41.534] [000000312]: Loading step: [ITextureUtil]
+(I) [07:42:41.536] [000000312]: Loading step: [TextureManager]
+(I) [07:42:41.565] [000000312]: Loading step: [Loaders]
+(I) [07:42:41.565] [000000312]: Loading step: [ActionCommandFunction]
+(I) [07:42:41.566] [000000312]: Loading step: [TeamColourCommandFunction]
+(I) [07:42:41.566] [000000312]: Loading step: [SetShaderVariableCommandFunction]
+(I) [07:42:41.566] [000000312]: Loading step: [SetMaterialOverrideCommandFunction]
+(I) [07:42:41.567] [000000312]: Loading step: [IntersectUtil]
+(I) [07:42:41.567] [000000312]: Loading step: [ShadowManager]
+(I) [07:42:41.568] [000000312]: Loading step: [Debug Render]
+(I) [07:42:41.568] [000000312]: Loading step: [Sound]
+(E) [07:42:41.579] [000000476]: HTTPCLIENT: HCHttpCallPerform [ID 2] [TID 476l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=1 dwError=12152
+(I) [07:42:44.002] [000000312]: Loading step: [Fonts]
+(I) [07:42:44.038] [000000312]: Loading step: [Statgraph]
+(I) [07:42:44.039] [000000312]: Loading step: [Debug Console]
+(E) [07:42:44.067] [000000440]: HTTPCLIENT: HCHttpCallPerform [ID 3] [TID 440l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=1 dwError=12152
+(I) [07:42:44.123] [000000312]: Loading step: [Movie Manager]
+(I) [07:42:44.125] [000000312]: Loading step: [Flush Inventory]
+(I) [07:42:44.125] [000000312]: Loading step: [Purge BackgroundLoader]
+(I) [07:42:44.125] [000000312]: Loading step: [Unload inventory]
+(I) [07:42:44.125] [000000312]: Loading step: [Cancel Pending Soundbank Loads]
+(I) [07:42:44.129] [000000312]: GameViewport::Create
+(I) [07:42:44.375] [000000312]: Loading step: [Init Screen Background]
+(I) [07:42:44.375] [000000312]: Loading step: [Cursor]
+(I) [07:42:44.723] [000000312]: Failed to load lua file 'data:art\cursor\modal_set_rally_attack\cursor.lua'
+(I) [07:42:44.735] [000000312]: Failed to load lua file 'data:art\cursor\modal_set_rally_economy\cursor.lua'
+(I) [07:42:44.794] [000000312]: Failed to load lua file 'data:art\cursor\reposition_unload_wall\cursor.lua'
+(I) [07:42:44.847] [000000312]: Failed to load lua file 'data:art\cursor\resource_olive\cursor.lua'
+(I) [07:42:45.033] [000000312]: Loading step: [Presentation App]
+(I) [07:42:45.033] [000000312]: Loading step: [Presentation Static App]
+(I) [07:42:45.037] [000000312]: Loading step: [DestinationFormationManager]
+(I) [07:42:45.039] [000000312]: Loading step: [Campaign Manager]
+(I) [07:42:45.039] [000000312]: Loading step: [Mods]
+(I) [07:42:45.062] [000000312]: Failed to load lua file 'userdata:mods_meta_data.lua'
+(I) [07:42:45.064] [000000312]: Loading WinCondition: data:scar\winconditions\chaotic_climate_mode.bin
+(I) [07:42:45.066] [000000312]: Loading WinCondition: data:scar\winconditions\chart_a_course_mode.bin
+(I) [07:42:45.066] [000000312]: Loading WinCondition: data:scar\winconditions\combat_mode.bin
+(I) [07:42:45.066] [000000312]: Loading WinCondition: data:scar\winconditions\empirewars.bin
+(I) [07:42:45.067] [000000312]: Loading WinCondition: data:scar\winconditions\full_moon_mode.bin
+(I) [07:42:45.067] [000000312]: Loading WinCondition: data:scar\winconditions\king_of_the_hill_mode.bin
+(I) [07:42:45.067] [000000312]: Loading WinCondition: data:scar\winconditions\map_monsters_mode.bin
+(I) [07:42:45.067] [000000312]: Loading WinCondition: data:scar\winconditions\nomad.bin
+(I) [07:42:45.068] [000000312]: Loading WinCondition: data:scar\winconditions\none.bin
+(I) [07:42:45.068] [000000312]: Loading WinCondition: data:scar\winconditions\rogue_mode.bin
+(I) [07:42:45.068] [000000312]: Loading WinCondition: data:scar\winconditions\sandbox.bin
+(I) [07:42:45.068] [000000312]: Loading WinCondition: data:scar\winconditions\scenario.bin
+(I) [07:42:45.068] [000000312]: Loading WinCondition: data:scar\winconditions\seasons_feast_mode.bin
+(I) [07:42:45.069] [000000312]: Loading WinCondition: data:scar\winconditions\standard_mode.bin
+(I) [07:42:45.112] [000000312]: SCENARIO -- Failed to open stream for Scenario 'data:scenarios\campaign\mongol\mon_base_xiangyang\mon_base_xiangyang.info'.
+(I) [07:42:45.167] [000000312]: Loading step: [Item Manager]
+(I) [07:42:45.170] [000000312]: Loading step: [Loadout Manager]
+(I) [07:42:45.170] [000000312]: Loading step: [Chat Manager]
+(I) [07:42:45.175] [000000312]: Loading step: [Squad Command Processor Types]
+(I) [07:42:45.178] [000000312]: Loading step: [Squad Command Processor Types from Games]
+(I) [07:42:45.178] [000000312]: Loading step: [IEngineInitializable]
+(E) [07:42:47.256] [000000440]: HTTPCLIENT: HCHttpCallPerform [ID 2] [TID 440l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=1 dwError=12152
+(E) [07:42:47.267] [000000448]: XAL_TELEMETRY: HTTP request 0000000058161210 failed with 0x80004005, system error code 2147954552, message: 
+(E) [07:42:52.507] [000000440]: HTTPCLIENT: HCHttpCallPerform [ID 3] [TID 440l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=1 dwError=12152
+(E) [07:42:52.516] [000000448]: XAL_TELEMETRY: HTTP request 0000000058161070 failed with 0x80004005, system error code 2147954552, message: 
+(E) [07:42:54.712] [000000440]: HTTPCLIENT: HCHttpCallPerform [ID 4] [TID 440l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=1 dwError=12152
+(I) [07:42:56.198] [000000312]: GameObjLoader 0x000000006DDF2810 - resetting counters
+(I) [07:42:56.198] [000000312]: GameObjLoader 0x000000006DDF28A0 - resetting counters
+(I) [07:42:56.198] [000000312]: GameObjLoader 0x000000006DDF2CC0 - resetting counters
+(I) [07:42:56.202] [000000312]: CRC & Version Info: exe 0x00002c2c:data 0x555fa825:flags 0
+(E) [07:42:58.254] [000000440]: HTTPCLIENT: HCHttpCallPerform [ID 4] [TID 440l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=1 dwError=12152
+(E) [07:43:04.703] [000000644]: HTTPCLIENT: HCHttpCallPerform [ID 4] [TID 644l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=1 dwError=12152
+(E) [07:43:04.705] [000000448]: XAL_TELEMETRY: HTTP request 0000000058161070 failed with 0x80004005, system error code 2147954552, message: 
+(I) [07:43:14.312] [000000312]: Requesting ticket
+(I) [07:43:14.493] [000000588]: Enumerating Graphics Adapters
+(I) [07:43:14.499] [000000588]: Choosing first adapter
+(I) [07:43:14.499] [000000588]: Adapter: Wrapper(Turnip Adreno (TM) 740) video dedicated: 11997072384 shared: 11997072384 system dedicated: 0
+(I) [07:43:14.499] [000000588]: Chosen adapter: Wrapper(Turnip Adreno (TM) 740) video dedicated: 11997072384 shared: 11997072384 system dedicated: 0
+(I) [07:43:14.615] [000000312]: Loading WinCondition: data:scar\winconditions\chaotic_climate_mode.bin
+(I) [07:43:14.615] [000000312]: Loading WinCondition: data:scar\winconditions\chart_a_course_mode.bin
+(I) [07:43:14.615] [000000312]: Loading WinCondition: data:scar\winconditions\combat_mode.bin
+(I) [07:43:14.615] [000000312]: Loading WinCondition: data:scar\winconditions\empirewars.bin
+(I) [07:43:14.615] [000000312]: Loading WinCondition: data:scar\winconditions\full_moon_mode.bin
+(I) [07:43:14.615] [000000312]: Loading WinCondition: data:scar\winconditions\king_of_the_hill_mode.bin
+(I) [07:43:14.615] [000000312]: Loading WinCondition: data:scar\winconditions\map_monsters_mode.bin
+(I) [07:43:14.615] [000000312]: Loading WinCondition: data:scar\winconditions\nomad.bin
+(I) [07:43:14.615] [000000312]: Loading WinCondition: data:scar\winconditions\none.bin
+(I) [07:43:14.615] [000000312]: Loading WinCondition: data:scar\winconditions\rogue_mode.bin
+(I) [07:43:14.615] [000000312]: Loading WinCondition: data:scar\winconditions\sandbox.bin
+(I) [07:43:14.615] [000000312]: Loading WinCondition: data:scar\winconditions\scenario.bin
+(I) [07:43:14.615] [000000312]: Loading WinCondition: data:scar\winconditions\seasons_feast_mode.bin
+(I) [07:43:14.615] [000000312]: Loading WinCondition: data:scar\winconditions\standard_mode.bin
+(I) [07:43:14.686] [000000312]: UI Async loading data:ui\intro\pages\IntroVideoPage.xaml
+(I) [07:43:14.983] [000000312]: OnRequest app ticket returned N
+(I) [07:43:14.984] [000000312]: SteamAuth received ticket at t=2017907820
+(E) [07:43:16.335] [000000480]: HTTPCLIENT: HCHttpCallPerform [ID 5] [TID 480l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=1 dwError=12152
+(I) [07:43:17.218] [000000312]: Found 1 profiles for account /steam/76561198048162023
+(I) [07:43:17.222] [000000312]: Found profile: /steam/76561198048162023
+(I) [07:43:17.236] [000000312]: Client is using WebSockets to receive updates from the server
+(I) [07:43:17.254] [000000432]: WebSocketConnection::Process: Creating a websocket connection; host=dr-activerelease1-api.worldsedgelink.com port=443
+(I) [07:43:17.287] [000000312]: Login attempt: C00T01R00X-01 52656C6900B7
+(I) [07:43:18.296] [000000432]: WebSocketConnection::OnConnect; m_resumeState=0
+(I) [07:43:18.300] [000000432]: WebSocketConnection::Process: Sending session token; clientLibVersion=191 sessionToken=swl18hozgu30998q5b5efz2chkhetd
+(E) [07:43:19.393] [000000708]: HTTPCLIENT: HCHttpCallPerform [ID 5] [TID 708l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=1 dwError=12152
+(I) [07:43:19.558] [000000432]: WebSocketConnection::ProcessMessages: message=[0,"PresenceMessage",4851727,[[202,4851727,"/steam/76561198048162023","{\"sharedHistory\":1,\"hardwareType\":0,\"inputDeviceType\":0}","tarikbc","tarikbc","",9127736,2329,7,2074438,null,"76561198048162023",3,[],1,"Online",[[1409823,"-2"]]]]]
+(I) [07:43:26.210] [000000312]: System was measured to be capable of copying [17071] MB/sec.
+(I) [07:43:26.445] [000000312]: 	[VPXDecoder::UpdateDisplayFrame] Video has fallen behind by 9.24 s. Seeking to catch up
+(I) [07:43:26.933] [000000312]: Loading WinCondition: data:scar\winconditions\chaotic_climate_mode.bin
+(I) [07:43:26.933] [000000312]: Loading WinCondition: data:scar\winconditions\chart_a_course_mode.bin
+(I) [07:43:26.933] [000000312]: Loading WinCondition: data:scar\winconditions\combat_mode.bin
+(I) [07:43:26.933] [000000312]: Loading WinCondition: data:scar\winconditions\empirewars.bin
+(I) [07:43:26.933] [000000312]: Loading WinCondition: data:scar\winconditions\full_moon_mode.bin
+(I) [07:43:26.933] [000000312]: Loading WinCondition: data:scar\winconditions\king_of_the_hill_mode.bin
+(I) [07:43:26.933] [000000312]: Loading WinCondition: data:scar\winconditions\map_monsters_mode.bin
+(I) [07:43:26.933] [000000312]: Loading WinCondition: data:scar\winconditions\nomad.bin
+(I) [07:43:26.933] [000000312]: Loading WinCondition: data:scar\winconditions\none.bin
+(I) [07:43:26.933] [000000312]: Loading WinCondition: data:scar\winconditions\rogue_mode.bin
+(I) [07:43:26.933] [000000312]: Loading WinCondition: data:scar\winconditions\sandbox.bin
+(I) [07:43:26.933] [000000312]: Loading WinCondition: data:scar\winconditions\scenario.bin
+(I) [07:43:26.933] [000000312]: Loading WinCondition: data:scar\winconditions\seasons_feast_mode.bin
+(I) [07:43:26.933] [000000312]: Loading WinCondition: data:scar\winconditions\standard_mode.bin
+(I) [07:43:28.027] [000000312]: [PlayfabManager] : Playfab Login Succeeded
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(E) [07:43:29.805] [000000312]: Enum changed on the server CommunityEventContent::EventContentType
+(I) [07:43:43.680] [000000312]: UI Async loading data:ui\intro\pages\connectingandgenericloadingpage.xaml
+(I) [07:43:45.494] [000000312]: FILESYSTEM -- filepath failure, missing alias 'peruserdata:savedShoppingCart.sav'
+(I) [07:43:45.495] [000000312]: FILESYSTEM -- filepath failure, missing alias 'peruserdata:savedShoppingCart.sav'
+(I) [07:43:50.412] [000000312]: XP3 item found in inventory: 456303
+(I) [07:43:50.412] [000000312]: XP3 item found in inventory: 454341
+(I) [07:43:50.412] [000000312]: XP3 item found in server items: 456303
+(I) [07:43:50.412] [000000312]: XP3 item found in server items: 454341
+(I) [07:43:50.419] [000000312]: DLC FOUND: 1668560
+(I) [07:43:50.419] [000000312]: DLC FOUND: 1668570
+(I) [07:43:50.419] [000000312]: DLC FOUND: 1779350
+(I) [07:43:50.419] [000000312]: DLC FOUND: 1959430
+(I) [07:43:50.419] [000000312]: DLC FOUND: 2131250
+(I) [07:43:50.419] [000000312]: DLC FOUND: 3067190
+(I) [07:43:50.419] [000000312]: DLC FOUND: 3144890
+(I) [07:43:50.419] [000000312]: DLC FOUND: 3746540
+(I) [07:43:50.419] [000000312]: DLC FOUND: 4336170
+(I) [07:43:50.663] [000000312]: starting offline hosting
+(I) [07:43:50.751] [000000312]: Crucible progress loaded : offline
+(I) [07:43:50.755] [000000312]: LuaStateSaver saved in 0.003000 seconds
+(I) [07:43:50.768] [000000312]: OnlineHostAsync success
+(I) [07:43:50.772] [000000312]: Created Matchinfo for sessionID 18446744073709551614
+(I) [07:43:50.773] [000000312]: OnJoinAdvertisementSuccess - joined online match, server leave notification required
+(I) [07:43:50.779] [000000312]: starting local hosting
+(I) [07:43:50.791] [000000312]: ValidateCustomData: called with 1115 bytes of custom data
+(I) [07:43:50.795] [000000312]: WorldwideAdvertisementService::Process - EVENT_NEWPEER
+(I) [07:43:50.816] [000000436]: MessageCounts: inval=0/0, seek=0/0, join=0/0, ichk=0/0, sk_r=0/0, deny=0/0, Padd=0/0, Pdel=0/0, drop=0/0, data=0/0, mdat=0/0, voip=0/0, rchk=0/0, nudg=0/0, Thdr=0/0, Peer=0/0, PPrx=0/0, ping=0/0, Pfrg=0/0, rely=0/0, lb_p=0/0, lb_c=0/0, cast=0/0, cdat=0/0, sorq1=0/0, sorp=0/0, acto=0/0, spob=0/0, sorq2=0/0, setp=0/0, actr=0/0, lsim=0/0, rlbc=0/0, rlbc2=0/0, endg=0/0
+(I) [07:43:50.855] [000000312]: Sending matchinfo change #2
+(I) [07:43:50.861] [000000312]: HostAsync - got operation info 0:SessionOperationInfo::SUCCESS
+(I) [07:43:50.889] [000000312]: hosting - Session is connected
+(I) [07:43:50.971] [000000312]: [SAVE_GAME] FrontEndTask_SaveDataStore::OnBegin saving to slot DataStore
+(I) [07:43:50.975] [000000312]: [SAVE_GAME] FrontEndTask_SaveDataStore::OnBegin saving to slot DataStore
+(I) [07:43:51.001] [000000312]: HostAsync - completed with HostResult = 0
+(I) [07:43:51.054] [000000312]: WorldwideAutomatchService::OnHostComplete - automatcher is no longer active - stopPollPending 0 automatchPollID 18446744073709551615
+(I) [07:43:51.055] [000000312]: Sending matchinfo change #10
+(I) [07:43:51.059] [000000312]: [Match Flow] MatchSetup::StartMatch() - m_matchStatus = ST_STARTING [match type: 55, session id -2]
+(E) [07:44:02.073] [000000312]: SaveOfflineUserDataJob failed to complete on time.
+(I) [07:44:04.734] [000000312]: GetPartyStatsByID found 1 teams for user ID 4851727
+(I) [07:44:09.566] [000000432]: WebSocketConnection::ProcessMessages: message=[0,"PresenceMessage",4851727,[[203,4851727,"/steam/76561198048162023","{\"sharedHistory\":1,\"hardwareType\":0,\"inputDeviceType\":0}","tarikbc","tarikbc","",9127736,2329,7,2074438,null,"76561198048162023",3,[],2,"Online",[[1409823,"-2"]]]]]
+(I) [07:44:10.241] [000000312]: Match key created, UID=1248652778
+(E) [07:44:15.237] [000000432]: TlsConnection::Shutdown: socket 0/2016 SSL shut down failed; A system error occurred. errno=10038
+(I) [07:44:15.393] [000000432]: WebSocketConnection::Process: Connection closed
+(I) [07:44:15.399] [000000432]: WebSocketConnection::OnConnectionClose; statusCode=1006
+(I) [07:44:15.560] [000000432]: WebSocketConnection::Process: Creating a websocket connection; host=dr-activerelease1-api.worldsedgelink.com port=443
+(I) [07:44:15.694] [000000312]: MatchSetup::OnCreateSinglePlayerEvent
+(I) [07:44:15.759] [000000312]: Sending matchinfo change #11
+(I) [07:44:15.760] [000000312]: [Match Flow] MatchSetupManager::Update() - MatchSetup::ST_LOADING
+(I) [07:44:15.760] [000000312]: [Match Flow] GameApp::RequestGameBegin()
+(I) [07:44:15.847] [000000312]: MOD - Setting player (0) race to: 106553
+(I) [07:44:15.857] [000000312]: MOD - Setting player (1) race to: 131384
+(I) [07:44:15.858] [000000312]: MOD - Setting player (2) race to: 106553
+(I) [07:44:15.860] [000000312]: ModDllSetup: SetStatsGameUID=1248652778
+(I) [07:44:15.861] [000000312]: GAME -- Scenario: data:scenarios\campaign\angevin\ang_chp0_intro\ang_chp0_intro
+(I) [07:44:15.861] [000000312]: GAME -- Win Condition Qualified Name: 00000000000000000000000000000000:385555344
+(I) [07:44:15.861] [000000312]: GAME -- Win Condition Name: no_win_condition
+(I) [07:44:15.861] [000000312]: GAME -- Human Player: 0 tarikbc 4851727 0 english
+(I) [07:44:15.861] [000000312]: GAME -- AI Player: 1 2 A.I. Easy -1 1 french
+(I) [07:44:15.861] [000000312]: GAME -- AI Player: 2 3 A.I. Easy -1 2 english
+(E) [07:44:16.221] [000000312]: WorldwideGetProfileByPlatformIDAsync - response was failure: -46 
+(E) [07:44:16.221] [000000312]: WorldwideCallContext::LogFailure - WorldwideGetProfileByPlatformIDAsync : RLink::WorldwideGetProfilesByPlatformID - () failed
+(E) [07:44:16.702] [000000312]: SaveOfflineUserDataJob - response was failure: -48 
+(I) [07:44:16.709] [000000312]: GameObj::StartGameObj - info, network session GUID set to [1248652778].
+(I) [07:44:21.994] [000000748]: Loading step: [OnBeginLoad]
+(I) [07:44:21.999] [000000748]: Loading step: [Assign Players]
+(I) [07:44:21.999] [000000748]: [Match Flow] GameWorld::AssignPlayers()
+(I) [07:44:22.084] [000000748]: Loading step: [FXReflection]
+(I) [07:44:22.184] [000000748]: Loading step: [FXDataContext]
+(I) [07:44:22.187] [000000748]: Loading step: [FX Texture Pack]
+(I) [07:44:22.236] [000000748]: Loading step: [Run Havok Garbage Collection]
+(I) [07:44:22.236] [000000748]: Loading step: [Flush Inventory On Application Exit]
+(I) [07:44:22.236] [000000748]: Loading step: [Default World]
+(I) [07:44:22.512] [000000748]: sucessfully loaded art\civilizations\common\weapons\projectiles\common_arrow\common_arrow
+(I) [07:44:22.517] [000000748]: sucessfully loaded art\civilizations\common\weapons\projectiles\common_bolt\common_bolt
+(I) [07:44:22.518] [000000748]: Loading step: [FX Command Function]
+(I) [07:44:22.519] [000000748]: Loading step: [AnimatorCommandFunction]
+(I) [07:44:22.521] [000000748]: Loading step: [MemShrink]
+(I) [07:44:22.523] [000000748]: Loading step: [Tuning Variant]
+(I) [07:44:22.523] [000000748]: Setting scenario tuning variant [campaign]
