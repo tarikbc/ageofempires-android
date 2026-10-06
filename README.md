@@ -11,6 +11,25 @@ Sessions: 5–6 Oct 2026.
 - The game freezes or exits 2 to 4.5 minutes after launch. This happens online and offline.
 - The freeze comes from the copy protection, not from a setting. It is still open. The user owns the game so the goal is to implement the proper changes to make that protection understand the game is legit.
 - The protection's kill thread is now identified: a launch-time thread with entry `RelicCardinal.exe+0x3e69304` that suspends every other thread ~1 min after the network socket closes, then spins at 100 % CPU. See [`docs/KILL-ANALYSIS.md`](docs/KILL-ANALYSIS.md).
+- **FEX was advertising itself to the game** (`CPUID 0x40000000` → `FEXIFEXIEMU`). That is patched and the patch is live in the game's own session (`eax=0x0 vendor=''`, under `xtajit64.dll`) — and **the kill still fires**. See [`docs/FEX-PATCH-LIVE.md`](docs/FEX-PATCH-LIVE.md).
+
+### Traps that cost time (read before re-testing)
+
+- **"The process is still alive" is not success.** The kill *suspends* the threads and leaves the
+  process hung in place, so `ps` keeps showing it. The only valid criterion is the game's own log
+  (`warnings.log`) still growing after ~5 minutes, or `si` showing threads not suspended.
+- **GameNative re-installs the emulator DLLs on every launch.** Patching `C:\windows\system32\*` by
+  hand is silently reverted (observed: patched at 10:13, back to stock at 10:27). Use the Contents
+  Manager `.wcp` path.
+- **GameNative loads `xtajit64.dll`, not `libarm64ecfex.dll`.** A `.wcp` installs to whatever path its
+  manifest names, so it has to name `xtajit64.dll` too — GameNative warns that this is outside its
+  trusted set, but installs it.
+- **`uiautomator dump` alone lies here.** It sees one window and goes stale; use
+  `uiautomator dump --windows`. Taps were fine all along — the *reading* was wrong.
+- The container config must be **saved** (top-right button) or Back raises "Unsaved Changes" and the
+  selection is lost.
+- The game's `C06T13R-1X-*` error is **server connectivity**, not file integrity, and does not prevent
+  playing.
 
 ## What is in this repo
 
