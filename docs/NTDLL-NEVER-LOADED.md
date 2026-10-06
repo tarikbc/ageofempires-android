@@ -189,3 +189,56 @@ generated code or in deploying it, not in the section headers.
 Next is the third row: importing the invoke-only bundle isolates whether the `--waitq` cave or the
 `invoke` trampoline is responsible. If invoke-only starts, the waitq cave is at fault; if neither
 starts, the `invoke` trampoline itself needs re-deriving.
+
+## Round 9: three hypotheses tested, all disproved — the patch code is the suspect
+
+I went looking for a *fixable* defect in the patch rather than in the deployment. Three candidates, all
+eliminated by measurement:
+
+**1. The `0xC7` truncation cuts the trampoline.** `apply.py` does `code = bytearray(code[:0xC7])`.
+Assembling `invoke_arm64ec_syscall.s` gives **208 bytes (0xD0)**, so 9 bytes are dropped — but they are
+trailing `nop` padding. The kept 199 bytes end `…59 41 59 41 58 5a 41 5a 4c 8b 1c 24 9d 5d ff e1`,
+i.e. `popq %r9 / popq %r8 / popq %rdx / popq %r10 / movq (%rsp),%r11 / popfq / popq %rbp / jmpq *%rcx`.
+The epilogue is complete. **Not the bug.**
+
+**2. `0x11FA88` might not be the syscall table.** `apply.py` asserts the `4c8d1d` (`lea`) pattern in *its
+own replacement*, so it never checks the address against the original. Disassembling the original stub
+at file offset `0xEC050` settles it:
+
+```
+0x1800ec050: 4c89542408            mov  [rsp+8], r10
+0x1800ec055: 415a                  pop  r10
+0x1800ec057: 4c89542408            mov  [rsp+8], r10
+0x1800ec05c: 4c8d15253a0300        lea  r10, [rip + 0x33a25]     -> 0x18011FA88
+0x1800ec063: 41ff14c2              call qword ptr [r10 + rax*8]
+0x1800ec067: 4c8b1424              mov  r10, [rsp]
+0x1800ec06b: ff742408              push [rsp+8]
+0x1800ec06f: 4152                  push r10
+0x1800ec071: c3                    ret
+```
+
+`0x1800ec063 + 0x33a25 = 0x18011FA88`, RVA `0x11FA88` — **exactly what the patch uses.** Not the bug.
+(The original is also visibly the defect the patch describes: 0x21 bytes that never save
+`rdx/r8/r9/rflags`.)
+
+**3. My repack is malformed.** Compared entry-by-entry against the original bundle: **2233 entries both,
+34 executables both, 14 symlinks both with identical targets**, same modes. Only the tar owner names
+differ. **Not the bug.**
+
+## Where that leaves it
+
+The bundle is good, the cave is mapped, the truncation is harmless, and the table address is right — yet
+`proton-11.0-99-ntdlfix-3` prevents the Wine session from starting at all, while the stock
+`proton-11.0-99-arm64ec-1` launches normally. The remaining suspect is the trampoline's *runtime*
+behaviour — most likely its assumption about the ARM64EC entry/exit convention (the original does stack
+surgery with `push [rsp+8] / push r10 / ret` that the replacement does not replicate, and it is entered
+by `jmp` rather than `call`).
+
+That is not something I can settle by reading. The invoke-only bundle isolates it empirically:
+
+```
+/sdcard/Download/proton-11.0-99-invokeonly.wcp   (11.0-99-arm64ec-invokeonly, code 4)
+```
+
+If invoke-only starts, the `--waitq` cave is at fault. If neither starts, the `invoke` trampoline is —
+and it needs re-deriving against the real convention rather than deployed.
