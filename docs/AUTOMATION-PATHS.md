@@ -134,3 +134,36 @@ mCurrentFocus lists two windows:
 GameNative's window is on display 0 and `input -d 0` was tried explicitly. The AYN shell
 (`rip.moth.cocoonshell`) holds focus alongside it, which on a dual-screen handheld is plausibly where
 input is going. Worth knowing before blaming the app.
+
+
+## Round 33: why the taps were dead, and the fix
+
+`dumpsys window windows` showed **three windows above GameNative that are touchable** — none of them
+carries `NOT_TOUCHABLE`:
+
+```
+#2  com.odin.gameassistant   fl=NOT_FOCUSABLE HARDWARE_ACCELERATED
+#4  com.odin.gameassistant   fl=NOT_FOCUSABLE NOT_TOUCH_MODAL LAYOUT_NO_LIMITS HARDWARE_ACCELERATED
+#10 ShellDropTarget          fl=NOT_FOCUSABLE HARDWARE_ACCELERATED
+                             pfl=... INTERCEPT_GLOBAL_DRAG_AND_DROP      frame (0,0)(fillxfill)
+#12 app.gamenative/app.gamenative.MainActivity    <- the app, underneath all of them
+```
+
+`ShellDropTarget` is the launcher's drag-and-drop target: **full-screen, touchable, and above the app.**
+The two `com.odin.gameassistant` windows (the AYN overlay) are touchable too. Any of these would consume
+taps before they reach GameNative, which is exactly the symptom — and it explains why a tap *sometimes*
+worked and usually did not.
+
+**Fix: press HOME, then bring GameNative back.**
+
+```sh
+adb shell input keyevent 3                       # HOME -- resets the launcher overlays
+adb shell am start -n app.gamenative/.MainActivityAliasDefault
+```
+
+Verified: immediately before, a tap on **Back** did nothing at all; immediately after, the same style of
+tap changed the page (it navigated the library). So this is a real state reset, not luck.
+
+**Put `input keyevent 3` at the start of any scripted UI sequence on this device**, alongside the lock
+check. The two failure modes look identical from outside — nothing happens, nothing is logged — and the
+causes are unrelated.
