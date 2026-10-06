@@ -48,7 +48,7 @@ Sessions: 5–6 Oct 2026.
 | [`docs/GAMENATIVE-UI.md`](docs/GAMENATIVE-UI.md) | **Driving the GameNative UI**: the container-config path, the emulator/FEXCore selector, and the `uiautomator dump --windows` gotcha. |
 | [`docs/FEX-PATCH-LIVE.md`](docs/FEX-PATCH-LIVE.md) | **The FEX patch is live** (`eax=0x0 vendor=''` in the game's session) — and the game still dies in the same window. Includes the `C06T13R` error-code finding. |
 | [`docs/BACKEND-SESSION.md`](docs/BACKEND-SESSION.md) | **The game's backend session is broken**: DNS/TCP/TLS all work in-session, but the game's own requests fail with `12152`/`12157`. New lead for the ~1 min-after-socket-close kill. |
-| [`docs/SESSION-LOSS.md`](docs/SESSION-LOSS.md) | **The kill is downstream of losing the backend session**: the WebSocket dies with `errno=10038` (`WSAENOTSOCK`) then status `1006`, and Aegis kills ~73 s later. Ties to the ARM64EC syscall-stub register clobbering. |
+| [`docs/SESSION-LOSS.md`](docs/SESSION-LOSS.md) | **The kill is downstream of losing the backend session**: the WebSocket dies with `errno=10038` (`WSAENOTSOCK`) then status `1006`, and Aegis kills ~73 s later. Also corrects a false-positive reproduction: the backend refuses unauthenticated upgrades with `200`, not `101`. |
 
 ## Setup that works best
 
