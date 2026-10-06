@@ -151,7 +151,41 @@ A patched bundle has been built and pushed to the device as
 **`/sdcard/Download/fexcore-2610-aoe-nofex.wcp`** (`versionName` `2610-aoe-nofex`, `versionCode` 2,
 patched `libarm64ecfex.dll` + stock `libwow64fex.dll`).
 
-**Status: not yet installed.** Installing it needs the GameNative Contents Manager UI, and the app
+**Status: imported and installed — but onto the wrong filename.** The bundle was imported through
+Settings → Contents Manager and selected for AoE IV (Edit container → Emulation → FEXCore Version →
+`2610-aoe-nofex`). Verified afterwards on disk:
+
+| file | state |
+|---|---|
+| `C:\windows\system32\libarm64ecfex.dll` | **PATCHED** (the `.wcp` target wired up correctly) |
+| `C:\windows\system32\xtajit64.dll` | **ORIGINAL** (mtime unchanged, still 00:32) |
+
+That matters because `xtajit64.dll` is the file GameNative actually loads. Confirmed by both
+`modchk` (reports `xtajit64.dll` in the game process) and `dbgprobe` (its own module list shows
+`C:\windows\system32\xtajit64.dll`, and CPUID still answers `eax=0x40000001 vendor='FEXIFEXIEMU'`).
+So the `.wcp` install updates `libarm64ecfex.dll` but GameNative does **not** sync the two names, and
+the emulator in use is still stock. The patch is therefore installed but **not in effect**.
+
+Also observed: after selecting the new FEXCore the game stopped launching at all — the container comes
+up (`wineserver`, `services.exe`, `winedevice`, `explorer`, `winhandler`, a `start.exe`) but
+`RelicCardinal.exe` never appears and the log stays silent, leaving a black screen with the AoE
+cursor. Whether that is caused by the patched FEXCore or is unrelated container state was not
+determined before stopping.
+
+### Next steps
+
+1. Restart the device (or GameNative) to clear the stuck container, and confirm the stock
+   `2610-aoe-1` FEXCore still launches the game — that separates "patched DLL broke the launch" from
+   "container wedged".
+2. Work out how `xtajit64.dll` is meant to track `libarm64ecfex.dll`. Either GameNative syncs them at
+   some point (container creation? app start?) or the previous session created `xtajit64.dll` by
+   hand. Until the loaded filename is patched, the FEX signature remains.
+3. If there is no sync, the remaining route is the one that failed before: replace
+   `C:\windows\system32\xtajit64.dll` while no Wine process holds it. Under Wine a mapped DLL
+   could not be moved aside, so this needs either an in-place write from a Windows helper opened with
+   `FILE_SHARE_DELETE`, or a window where the session is fully down.
+
+**Earlier status note (kept for context): not yet installed.** Installing it needs the GameNative Contents Manager UI, and the app
 was stuck at 0 % CPU ignoring input at the time of writing (it needed a restart). Once installed,
 re-verify with `modchk`/`dbgprobe` that the leaf reads `eax=0x0 vendor=''` *in the game's own
 process*, then measure whether the kill still happens at 2–4.5 minutes.
