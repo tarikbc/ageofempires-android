@@ -167,3 +167,33 @@ it is therefore a way to get a session without fixing the broken one first.
 (`Play`/`Install`/`Update`) appeared in the UI dump, so the launch could not be triggered. Worth
 retrying; if that container starts, the AoE IV config becomes reachable without any UI changes to the
 container itself.
+
+
+## A field that was in front of me all along: `needsUnpacking: true`
+
+The `.container` read in round 18 contains:
+
+```json
+"needsUnpacking": true
+```
+
+A Wine tree ships a `prefixPack.txz` — the bundle built in round 37 has one at its root — and that pack
+has to be **unpacked** into the container before Wine can run. `.container` says that unpacking is still
+pending.
+
+That fits the failure exactly. Box64 is asked to run `wine explorer /desktop=… winhandler.exe …`, looks
+for the `wine` binary at `…/imagefs/opt/wine/bin/`, and does not find it — because the tree it should be
+finding has never been laid down. It is not that the binary is missing from a tree; it is that the setup
+step which would put it there has not run.
+
+It also matches the earlier symptom chain: the X server comes up (that is the Android side), and then the
+Wine launch fails, which is the point where the unpacked tree is first needed.
+
+`needsUnpacking: true` is also the kind of flag a re-selection should clear — which is why
+**re-selecting the Wine version and saving** remains the right first move, and why doing it with a
+*different* version (`11.0-99-arm64ec-aoe-clean-5`) is the more reliable version of that move.
+
+Also noted: the launch goes through Box64 (`[BOX64] Wine64 detected`) even though the container's
+`appliedWineVersion` is an ARM64EC Proton build. That is not necessarily wrong — Box64 is the launcher
+here — but combined with the missing binary it suggests the container is being assembled for a tree that
+is not present, rather than failing to find a file inside a present one.
