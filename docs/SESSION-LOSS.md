@@ -84,39 +84,40 @@ saying no. Wine's schannel is the prime suspect until something else explains th
 The Mac runs a different Wine build (x86-64 under Rosetta) and never had this ARM64EC syscall stub.
 Same game files, same servers, no register clobbering, no socket corruption, no kill.
 
-## Reproduced outside the game
+## The first "reproduction" was a false positive — corrected
 
-`tools/wsprobe.c` drives the same backend directly from a probe:
+`tools/wsprobe.c` appeared to reproduce the drop outside the game:
 
 ```
---- phase 1: plain HTTPS before ---   GET / (before)   ok (err=0)
 --- phase 2: WebSocket, held open --- upgrade OK -- holding the socket open
                                       WebSocket receive failed after 30s: err=12152
---- phase 3: plain HTTPS after ---    GET / (after #1..#4)  ok (err=0)
 ```
 
-So a **bare WebSocket to the game's own backend dies after ~30 s with `12152`**, with no game involved.
-That much is reproduced and is a Wine-side fact, not the game's fault.
+**That was not a WebSocket drop, and the probe does not reproduce anything.** A native client
+(`tools/ws_native.py`, plain Python `ssl` + hand-rolled WebSocket, no Wine in the path) shows what the
+server actually answers for an unauthenticated upgrade at `/`:
 
-**But it is not the whole story, and the probe does not yet explain the game.** Two differences matter:
+```
+TLS OK  TLSv1.2  cipher=ECDHE-RSA-AES256-GCM-SHA384
+handshake: HTTP/1.1 200 OK                       <- NOT 101 Switching Protocols
+Content-Type: application/json;charset=utf-8
+Content-Length: 0
+Set-Cookie: ApplicationGatewayAffinity=…
+```
 
-- The probe's socket was **unauthenticated**. A 30 s drop is exactly what a server does to a connection
-  that never authenticates, so this specific timeout may be ordinary server behaviour rather than a
-  Wine defect. The game *did* authenticate (session token sent, `PresenceMessage` received) and still
-  died at ~39 s.
-- In the game, every TLS connection afterwards failed with `12157` (`SECURE_FAILURE`). In the probe,
-  plain HTTPS kept working fine after the WebSocket died. So the probe does **not** reproduce the
-  TLS-stack failure — the game's situation is worse than a dropped socket.
+The backend **refuses** the upgrade, replying `200` with an empty JSON body. Wine's
+`WinHttpWebSocketCompleteUpgrade` returned a handle anyway for that non-upgraded connection, and the
+subsequent `WinHttpWebSocketReceive` then failed with `12152` (`INVALID_SERVER_RESPONSE`) — which is
+exactly what receiving an ordinary HTTP response on a socket you believed was a WebSocket looks like.
 
-That gap is the thing to close. A promising direction: the game holds many concurrent sockets (39 HTTP
-requests plus the WebSocket plus Steam), and both symptoms — `WSAENOTSOCK` and then `SECURE_FAILURE`
-for everything — look like a **handle/socket table that has been exhausted or corrupted**, rather than
-one connection failing. Worth measuring the game process's handle count over the course of a run
-(`GetProcessHandleCount` against it from a probe) and seeing whether it climbs.
+So the 30 s timeout was an artifact of the probe, not a Wine defect. The game's WebSocket *does*
+upgrade for real (`OnConnect`, session token sent, `PresenceMessage` received), and the game uses some
+path or authentication the probe did not.
 
-A note on the probe's own limits: `WinHttpWebSocketReceive` blocks for the full ~30 s, so the keepalive
-send in the loop never executes — testing "does traffic keep it alive?" needs a receive timeout that
-actually applies, which `WinHttpSetTimeouts` did not deliver here.
+**The failure to reproduce is itself the finding:** the game's socket works and then dies at ~39 s,
+while the same host answers a correct native client, so the drop is not simply "the server closes
+after N seconds". Reproducing it needs the game's real upgrade request — which means capturing it
+(the Mac has `mitmproxy` installed, and the container has a proxy setting) rather than guessing.
 
 ## Next steps
 
