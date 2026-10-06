@@ -105,3 +105,36 @@ adb shell cat /sdcard/Android/data/app.gamenative/files/wine_logs/wine_debug.log
 
 If it ends with `Error: File is not found. (wine)` again, the link did not get re-created and the next
 step is the Wine/Proton Manager rather than the container's General tab.
+
+
+## Fallback: a freshly installed Wine tree to select
+
+Re-selecting the current version may not be enough if GameNative considers it already applied. So a clean
+`Proton` bundle was built and pushed, giving the container a *distinct* version to switch to — which
+forces the wine setup to run again from scratch.
+
+```
+/sdcard/Download/proton-11.0-99-clean.wcp     268 MB      (Proton, versionCode 5)
+  versionName : 11.0-99-arm64ec-aoe-clean      -> appears as 11.0-99-arm64ec-aoe-clean-5
+  ntdll       : PRISTINE, 606d0a2fb197d37b     no patches of any kind
+  entries     : 2233, same structure as the original bundle
+  wine        : { binPath: bin, libPath: lib, prefixPack: prefixPack.txz }
+```
+
+It carries **no** ntdll patch deliberately. The point is a Wine tree that installs cleanly and can be
+selected, not to advance the SMC work — that comes later, via the FEXCore bundle.
+
+Note what else is on the device: the *original* `proton-11.0-99-arm64ec.wcp` (364 MB, 2026-10-05) is
+still there. The container's `wineVersion` of `proton-11.0-99-arm64ec-1` is that bundle — the `-1` is its
+versionCode. **So re-importing it would change nothing; it is already the selected version.** The
+problem is the link from `/opt/wine` to it, which is why a *different* version is the more reliable
+lever.
+
+## Order to try
+
+1. Container → General → Wine version → select **`11.0-99-arm64ec-aoe-clean-5`** → Save → start.
+   (Requires importing `proton-11.0-99-clean.wcp` first, via the Wine/Proton Manager.)
+2. If that fails the same way, re-select the *existing* `proton-11.0-99-arm64ec-1` and Save.
+3. Either way, read the verdict directly:
+   `adb shell tail -3 /sdcard/Android/data/app.gamenative/files/wine_logs/wine_debug.log`
+   `winhandler` appearing in `ps` is the success signal.
