@@ -1,0 +1,135 @@
+Box64: decode SSE and AVX memory stores in decopcode.c
+
+decode_avx(), decode_660f(), decode_f20f() and decode_f30f() were empty stubs, so a page
+fault on an SSE/AVX store reached Wine as a read fault. The VEX prefix decoder also read
+the wrong byte. Made against github.com/Pipetto-crypto/box64 at eb6fb21f (GameNative's Box64).
+
+diff --git a/src/libtools/decopcode.c b/src/libtools/decopcode.c
+index c63e15e5..98995f57 100644
+--- a/src/libtools/decopcode.c
++++ b/src/libtools/decopcode.c
+@@ -14,6 +14,50 @@
+ 
+ int decode_avx(uint8_t* addr, int idx, vex_t vex)
+ {
++    uint8_t opcode = addr[idx++];
++    uint8_t nextop = addr[idx++];
++    if(MODREG)
++        return 0;
++    switch(vex.m) {
++        case VEX_M_0F:
++            switch(opcode) {
++                case 0x11:  // vmovups/vmovupd/vmovss/vmovsd store
++                case 0x13:  // vmovlps/vmovlpd store
++                case 0x17:  // vmovhps/vmovhpd store
++                case 0x29:  // vmovaps/vmovapd store
++                case 0x2B:  // vmovntps/vmovntpd
++                    return OPCODE_WRITE;
++                case 0x7E:  // vmovd/vmovq to r/m with 66, vmovq load with F3
++                    return (vex.p==VEX_P_66)?OPCODE_WRITE:OPCODE_READ;
++                case 0x7F:  // vmovdqa/vmovdqu store
++                case 0xD6:  // vmovq store
++                case 0xE7:  // vmovntdq
++                    return (vex.p==VEX_P_66 || vex.p==VEX_P_F3)?OPCODE_WRITE:OPCODE_READ;
++                case 0xAE:  // vstmxcsr is /3, vldmxcsr is /2
++                    return (((nextop>>3)&7)==3)?OPCODE_WRITE:OPCODE_READ;
++            }
++            return OPCODE_READ;
++        case VEX_M_0F38:
++            switch(opcode) {
++                case 0x2E:  // vmaskmovps store
++                case 0x2F:  // vmaskmovpd store
++                case 0x8E:  // vpmaskmovd/vpmaskmovq store
++                    return OPCODE_WRITE;
++            }
++            return OPCODE_READ;
++        case VEX_M_0F3A:
++            switch(opcode) {
++                case 0x14:  // vpextrb
++                case 0x15:  // vpextrw
++                case 0x16:  // vpextrd/vpextrq
++                case 0x17:  // vextractps
++                case 0x19:  // vextractf128
++                case 0x1D:  // vcvtps2ph
++                case 0x39:  // vextracti128
++                    return OPCODE_WRITE;
++            }
++            return OPCODE_READ;
++    }
+     return 0;
+ }
+ 
+@@ -105,15 +149,52 @@ int decode_0f(uint8_t* addr, int idx, rex_t rex)
+ }
+ int decode_660f(uint8_t* addr, int idx, rex_t rex)
+ {
+-    return 0;
++    uint8_t nextop;
++    switch(addr[idx]) {
++        case 0xD6:  // movq xmm/m64, xmm
++            nextop = addr[idx+1];
++            return (MODREG)?0:OPCODE_WRITE;
++        case 0x38:
++            nextop = addr[idx+2];
++            if(MODREG) return 0;
++            return (addr[idx+1]==0xF1)?OPCODE_WRITE:OPCODE_READ;    // movbe m16, r16
++        case 0x3A:
++            nextop = addr[idx+2];
++            if(MODREG) return 0;
++            switch(addr[idx+1]) {
++                case 0x14:  // pextrb
++                case 0x15:  // pextrw
++                case 0x16:  // pextrd/pextrq
++                case 0x17:  // extractps
++                    return OPCODE_WRITE;
++            }
++            return OPCODE_READ;
++    }
++    // other opcodes behave like their unprefixed form for memory access
++    return decode_0f(addr, idx, rex);
+ }
+ int decode_f20f(uint8_t* addr, int idx, rex_t rex)
+ {
+-    return 0;
++    uint8_t nextop;
++    switch(addr[idx]) {
++        case 0x38:  // crc32
++            nextop = addr[idx+2];
++            return (MODREG)?0:OPCODE_READ;
++    }
++    // movsd store (0x11) and movntsd (0x2B) match their unprefixed form
++    return decode_0f(addr, idx, rex);
+ }
+ int decode_f30f(uint8_t* addr, int idx, rex_t rex)
+ {
+-    return 0;
++    uint8_t nextop;
++    switch(addr[idx]) {
++        case 0x7E:  // movq xmm, xmm/m64 is a load
++        case 0xB8:  // popcnt
++            nextop = addr[idx+1];
++            return (MODREG)?0:OPCODE_READ;
++    }
++    // movss store (0x11) and movdqu store (0x7F) match their unprefixed form
++    return decode_0f(addr, idx, rex);
+ }
+ 
+ int decode_opcode(uintptr_t rip, int is32bits)
+@@ -154,7 +235,7 @@ int decode_opcode(uintptr_t rip, int is32bits)
+         switch(addr[idx++]) {
+             case 0xC4:
+                 vex.rex = rex;
+-                tmp8u = nextop;
++                tmp8u = addr[idx++];
+                 vex.m = tmp8u&0b00011111;
+                 vex.rex.b = (tmp8u&0b00100000)?0:1;
+                 vex.rex.x = (tmp8u&0b01000000)?0:1;
+@@ -167,7 +248,7 @@ int decode_opcode(uintptr_t rip, int is32bits)
+                 break;
+             case 0xC5:
+                 vex.rex = rex;
+-                tmp8u = nextop;
++                tmp8u = addr[idx++];
+                 vex.p = tmp8u&0b00000011;
+                 vex.l = (tmp8u>>2)&1;
+                 vex.v = ((~tmp8u)>>3)&0b1111;
