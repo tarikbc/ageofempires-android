@@ -97,3 +97,23 @@ is what makes `SMCChecks=full` unusable.
 
 See [`patches/fex/0001-hide-smc-trap-from-guest.patch`](../patches/fex/0001-hide-smc-trap-from-guest.patch).
 **Written, not built or tested** — ARM64EC FEX needs llvm-mingw, which is not installed here.
+
+
+## Update (round 31): the crux is verified in source
+
+The hypothesis needs two things to be true, and both now check out by reading the code:
+
+1. **FEX strips write permission from guest RWX pages.** `GetTrapProt()` returns `PAGE_EXECUTE_READ`, and
+   `ProtectRWXIntervalsInternal` applies it through `NtProtectVirtualMemory` as soon as the guest marks a
+   range executable.
+2. **FEX never intercepts the query that would reveal it.** The ARM64EC syscall table tracks exactly four
+   calls — `NtContinue`, `NtAllocateVirtualMemory`, `NtProtectVirtualMemory`, `NtRaiseException` — and
+   the BT interface FEX registers with (`BTInterface.h`) has only `NotifyMemoryAlloc` /
+   `NotifyMemoryProtect` / `NotifyMemoryFree`. **There is no query direction in either place**, so a
+   guest's `NtQueryVirtualMemory` passes straight through.
+
+So the mechanism is confirmed statically. What remains unconfirmed is the runtime observation — that a
+guest really does read back `PAGE_EXECUTE_READ` for a page it set to `PAGE_EXECUTE_READWRITE`. That is
+exactly what `tools/smctest.c` measures, and it takes seconds once a session can start.
+
+Drafted upstream report: [UPSTREAM-FEX-ISSUE.md](UPSTREAM-FEX-ISSUE.md).
