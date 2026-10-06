@@ -49,9 +49,12 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
    pass a fixed 192-byte high-entropy blob at RVA `0x56fbf40`. See
    [KILL-ANALYSIS.md](docs/KILL-ANALYSIS.md).
    *Test:* resolve the parameter flow (Ghidra) to recover the hashed range and the expected hash.
-2. **The `RtlWaitOnAddress`/`RtlWakeAddress` spinlock bug makes Aegis's own watchdog misfire** — it sees
-   a stall and responds as if tampered with. *Test:* get the waitq ntdll actually loaded and re-run.
-   Direct evidence: fact 7.
+2. **FEX mistranslates Aegis's self-modifying code** — so Aegis's own integrity computation returns a
+   wrong result and it kills in response. Aegis demonstrably self-modifies, and FEX's `SMCChecks` setting
+   (`none`/`full`/`mtrack`) *changes the failure mode*, which is a code-translation signature rather than
+   an environment-detection one. Explains why nothing environmental helps and why the Mac passes.
+   See [SMC-HYPOTHESIS.md](docs/SMC-HYPOTHESIS.md). *Test:* read FEX's ARM64EC block-invalidation path;
+   instrument the hash routine to see whether the digests cover self-modified memory.
 3. **A Wine API returns something Windows would not.** One concrete instance:
    `NtSetInformationThread(ThreadHideFromDebugger)` returns `0xC0000002` where Windows returns success —
    a plausible dependency of Aegis's "Stealth-Startup". *Test:* fix it in Wine's unix-side `ntdll.so`
@@ -126,6 +129,7 @@ and what did not. Then:
 | [`ANALYSIS-GOTCHAS.md`](docs/ANALYSIS-GOTCHAS.md) | Read before any offline analysis (`text.bin` indexing, packed vs unpacked, Mac tooling) |
 | [`CONTAINER-CONFIG.md`](docs/CONTAINER-CONFIG.md) | Editing the container config from Wine; `Open container` |
 | [`WINE-GAPS.md`](docs/WINE-GAPS.md) | Wine behaviours Aegis could notice (`ThreadHideFromDebugger`) |
+| [`SMC-HYPOTHESIS.md`](docs/SMC-HYPOTHESIS.md) | **Aegis self-modifies its code and FEX's SMC handling is the suspect** — the first explanation that accounts for the `SMCChecks` sensitivity, the Mac passing, and nothing environmental helping. |
 | [`MODULE-LIST.md`](docs/MODULE-LIST.md) | The loaded module names that do not exist on Windows |
 | [`FEX-VENDOR-LEAK.md`](docs/FEX-VENDOR-LEAK.md) | The CPUID `0x40000000` leak and its patch |
 | [`FEX-PATCH-LIVE.md`](docs/FEX-PATCH-LIVE.md) | The patch verified live — and the kill surviving it |
