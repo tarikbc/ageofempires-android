@@ -215,3 +215,70 @@ x86-64 `ntdll` under FEX).
 - `tools/dumprange.c` — the memory-dump probe (built as `dumprange.exe`, pushed to `D:\`).
 - `tools/disasm.py` — capstone disassembler for the dumps (`disasm.py <dump> <base> <rva>…`).
 - `prot_main.bin` / `prot_754.bin` — the raw dumps (2 MB + 128 KB; regenerable, not committed).
+
+
+## Update (round 21): the hash routines located by their constants
+
+The next step above said to trace the callers of the "`+0x563cc` / `+0x56bc0` xxHash64 routines".
+Those offsets did not hold up, so the routines were found the reliable way — **by searching for the
+xxHash constants** — and the result is better than expected.
+
+### Aegis carries its own hash implementation
+
+The xxHash64 and xxHash32 primes cluster in two places. One is the game engine's own implementation
+(RVAs `0x3ddd3xx`–`0x3ddd9xx`). **The other is inside Aegis's region:**
+
+```
+PRIME64_4  0x85ebca77c2b2ae63   at RVA 0x3e42d9c, 0x3e43064, 0x3e432e7
+PRIME64_5  0x27d4eb2f165667c5   at RVA 0x3e42db3, 0x3e4307d, 0x3e43300
+```
+
+The function at **RVA `0x3e42d34`** loads all eight primes into stack slots and hashes in 4-lane SIMD
+(`pmuludq` / `paddq`) blocks of 1 KB — it computes `(len - 1) >> 10` as its outer count. Signature:
+`(rcx = pointer, rdx = length)`, returning a digest.
+
+**Each of these hash functions has exactly one direct caller**, e.g.:
+
+| hash routine | called from | note |
+|---|---|---|
+| `0x3e42d34` | `0x3e439a7` (in function `0x3e43694`) | |
+| `0x3e563cc` | `0x3e5703f` | matches the "`+0x563cc`" from earlier notes |
+| **`0x3e681cc`** | **`0x3e68e3f`** | **~1.2 KB before the kill thread entry `0x3e69304`** |
+
+That last row is the interesting one: a hash call immediately upstream of the kill thread's entry point.
+
+### The calls take a fixed high-entropy blob
+
+Every call site has the same shape:
+
+```asm
+lea  r9, [rip + 0x189310d]        ; -> RVA 0x56fbf40
+mov  qword ptr [rsp+0x20], 0xc0   ; size 192
+xor  r8d, r8d
+call 0x3e681cc                    ; the hash routine
+```
+
+RVA `0x56fbf40` is in `.rdata` and is **192 bytes of high-entropy material** (138/256 distinct byte
+values) — 24 qwords, or six 32-byte values:
+
+```
++0x00  b8 fe 6c 39 23 a4 4b be 7c 01 81 2c f7 21 ad 1c
++0x10  de d4 6d e9 83 90 97 db 72 40 a4 a4 b7 b3 67 1f
+...
++0xb0  45 cb 3a 8f 95 16 04 28 af d7 fb ca bb 4b 40 7e
+```
+
+It is passed *into* the hash, so it is input (key/salt/blinding material) rather than an expected
+digest. Where the returned value is compared is still unresolved.
+
+### Why manual tracing stalls here
+
+`0x3e43694`'s callers are a generated stub table — 68 entries spaced about `0x927` apart. That is
+Aegis's obfuscation, and following it by hand is the wrong approach. Ghidra is running on
+`RelicCardinal.unpacked.exe` to resolve the parameter flow properly.
+
+### Method note
+
+The repo's stated next step was correct; what failed was trusting remembered offsets. **Locate code by
+its constants, not by addresses quoted from an earlier session** — `tools/callers.py` does the
+enclosing-function and caller lookup once a routine is found.

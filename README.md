@@ -43,8 +43,12 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
 
 1. **Aegis hashes a memory region and compares it to an expected value.** Most likely `ntdll.dll`, whose
    bytes differ between Wine's ARM64EC build (Thor) and its x86-64 build (Mac/Rosetta) — which is
-   exactly where the behaviour differs. Two xxHash64 routines sit at `+0x563cc` and `+0x56bc0`.
-   *Test:* decompile their callers; recover the hashed range and expected hash.
+   exactly where the behaviour differs. **Located:** Aegis carries its own xxHash implementation at RVA
+   `0x3e42d34` (plus siblings `0x3e563cc`, `0x3e681cc`, …), each with exactly one caller — and
+   `0x3e681cc` is called from `0x3e68e3f`, ~1.2 KB before the kill thread entry `0x3e69304`. The calls
+   pass a fixed 192-byte high-entropy blob at RVA `0x56fbf40`. See
+   [KILL-ANALYSIS.md](docs/KILL-ANALYSIS.md).
+   *Test:* resolve the parameter flow (Ghidra) to recover the hashed range and the expected hash.
 2. **The `RtlWaitOnAddress`/`RtlWakeAddress` spinlock bug makes Aegis's own watchdog misfire** — it sees
    a stall and responds as if tampered with. *Test:* get the waitq ntdll actually loaded and re-run.
    Direct evidence: fact 7.
