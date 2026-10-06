@@ -84,12 +84,46 @@ saying no. Wine's schannel is the prime suspect until something else explains th
 The Mac runs a different Wine build (x86-64 under Rosetta) and never had this ARM64EC syscall stub.
 Same game files, same servers, no register clobbering, no socket corruption, no kill.
 
+## Reproduced outside the game
+
+`tools/wsprobe.c` drives the same backend directly from a probe:
+
+```
+--- phase 1: plain HTTPS before ---   GET / (before)   ok (err=0)
+--- phase 2: WebSocket, held open --- upgrade OK -- holding the socket open
+                                      WebSocket receive failed after 30s: err=12152
+--- phase 3: plain HTTPS after ---    GET / (after #1..#4)  ok (err=0)
+```
+
+So a **bare WebSocket to the game's own backend dies after ~30 s with `12152`**, with no game involved.
+That much is reproduced and is a Wine-side fact, not the game's fault.
+
+**But it is not the whole story, and the probe does not yet explain the game.** Two differences matter:
+
+- The probe's socket was **unauthenticated**. A 30 s drop is exactly what a server does to a connection
+  that never authenticates, so this specific timeout may be ordinary server behaviour rather than a
+  Wine defect. The game *did* authenticate (session token sent, `PresenceMessage` received) and still
+  died at ~39 s.
+- In the game, every TLS connection afterwards failed with `12157` (`SECURE_FAILURE`). In the probe,
+  plain HTTPS kept working fine after the WebSocket died. So the probe does **not** reproduce the
+  TLS-stack failure — the game's situation is worse than a dropped socket.
+
+That gap is the thing to close. A promising direction: the game holds many concurrent sockets (39 HTTP
+requests plus the WebSocket plus Steam), and both symptoms — `WSAENOTSOCK` and then `SECURE_FAILURE`
+for everything — look like a **handle/socket table that has been exhausted or corrupted**, rather than
+one connection failing. Worth measuring the game process's handle count over the course of a run
+(`GetProcessHandleCount` against it from a probe) and seeing whether it climbs.
+
+A note on the probe's own limits: `WinHttpWebSocketReceive` blocks for the full ~30 s, so the keepalive
+send in the loop never executes — testing "does traffic keep it alive?" needs a receive timeout that
+actually applies, which `WinHttpSetTimeouts` did not deliver here.
+
 ## Next steps
 
-1. Reproduce the TLS breakdown outside the game: hammer HTTPS and then a long-lived WebSocket to
-   `dr-activerelease1-api.worldsedgelink.com` from a probe, and see whether TLS stops working after a
-   connection is torn down. If a simple probe reproduces `12157`, the culprit is Wine, not the game.
-2. Establish which schannel/secur32 DLLs are in use and whether an override changes it.
+1. Measure the game's handle/socket count across a run. If it climbs to a limit, the `12157` storm is
+   exhaustion, not TLS, and the fix is wherever the leak is.
+2. Make the probe authenticate (send a session token) so its WebSocket lifetime is comparable to the
+   game's — that separates "server drops unauthenticated sockets" from "Wine drops sockets".
 3. Re-run the game and watch for `errno=10038` / status `1006` disappearing. **The success criterion is
    the log still growing past ~5 minutes**, not the process merely existing.
 
