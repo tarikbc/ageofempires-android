@@ -1,0 +1,22 @@
+GameNative: refresh the Steam ticket on every ColdClient launch
+
+replaceSteamclientDll() returns early once .steam_coldclient_used exists, so
+configs.user.ini keeps the ticket from the first launch. Relic's server then rejects
+it ("Found 0 profiles", C00T01R04X-01). Tested workaround: delete the marker before each
+launch. This patch is not built or tested. Made against utkarshdalal/GameNative at 231d136.
+
+diff --git a/app/src/main/java/app/gamenative/utils/SteamUtils.kt b/app/src/main/java/app/gamenative/utils/SteamUtils.kt
+index 82532b4..02bb59a 100644
+--- a/app/src/main/java/app/gamenative/utils/SteamUtils.kt
++++ b/app/src/main/java/app/gamenative/utils/SteamUtils.kt
+@@ -374,6 +374,10 @@ object SteamUtils {
+         val steamRootDir = File(container.getRootDir(), ".wine/drive_c/Program Files (x86)/Steam")
+ 
+         if (MarkerUtils.hasMarker(appDirPath, Marker.STEAM_COLDCLIENT_USED) && File(container.getRootDir(), ".wine/drive_c/Program Files (x86)/Steam/steamclient_loader_x64.exe").exists()) {
++            // The encrypted app ticket expires, so write the current one on every launch.
++            // Games that check it online (AoE IV: "Found 0 profiles", C00T01R04X-01) fail with a stale one.
++            val ticketBase64 = SteamService.instance?.getEncryptedAppTicketBase64(steamAppId)
++            ensureSteamSettings(context, File(steamRootDir, "steamclient.dll").toPath(), appId, ticketBase64, isOffline)
+             return
+         }
+         MarkerUtils.removeMarker(appDirPath, Marker.STEAM_DLL_REPLACED)
