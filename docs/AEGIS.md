@@ -200,3 +200,39 @@ obfuscated the same way its strings are. Establishing what it actually does need
 Worth keeping in perspective: [KILL-STILL-OPEN.md](KILL-STILL-OPEN.md) already shows the kill fires
 with a healthy backend session for the whole run, so whatever this 90 s path is, the network is not the
 whole story.
+
+## The 3-byte runtime string: "SDC"
+
+The string at `0x3e41ae6` is built by an inline decrypt loop, so it can be recovered statically:
+
+```asm
+0x3e41ae6: mov  dword ptr [rbp+0x17], 0x7001744   ; ciphertext bytes 44 17 00 07
+0x3e41aed: xor  eax, eax
+0x3e41aef: mov  byte ptr [rbp+0x1b], al           ; terminator
+0x3e41af2: xor  byte ptr [rbp+rax+0x18], dil      ; <-- the loop
+0x3e41af7: inc  rax
+0x3e41afa: cmp  rax, 3
+0x3e41afe: jae  0x3e41b06
+0x3e41b00: mov  dil, byte ptr [rbp+0x17]          ; key = first ciphertext byte
+0x3e41b04: jmp  0x3e41af2
+```
+
+The loop writes to `[rbp+rax+0x18]`, i.e. bytes `44 17 00 07` at `0x17`, and decrypts the three at
+`0x18..0x1a` (`17 00 07`). With the key = first ciphertext byte (`0x44`, which is also what the loop
+loads into `dil` after the first iteration):
+
+```
+0x17 ^ 0x44 = 'S'     0x00 ^ 0x44 = 'D'     0x07 ^ 0x44 = 'C'
+```
+
+**The string is `"SDC"`** — a 3-character token, which matches the call signature `(3, ptr, 90000)`.
+
+Two honest caveats. First, the first loop iteration uses whatever `dil` held on entry; `"SDC"` assumes
+it already equalled the ciphertext's first byte, which is the natural reading but not proven. Second,
+the signature `40 30 7C 05` (the loop's bytes) appears **exactly once in the whole 91 MB `.text`** — so
+this is a one-off, not a recurring string-decrypt helper, and no vocabulary can be recovered from it.
+
+So the earlier question — what does Aegis call with a 90-second timeout — is still open. `"SDC"` could be
+a subsystem tag (the backend's own error codes use 4-character tags like `"Matc"` and `"Reli"`, see
+[SESSION-LOSS.md](SESSION-LOSS.md)), an HTTP-ish token, or a binary value that merely happens to be
+printable. It is not enough to identify the call.
