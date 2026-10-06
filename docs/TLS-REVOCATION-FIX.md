@@ -92,3 +92,38 @@ x86_64-w64-mingw32-gcc -O1 -static -o reuseprobe.exe reuseprobe.c -lwinhttp
 
 Note `WinHttpConnect` is asynchronous, so a naive "connect vs send" timing split reports 0 ms for the
 connect and hides the cost inside `WinHttpSendRequest`.
+
+## Testing the waitq fix next
+
+This repo carries a second ntdll patch that is **not currently applied** — the deployed ntdll is
+`apply.py`'s `EXPECTED[False]` (syscall-register fix only), not `EXPECTED[True]` (the `--waitq`
+build). That patch makes `RtlWaitOnAddress` / `RtlWakeAddress*` spinlocks safe against
+`NtSuspendThread`, and [KILL-ANALYSIS.md](KILL-ANALYSIS.md) records a Wine
+`RtlWaitOnAddress`/`RtlWakeAddress` spinlock deadlock in the kill. It was tested before and "did not
+stop the freeze" — but that was with a broken backend session, so the combination has never been
+measured.
+
+With the session now healthy, the kill still fires, so the deadlock is a live suspect again.
+
+**A `.wcp` cannot be installed while a session is running** (`copy` into `C:\windows\system32`
+returns *Sharing violation* for a mapped ntdll), and the Contents Manager installs a content's files
+when that content is **selected**, not when it is imported. So `aoe4-fixes.wcp` (committed here)
+bundles everything into one selection:
+
+```json
+"files": [
+  { "source": "libarm64ecfex.dll", "target": "${system32}/libarm64ecfex.dll" },
+  { "source": "libarm64ecfex.dll", "target": "${system32}/xtajit64.dll"      },
+  { "source": "libwow64fex.dll",   "target": "${system32}/libwow64fex.dll"   },
+  { "source": "ntdll.dll",         "target": "${system32}/ntdll.dll"         }
+]
+```
+
+A bare ntdll bundle would also revert the FEX DLLs, because GameNative restores the contents of the
+selected version — hence shipping all four files together. GameNative warns that `xtajit64.dll` and
+`ntdll.dll` are outside its trusted set, and installs them anyway.
+
+**Status at the end of this session: imported, but not yet selected.** The FEXCore Version dropdown
+still lists only `2610-aoe-nofex2-3`, so the install has not taken effect and the waitq fix is
+**not** applied. Next step is to select `aoe4-fixes-4` and confirm the swap by hash
+(`ce925da602e6abfe…` = waitq build) before drawing any conclusion from a run.
