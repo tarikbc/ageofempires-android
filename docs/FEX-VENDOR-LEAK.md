@@ -94,7 +94,83 @@ Note that a **hex patch of the shipped DLL is not straightforward**: `FEXIFEXIEM
 a searchable literal anywhere in `xtajit64.dll` / `libarm64ecfex.dll` / `libwow64fex.dll` (the ARM64
 code materialises it from instruction immediates). A source build is the clean route.
 
+## The patch — built and verified working
+
+The leaf is implemented in a small ARM64 function that materialises the string from `movz`/`movk`
+immediates, so there is no literal to hex-edit. It was located by disassembling the `.text` of
+`libarm64ecfex.dll` as ARM64 (capstone) and searching decoded instructions for the immediates
+`#0x4546`/`#0x4958` (="FEXI"), `#0x4d45`/`#0x55` (="EMU\0") next to `mov w9, #0x40000000`:
+
+```
+file 0x28644: mov  x0, #1                  ; eax = 0x40000001
+file 0x28648: mov  x1, #0x4546             ; 'FE'
+file 0x2864c: movk x0, #0x4000, lsl #16
+file 0x28650: movk x1, #0x4958, lsl #16    ; 'XI'
+file 0x28654: movk x0, #0x4546, lsl #32    ; 'FE'
+file 0x28658: movk x1, #0x4d45, lsl #32    ; 'EM'
+file 0x2865c: movk x0, #0x4958, lsl #48    ; 'XI'   -> x0 = {eax, "FEXI"}
+file 0x28660: movk x1, #0x55, lsl #48      ; 'U\0'  -> x1 = {"FEXI", "EMU\0"}
+file 0x28664: ret
+```
+
+The 32 bytes at `0x28644` were replaced with `mov x0, #0` / `mov x1, #0` / 6×`nop`, leaving the
+`ret`. Result: the leaf returns `eax=0` and an all-zero vendor — i.e. "no hypervisor here", which is
+consistent with the (already working) `HideHypervisorBit`.
+
+**Verified.** With the patched DLL installed and loaded:
+
+```
+leaf1 ecx=0x3ed8330f edx=0x278bfbff  hypervisor_bit=0
+hypervisor leaf 0x40000000 eax=0x0 vendor=''
+modules: ... C:\windows\system32\libarm64ecfex.dll
+```
+
+The signature is gone. (Before: `eax=0x40000001 vendor='FEXIFEXIEMU'`.)
+
+## Installing it: GameNative restores these DLLs itself
+
+Two dead ends worth recording, because they cost time:
+
+1. **Copying a patched file into `C:\windows\system32` does not stick.** GameNative re-installs the
+   emulator DLLs at launch. Observed directly: a patched `libarm64ecfex.dll` (mtime 10:13) was
+   reverted to the stock bytes with a fresh mtime at 10:27, when the game next launched.
+2. **The `Wow64\amd64` registry value is forced back to `xtajit64.dll`.** Editing
+   `HKLM\Software\Microsoft\Wow64\amd64` (and the `wine.inf` that defines it — there is no copy of
+   `wine.inf` inside the prefix) does not survive a launch either. `xtajit64.dll` is byte-identical
+   to `libarm64ecfex.dll`, so GameNative installs one and uses it under both names.
+
+The supported channel is the **Contents Manager**, which consumes `.wcp` bundles. The format is
+`tar.xz` containing `profile.json` plus the DLLs:
+
+```json
+{ "type": "FEXCore", "versionName": "2610-aoe", "versionCode": 1, ...
+  "files": [ { "source": "libarm64ecfex.dll", "target": "${system32}/libarm64ecfex.dll" }, ... ] }
+```
+
+A patched bundle has been built and pushed to the device as
+**`/sdcard/Download/fexcore-2610-aoe-nofex.wcp`** (`versionName` `2610-aoe-nofex`, `versionCode` 2,
+patched `libarm64ecfex.dll` + stock `libwow64fex.dll`).
+
+**Status: not yet installed.** Installing it needs the GameNative Contents Manager UI, and the app
+was stuck at 0 % CPU ignoring input at the time of writing (it needed a restart). Once installed,
+re-verify with `modchk`/`dbgprobe` that the leaf reads `eax=0x0 vendor=''` *in the game's own
+process*, then measure whether the kill still happens at 2–4.5 minutes.
+
 ## Files
 
 - `tools/dbgprobe.c` — the probe that reports CPUID, anti-debug and module state from inside the
   session.
+- `samples/aegis/dbgprobe_cpuid_report.txt` — the before/after CPUID reports.
+
+## Reproducing the patch
+
+```sh
+# 1. take the shipped DLL
+#    (device: C:\windows\system32\libarm64ecfex.dll)
+# 2. patch 32 bytes at file offset 0x28644:
+printf '\x00\x00\x80\xd2\x01\x00\x80\xd2\x1f\x20\x03\xd5\x1f\x20\x03\xd5\x1f\x20\x03\xd5\x1f\x20\x03\xd5\x1f\x20\x03\xd5\x1f\x20\x03\xd5' \
+  | dd of=libarm64ecfex.dll bs=1 seek=$((0x28644)) conv=notrunc
+# 3. package it (profile.json + both DLLs) as tar.xz and import via Contents Manager
+```
+
+The ready-made bundle is committed here as `fexcore-2610-aoe-nofex.wcp`.
