@@ -390,3 +390,42 @@ hash" directly, without a debugger, which matters because Aegis is anti-debug.
 
 Risk to weigh: Aegis verifies its own image, so a patch could itself trip the check. Worth trying, and
 informative either way — if the game dies earlier when patched, that is itself a result.
+
+
+## Ghidra result (round 31, job started round 24)
+
+Ghidra 11.3.1 finished a full auto-analysis of `RelicCardinal.unpacked.exe` (4055 s, ~68 min) and the
+decompiler was pointed at the kill path and the two hash routines. The output is in
+[`tools/ghidra_decomp.txt`](../tools/ghidra_decomp.txt) (248 KB).
+
+**The kill path cannot be decompiled, and that is itself the result:**
+
+```
+=== 0x143e69304  kill thread entry (+0x3e69304)
+no function contains this address
+
+=== 0x143e6b53c  kill function (+0x3e6b53c)
+/* WARNING: Control flow encountered bad instruction data */
+void FUN_143e6b53c(void) {
+  halt_baddata();
+}
+```
+
+A full commercial-grade decompiler, given the restored image, finds **no function** at the kill thread
+entry and **no valid instructions** in the kill function. That independently confirms rounds 22–23 from a
+different direction: the bytes there are not executable code as they stand, because Aegis writes them at
+runtime. My hand-rolled disassembly was never going to succeed there, and neither was Ghidra's.
+
+This is the strongest evidence yet for the runtime-only conclusion — and, read alongside the SMC
+findings, for the idea that the protection's own self-modification is central rather than incidental.
+
+**The hash helper, by contrast, decompiles cleanly.** RVA `0x563cc` resolves to
+`FUN_140055940` (starting at `0x140055940`), 2839 lines, signature:
+
+```c
+void FUN_140055940(undefined1 (*param_1)[32], undefined8 *param_2, uint param_3)
+```
+
+`param_1` is a pointer to **32-byte objects**, which matches the 48-byte signature records (two qwords
+plus a 32-byte digest) traced in round 22. So the hashing is ordinary code and fully analyzable; it is
+only the control flow around it that is obscured.
