@@ -58,3 +58,27 @@ changes it". It also means the practical lever is module **names**, which is tes
    `winepulse.drv`, `winealsa.drv`, `lsteamclient.dll`, and the `none_deadbeef` COMCTL32 path. The audio
    drivers are the most removable; the display and Vulkan drivers are not, so those would need renaming
    in a rebuilt Wine.
+
+## The offline control does not work
+
+To test whether the kill needs a server round-trip, I took the device fully offline
+(`svc wifi disable`; confirmed with `ping 8.8.8.8` -> "Network is unreachable") and launched the game.
+It exits after **~35 s**, much earlier than the ~4-minute online kill, and its log stops at:
+
+```
+Loading step: [Locale System]
+Loading step: [Compatible Architecture Check]
+…
+Loading step: [Parental Control]
+Loading step: [NetworkGlobal]        <- last line
+```
+
+So offline the game never reaches the state where Aegis's kill happens — it dies during network
+initialisation instead. **The test neither supports nor refutes the server hypothesis**, because the
+process is gone before the question can be asked.
+
+It does mean the README's *"the game freezes or exits 2 to 4.5 minutes after launch; this happens online
+and offline"* is probably conflating two different failures: the characterized kill (online), and this
+early network-init exit (offline). Worth not re-testing offline again for this purpose.
+
+Network was restored afterwards (wifi back on, `ping 8.8.8.8` OK).
