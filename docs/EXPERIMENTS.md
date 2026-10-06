@@ -42,6 +42,7 @@ the kill *suspends* the threads and leaves the process hung, so `ps` still shows
 | Editing `wineVersion` / `fexcoreVersion` in the same file | **Ignored** — GameNative re-applies from its own store |
 | Writing into `Z:\opt\<wine-tree>` | **Read-only** |
 | Windows-on-ARM reference run | Impossible — no Windows machine available |
+| Locked device → "container will not start" (rounds 19, 26) | **MISDIAGNOSED.** The device was on a secure lock screen, so taps went to the keyguard. The container was never broken. Check `dumpsys trust \| grep deviceLocked` first |
 | Hardware tracing (ETM/CoreSight) on the Thor | Needs root: `enable_source` is root-owned, `perf_event_paranoid=3`, `simpleperf` rejects `task-clock`. Bootloader is unlocked, so rooting is possible but not free. |
 
 ## Fixed along the way
