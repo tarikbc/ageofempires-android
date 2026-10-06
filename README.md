@@ -153,6 +153,7 @@ and what did not. Then:
 | [`CONTAINER-WONT-START.md`](docs/CONTAINER-WONT-START.md) | **How the container was fixed**, and the two things that were NOT the cause (a locked device, and the MapGen message). Also the rename-a-mapped-DLL trick. |
 | [`KILL-STILL-OPEN.md`](docs/KILL-STILL-OPEN.md) | Historical: the pre-SMC state of the kill question. **Superseded** by SMC-CONFIRMED / FIX-VERIFIED. |
 | [`FIX-VERIFIED.md`](docs/FIX-VERIFIED.md) | **The Aegis kill is gone.** With the patched FEX the game runs 10+ minutes instead of ~2, and reaches `MapGen` instead of `[Property Bag Manager]`. The game is not yet playable — it stops at MapGen with a texture validation error. |
+| [`DEATH-IS-NOT-THE-KILL.md`](docs/DEATH-IS-NOT-THE-KILL.md) | **Measured: the run ends without the kill's signature** — ordinary thread activity, then an exit, coinciding with X11 connection loss (`XConnectorEpoll.killConnection`). Suggests the current blocker is not Aegis. |
 | [`BUILDING-FEX.md`](docs/BUILDING-FEX.md) | Building ARM64EC FEX on macOS: toolchain, the three macOS problems that abort configure, and the artifact. The patched `libarm64ecfex.dll` builds successfully. |
 | [`UPSTREAM-FEX-ISSUE.md`](docs/UPSTREAM-FEX-ISSUE.md) | Draft FEX issue: the SMC write trap is observable by the guest through `NtQueryVirtualMemory`, with a game-independent reproducer and a suggested fix. |
 | [`MODULE-LIST.md`](docs/MODULE-LIST.md) | The loaded module names that do not exist on Windows |
