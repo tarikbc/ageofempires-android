@@ -103,3 +103,48 @@ The "who" and "where" are now pinned. The open question is still the "why" — w
 - `samples/si_2.txt … si_22.txt` — post-kill state (4 threads).
 - `samples/tctx_1.txt` — tctx, truncated where it hangs on `tid 0174`.
 - `samples/watch.txt` — the game's warnings.log at capture time (trigger at line 559).
+
+## Reverse engineering (same run) — the protection is readable and uses xxHash64
+
+Dumped the localized region from a live run with the new [`tools/dumprange.c`](../tools/dumprange.c)
+probe: `RelicCardinal.exe +0x3e00000..+0x4000000` (2 MB) and `+0x7540000..+0x7560000` (128 KB).
+Disassembling the thread entry and its call-chain addresses shows the protection is **ordinary MSVC
+x86-64 with `/GS` stack canaries** (`__security_check_cookie` at `+0x44fb0d50`) — **not** a
+VM/obfuscator. The earlier `aegis_code.bin` looked like junk only because it is an unanchored blob.
+
+What the code does:
+
+- **Thread entry** `+0x3e69304` → real routine at `+0x3e69309`: generates randomness
+  (`call +0x3f765f0` twice, `not/shl/xor` mixing, then `div` = modulo) and reads `[arg+0x1a8]`
+  / `[arg+0x1ac]` counters → the checker picks **random targets/times**.
+- **xxHash64** — `+0x563cc` and `+0x56bc0` load the exact xxHash64 primes
+  (`0x9E3779B185EBCA87`, `0xC2B2AE3D27D4EB4F`, `0x165667B19E3779F9`,
+  `0x85EBCA77C2B2AE63`, `0x27D4EB2F165667C5`) and run the round mix → the protection hashes a
+  memory region.
+- **A repeated ntdll call pair** — 34 indirect `call [rip+…]` sites in the 2 MB region resolve to
+  three IAT slots; two of them (`0x1456dfa68`, `0x1456dfa70`) are called **16× each** and point at
+  `ntdll+0x907a0` / `+0x922e0`. That ntdll neighborhood is `A_SHA*`/`MD4`/`MD5` plus
+  `RtlQueryProcessDebugInformation` — a hash/debug helper, **not** `NtSuspendThread`
+  (`+0x676a0`). So the actual suspend/free calls are elsewhere (dynamic resolution, or outside the
+  dumped window).
+
+### Working hypothesis (the "why it fails")
+
+The protection periodically computes **xxHash64 (and/or SHA) over a memory region** and compares it
+to an expected value; a mismatch triggers the suspend-all. The most likely hashed region is
+**`ntdll.dll` (or the protection's own image)** — whose bytes differ between Wine's **ARM64EC**
+build (Thor) and Wine's **x86-64** build (Mac/Rosetta). That is precisely why the same check "acts
+differently under FEX/ARM64EC and under Rosetta".
+
+### Next step
+
+Trace the callers of the `+0x563cc` / `+0x56bc0` xxHash64 routines (they are reached indirectly or
+from outside the 2 MB window) to learn the **hashed address range and the expected hash**. Then the
+fix is either (a) patch the stored expected hash, or (b) make the hashed region match (e.g. run an
+x86-64 `ntdll` under FEX).
+
+### Files
+
+- `tools/dumprange.c` — the memory-dump probe (built as `dumprange.exe`, pushed to `D:\`).
+- `tools/disasm.py` — capstone disassembler for the dumps (`disasm.py <dump> <base> <rva>…`).
+- `prot_main.bin` / `prot_754.bin` — the raw dumps (2 MB + 128 KB; regenerable, not committed).
