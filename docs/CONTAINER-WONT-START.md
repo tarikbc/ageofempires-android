@@ -138,3 +138,32 @@ lever.
 3. Either way, read the verdict directly:
    `adb shell tail -3 /sdcard/Android/data/app.gamenative/files/wine_logs/wine_debug.log`
    `winhandler` appearing in `ps` is the success signal.
+
+
+## Access routes into the imagefs, tested
+
+Correcting the container's wine reference needs to write inside `imagefs/`, so every route was tried:
+
+| Route | Result |
+|---|---|
+| `adb shell ls /data/user/0/app.gamenative/files/imagefs/opt/` | `Permission denied` |
+| `adb shell run-as app.gamenative …` | `run-as: package not debuggable: app.gamenative` |
+| `/sdcard/Android/data/app.gamenative/files/` | readable, but holds only `crash_logs`, `debug_reports`, `powercontrol`, `wine_logs` — no `imagefs` |
+
+So there is **no adb-side route** into the imagefs. The only writer is GameNative itself.
+
+## The route that might still work: start a *different* container
+
+**The imagefs is shared between containers.** Its prefix lives at `imagefs/home/xuser`, and per-container
+configs sit beside it (`home/xuser-STEAM_<appid>/.container`). So *any* container that starts
+successfully yields a Wine session — and from inside that session the AoE IV container's config is
+writable, including `envVars` (which is honoured, unlike `wineVersion`) and possibly the wine reference
+itself.
+
+The library shows **The Witcher 2 with 5h10m of play time**, i.e. a container that has worked. Launching
+it is therefore a way to get a session without fixing the broken one first.
+
+**It was not confirmed this round** — the Witcher's detail page opened, but no action button
+(`Play`/`Install`/`Update`) appeared in the UI dump, so the launch could not be triggered. Worth
+retrying; if that container starts, the AoE IV config becomes reachable without any UI changes to the
+container itself.
