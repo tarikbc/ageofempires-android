@@ -30,6 +30,31 @@ a compile-time constant rather than a string, so a string search cannot settle i
 encrypted, so its own imports are not visible either. The way to settle it is to implement the class in
 Wine and see whether the kill changes.
 
+### Where the fix has to go
+
+`NtSetInformationThread` in the PE `ntdll.dll` is nothing but a syscall stub, so the class handling is
+**not** in a file this repo has patched before:
+
+```
+NtSetInformationThread  rva=0x659a0  va=0x1800659a0
+  0x1800659a0: a80180d2   mov  x8, #0xd          <- syscall 13
+  0x1800659a4: e9031eaa   mov  x9, x30
+  0x1800659a8: 90000058   ldr  x16, #0x1800659b8
+  0x1800659ac: 100240f9   ldr  x16, [x16]
+  0x1800659b0: 00023fd6   blr  x16
+  0x1800659b4: c0035fd6   ret
+```
+
+The implementation is on the **Unix side** — `lib/wine/aarch64-unix/ntdll.so` in the Proton tree, an
+ELF shared object inside the imagefs. `patches/proton-arm64ec-ntdll/apply.py` patches the PE DLL and
+will not help here; this needs an ELF/ARM64 patch to `ntdll.so`, or a rebuilt Wine.
+
+That is a genuine increase in cost, so it is worth confirming Aegis even calls the class before paying
+it. The cheapest confirmation is a Wine debug channel: if the game is run with `WINEDEBUG=+thread` (or
+whichever channel logs the unimplemented class) and the log shows the call, the hypothesis is settled
+without touching binary code. `WINEDEBUG` is currently set by the launcher, not by
+`HKCU\Environment` or the container's Environment tab, so that has to be established first.
+
 ### Everything else on that surface is correct
 
 ```
