@@ -1,0 +1,28 @@
+diff --git a/Source/Windows/Common/InvalidationTracker.cpp b/Source/Windows/Common/InvalidationTracker.cpp
+index 155403d..ff4ab09 100644
+--- a/Source/Windows/Common/InvalidationTracker.cpp
++++ b/Source/Windows/Common/InvalidationTracker.cpp
+@@ -315,7 +315,22 @@ ULONG InvalidationTracker::GetTrapProt(uint64_t Address) const {
+   if (DEPDisabled && DEPPromotedIntervals.Query(Address).Enclosed) {
+     return PAGE_READONLY;
+   }
+-  return PAGE_EXECUTE_READ;
++
++  // Do not strip write permission from the guest's own pages.
++  //
++  // The trap works by making a guest RWX page read-only so a write faults and the translated
++  // block can be invalidated. It also *leaks*: the guest can see it through
++  // NtQueryVirtualMemory, which reports PAGE_EXECUTE_READ for a page the guest set to
++  // PAGE_EXECUTE_READWRITE. FEX has no query interception (the ARM64EC syscall table tracks
++  // only NtContinue, NtAllocateVirtualMemory, NtProtectVirtualMemory and NtRaiseException),
++  // so the guest is told something about its own address space that is not true.
++  //
++  // Correctness is preserved instead by runtime validation: FEXCore's decoder marks blocks in
++  // writable executable regions with ForceFullSMCDetection, which validates each translated
++  // instruction against guest memory as it executes. That needs no protection change at all.
++  //
++  // See patches/fex/0001-hide-smc-trap-from-guest.patch and 0003-no-smc-write-trap.patch.
++  return GetUntrapProt(Address);
+ }
+ 
+ ULONG InvalidationTracker::GetUntrapProt(uint64_t Address) const {
