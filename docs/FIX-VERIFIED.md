@@ -1,61 +1,59 @@
-# Status: the SMC trap is fixed; the kill is NOT shown to be gone
+# Status: the trap fix works but regresses the game; the wall is now a MapGen asset error
 
-**Corrected.** An earlier version of this file claimed the Aegis kill was gone. That claim was wrong,
-and the evidence for it was exactly the false positive this repo already warns about.
+Corrected twice, both times after being wrong.
 
-## The rule I broke
-
-> **"The process is still alive" is not success.** The kill *suspends* the threads and leaves the process
-> hung in place, so `ps` keeps showing it. The only valid criterion is the game's own log
-> (`warnings.log`) still growing after ~5 minutes.
-
-I wrote that rule, put it in [EXPERIMENTS.md](EXPERIMENTS.md), and then cited "alive after 10 minutes" as
-proof anyway. It is not proof. A hung process and a working one look identical to `ps`.
-
-## What is actually established
-
-**1. The SMC trap is fixed — this part is solid, and is a real result.**
+## 1. The SMC trap fix is real, and verified
 
 `tools/smctest.c` inside the guest:
 
-| | before | after |
+| | stock FEX | patched FEX |
 |---|---|---|
 | protection after executing an RWX page | `RX` (0x20) | **`RWX` (0x40)** |
 | `VirtualProtect` reports previous | `0x20` | **`0x40`** |
 
-FEX no longer silently removes write permission from the guest's own pages. That was the confirmed defect
-([SMC-CONFIRMED.md](SMC-CONFIRMED.md)) and it is now confirmed fixed.
+FEX no longer silently removes write permission from the guest's own pages. That defect was real
+([SMC-CONFIRMED.md](SMC-CONFIRMED.md)) and is fixed. This part stands.
 
-**2. The kill is not shown to be gone.**
+## 2. But that patch regresses the game — and my first claim about it was wrong
 
-| run | process | log (`warnings.log`) |
-|---|---|---|
-| stock FEX | gone at ~2 min | stops at `[Property Bag Manager]` |
-| patched FEX (19:35 run) | alive at 10 min | **stops at `MapGen`, at 19:38:11** |
-| patched FEX (single relaunch) | alive, **5 threads, all state `S`, 0% CPU** | **never logged at all** |
+I claimed an earlier run "survived 10 minutes" and that the kill was gone. **That was the false positive
+this repo already warns about**: the kill suspends threads and leaves the process hung, so `ps` keeps
+showing it. The correct criterion is `warnings.log` still growing, and I ignored it. A user challenge
+("isn't this a false positive?") caught it.
 
-The log is the criterion, and **it stops in every case**. The last two runs left a process that `ps`
-shows and that does nothing — which is precisely what a suspended process looks like.
+With the trap disabled the game gets *less* far, not more:
 
-So the patched FEX gets the game *further* (`MapGen` versus `[Property Bag Manager]`) but it does not
-demonstrably survive, and it is certainly not playable.
+| FEX build | game's log |
+|---|---|
+| stock | fresh log each run, reaches **`MapGen`** |
+| no-trap (patches 0001 + 0003) | **no new log at all**; process sits at **5 threads, state `S`, 0% CPU** |
 
-## What went wrong with the measurement
+So `ForceFullSMCDetection` is **not** a sufficient replacement for the trap. Removing the leak without
+breaking invalidation needs a different approach. Stock FEX has been restored.
 
-The 19:35 run's log stopped at `MapGen` at 19:38:11 and never grew again, while the process stayed
-alive — and I read the aliveness rather than the log. Then my "single clean instance" launch
-(`start "" "A:\RelicCardinal.exe"` from `cmd`) produced a process with 5 threads and no log output at
-all, i.e. one that never started properly; I read its aliveness as success too.
+## 3. The wall is a MapGen asset error, and it is not Steam
 
-Direct launches from the session are not equivalent to GameNative's own launch path. The 19:35 run — the
-only one that reached `MapGen` — came from Play.
+Both stock and patched runs end identically:
 
-## Next steps that would actually settle it
+```
+(I) [20:13:16.381] [000000316]: MapGen - Failed to validate: !m_texturePath.empty()
+    Failed to validate an attribute data field for map generation.
+```
 
-1. **One clean run via Play**, with nothing else launched into the session, judged only by whether
-   `warnings.log` keeps growing past five minutes.
-2. **Capture the thread state** in the kill window. The kill's signature is ~60 threads with all but one
-   suspended and that one spinning; a 5-thread 0%-CPU process is a different failure entirely and should
-   not be confused with it.
-3. **Separate the `MapGen` error** — `!m_texturePath.empty()` may be an asset problem independent of both
-   the trap and the kill.
+Checked and ruled out:
+
+- **Steam ticket** — no `C00T01R04X`, no "Found 0 profiles" anywhere in the log, and
+  `.steam_coldclient_used` does not exist, so GameNative is already writing a fresh ticket each launch.
+- **Aegis** — the same failure appears with the stock build.
+
+An empty texture path during map generation points at **missing or incomplete game data**. Worth noting
+the install reports **45.31 GiB**, while a full AoE IV install with expansions is considerably larger, so
+an incomplete download is a plausible cause. The standard remedy is Steam's *verify integrity of game
+files*, which is a UI action.
+
+## The useful thing learned this round
+
+**Check the log's own first line before trusting it.** `cp.bat` copies whatever `warnings.log` currently
+holds, which may be a *previous* run's file — I spent a whole monitoring cycle reading a log whose first
+line said `started at 19:35` while the run under test had started at 20:10 and written nothing. Comparing
+the log's start timestamp against the run is the guard.
