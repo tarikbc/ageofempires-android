@@ -152,3 +152,51 @@ the 1-byte code write (Aegis reacting to a modified byte) or just from the debug
 **not yet determined** — the no-breakpoint control run failed to launch before the pause. If the
 control reaches the normal kill, the stall is attributable to the modified byte, which would be
 direct evidence that Aegis's kill is an integrity response.
+
+
+## Timing constants inside the protection region (round 12 analysis)
+
+With the `.wcp` import blocked, I analysed the restored `.text` dump (`text.bin`, 91 MB) directly,
+looking for the millisecond constants a delayed kill would need.
+
+**Aegis's region is dense code:** `0x3e40000..0x3f90000` contains **1561** registered functions in
+`.pdata` (the whole image has 331,926). The kill thread's entry `+0x3e69304` and its function
+`+0x3e6b53c` live here, as expected.
+
+**Delay constants found inside that region:**
+
+| constant | where | note |
+|---|---|---|
+| `0x15f90` = 90000 ms | `0x3e41b23`, an immediate | passed to a call |
+| `0x493e0` = 300000 ms | `0x3e7f521` | inside a constant pool, not an immediate |
+
+Notably there is **no 240000 (4 min) constant anywhere in the region** — the 4-minute figure has no
+fixed timer behind it, which fits the observed behaviour of "an event, then a delay" rather than a
+scheduled alarm.
+
+**The 90 s site is the interesting one.** It sits at the end of an obfuscated string build:
+
+```
+0x3e41ae6: mov  dword ptr [rbp+0x17], 0x7001744    <- 4 encrypted bytes
+0x3e41af2: xor  byte ptr [rbp+rax+0x18], dil       <- 3-iteration decrypt loop
+0x3e41b0d: call 0x3f71344                          <- string/object ctor
+0x3e41b21: mov  r8d, 0x15f90                       <- 90000
+0x3e41b27: lea  rdx, [rbp+0x1f]                    <- the decrypted 3-char string
+0x3e41b2b: mov  ecx, 3
+0x3e41b30: call 0x3e89ef8
+```
+
+So Aegis builds a **3-character string at runtime** (which is why memory scans find no plaintext — see
+the memscan result above) and calls a function with `(3, string, 90000)`.
+
+**Reading, not proof:** a 3-character string with a 90,000 ms timeout is what an HTTP request with a
+90-second timeout looks like, and the kill lands roughly a minute after its triggering event. That
+would fit the server-side hypothesis in [MODULE-LIST.md](MODULE-LIST.md). But three characters could be
+many things, and the callee's own references did not resolve — scanning `0x3e88850..0x3e8a68b` for
+RIP-relative operands into the IAT or the known Aegis data blocks found **none**, so its calls are
+obfuscated the same way its strings are. Establishing what it actually does needs either a breakpoint
+(Aegis is anti-debug) or a proper de-obfuscation pass.
+
+Worth keeping in perspective: [KILL-STILL-OPEN.md](KILL-STILL-OPEN.md) already shows the kill fires
+with a healthy backend session for the whole run, so whatever this 90 s path is, the network is not the
+whole story.
