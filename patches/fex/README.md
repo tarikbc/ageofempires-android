@@ -1,0 +1,45 @@
+# FEX patches
+
+## `0001-hide-smc-trap-from-guest.patch`
+
+**The problem.** Under the default `SMCChecks=mtrack`, FEX catches self-modifying code by clearing the
+write permission on the guest's own writable+executable pages, so a write faults and the translated
+block can be invalidated. That works, but the guest can see it:
+
+```c
+ULONG InvalidationTracker::GetTrapProt(...) { return PAGE_EXECUTE_READ; }   // write removed
+```
+
+and FEX does not hide it — it intercepts the guest's `NtAllocateVirtualMemory` and
+`NtProtectVirtualMemory` (via the ARM64EC BT interface and `WineNtProtectVirtualMemorySyscallId`) but
+**not `NtQueryVirtualMemory`**. So a page the guest set to `PAGE_EXECUTE_READWRITE` reads back as
+`PAGE_EXECUTE_READ`. Internal instrumentation must not be visible in the guest's view of its own
+address space, and anti-tamper code checks exactly this: AoE IV's Aegis calls `NtQueryVirtualMemory`
+**35,248 times per run**.
+
+**The fix.** FEX already contains an invisible alternative. `ForceFullSMCDetection` makes the core
+validate each translated instruction against guest memory at run time (`Core.cpp`, via
+`_ValidateCode`), which needs no protection change at all — it is currently only enabled for Mono
+hacks. This patch sets it for any block that lies in a writable executable region, which the decoder
+already knows: `CheckRangeExecutable()` populates `ExecutableRangeWritable`, and on ARM64EC the
+underlying `QueryExecutableRange` returns `Writable = true` for precisely the `RWXIntervals` the trap
+would otherwise be applied to.
+
+```cpp
+if (!BlockIt->ForceFullSMCDetection && CheckRangeExecutable(BlockIt->Entry, 1) && ExecutableRangeWritable) {
+  BlockIt->ForceFullSMCDetection = true;
+}
+```
+
+Cost is bounded: only blocks in writable executable regions pay for validation, not the whole address
+space as with `SMCChecks=full`.
+
+**Status: written, not built or tested.** Building ARM64EC FEX needs llvm-mingw, which is not currently
+installed on this machine. It also has not been validated against the FEX revision GameNative ships.
+Treat it as a candidate fix, not a verified one.
+
+**Also untested:** whether `CheckRangeExecutable` is cheap enough to call once per decoded block. It
+caches its range, so repeated calls within a region should be near free, but that has not been measured.
+
+**Upstreaming.** This is a general correctness fix rather than a game-specific hack — the framing for a
+FEX issue is "the SMC write trap is observable by the guest through `NtQueryVirtualMemory`".
