@@ -53,3 +53,30 @@ the kill *suspends* the threads and leaves the process hung, so `ps` still shows
 | D3D12: "No adapter found which supports Direct3D 12" | Use the VKD3D wrapper, not DXVK alone |
 | Stale Steam ticket (GameNative bug) | Delete `<game>/.steam_coldclient_used` per launch, or enable Bionic Steam |
 | `12152`/`12157` / `XAL_TELEMETRY` errors | **Noise.** They are Xbox Live calls, downstream of the asio failure. The endpoints answer fine from Wine. |
+
+
+## Launch-path trap: a direct launch is not a real run
+
+Recorded after it produced two false conclusions in a row.
+
+`start "" "A:\RelicCardinal.exe"` from a `cmd` in the live session **starts a process that is not the
+game**. It appears in `ps` as `A:\RelicCardinal.exe`, it stays alive indefinitely, and it does nothing:
+
+| launched by | threads | CPU | writes to `warnings.log` |
+|---|---|---|---|
+| **Play** (GameNative's own path) | ~20 | active | yes — fresh `RelicCardinal started at …` line |
+| `start` from the session | **5, all state `S`** | **0%** | **no — nothing at all** |
+
+I twice treated the second kind as a successful run and as evidence the Aegis kill was gone. It was not;
+it was a process that never initialised.
+
+**Guards, both needed:**
+
+1. **Check the log's own first line.** `cp.bat` copies whatever `warnings.log` currently holds, which may
+   be a *previous* run's file. If `RelicCardinal started at …` does not match the run under test, the log
+   is not about that run. I spent a full monitoring cycle reading a 19:35 log while the run under test
+   began at 20:10 and had written nothing.
+2. **Check the thread count.** A real run has ~20 threads; 5 threads at 0% CPU means it never started.
+
+**Use Play for anything that will be judged.** Direct launches are useful only for probing the session
+(`smctest`, file operations), never for measuring game behaviour.
