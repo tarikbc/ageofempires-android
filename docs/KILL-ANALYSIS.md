@@ -97,6 +97,61 @@ The "who" and "where" are now pinned. The open question is still the "why" — w
 3. **Instrument the protection entry** (`+3e69304`): set a hardware/int3 breakpoint (dbgguard) on
    that address to catch the first instruction it executes when it wakes up at the kill.
 
+## The executable is packed: `.text` is encrypted at rest
+
+Compared the **on-disk** `RelicCardinal.exe` (copied out of the Wine prefix) against a **memory**
+dump of the loaded image. They do not match — the code is decrypted at load time:
+
+| Section | Identical to disk |
+|---|---|
+| `.text`  | **~21 %** (79 % of pages differ) |
+| `.rdata` | ~91–97 % (the differing part is the loader-filled IAT) |
+| `.pdata` | **100 %** |
+| `.rdata` import descriptors | **100 %** |
+
+Evidence it is encryption and not corruption:
+
+- 4 KB entropy: **7.15 bits/byte on disk vs 6.10 in memory** — and where the two differ, memory
+  holds **valid x86-64** while disk holds random bytes.
+- `0xCC` (`int3`) padding bytes are **byte-identical** between disk and memory, while the
+  instruction bytes around them differ — i.e. the packer encrypts instructions but leaves padding.
+- The PE headers, checksum (`0x807d142`), section table, entry point and `.pdata` are intact, so
+  the image is otherwise untouched.
+- The file carries a **10 MB high-entropy overlay** (10,049,828 bytes) after the last section.
+
+The entry point `+0x4fb0884` and the single TLS callback `+0x4fb0b6c` are **unencrypted stock CRT
+code** (the TLS callback is the normal `_initterm` dynamic-initializer loop), so the decryption is
+not driven from the normal CRT startup path.
+
+**Consequence:** the whole `+0x3e4xxxx…+0x3f9xxxx` analysis below is performed on the **decrypted**
+image, so it is valid. It also means an *unpacked* image is trivially reconstructible — the memory
+dumps are exactly that.
+
+## Import map (1298 imports resolved)
+
+Parsed the import descriptors from a `.rdata` dump so IAT slots can be named
+([`tools/impmap.py`](../tools/impmap.py)). Thread/memory APIs actually used by the game:
+
+| API | IAT slot | Call sites in `.text` |
+|---|---|---|
+| `SuspendThread`   | `0x1456de648` | **2** — `+0x49065a1`, `+0x490699d` |
+| `ResumeThread`    | `0x1456df968` | 11 — incl. `+0x49065d1`, `+0x4906761`, `+0x49069cd` |
+| `OpenThread`      | `0x1456de560` | 1 — `+0x3b1e5e7` |
+| `CreateToolhelp32Snapshot` | `0x1456de820` | 20 |
+| `VirtualFree`     | `0x1456df8f8` | 64 |
+| `VirtualProtect`  | `0x1456df908` | 28 |
+
+The two `SuspendThread` sites are thin `thiscall` wrappers in a thread-object class:
+
+```
++0x4906590  mov rax,[rcx+8] ; mov rcx,[rax+0x10] ; test rcx,rcx ; je …
++0x49065a1  call [SuspendThread] ; cmp eax,-1 ; setne al ; ret
++0x49065c0  … same shape … +0x49065d1 call [ResumeThread]
+```
+
+Neither wrapper has a direct `call` — they are reached through function pointers, which is why the
+protection's suspend-all path is not visible as a plain call graph.
+
 ## Files
 
 - `samples/si_1.txt` — kill-moment suspend snapshot (the smoking gun).
