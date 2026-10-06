@@ -156,3 +156,35 @@ each sample to `D:\aoe\susp_hist.txt` so a whole run can be read back afterwards
 trace shows the server reacting to a client that had already gone.
 
 **What is not established by this document:** anything about whether the kill fired in that run.
+
+
+## Instrument validated
+
+`suspinfo` was confirmed working against a live process before being relied on — worth doing, because
+the first attempt failed for a silly reason:
+
+```
+suspinfo.exe [exename] [outfile] [hexaddr]     defaults: RelicCardinal.exe D:\si.txt
+```
+
+**It takes the output path as `argv[2]`**, so `suspinfo.exe RelicCardinal.exe` alone writes to
+`D:\si.txt`, *not* to any path the caller might expect. The first driver batch read the wrong file and
+reported "File not found", which looked like a broken probe rather than a broken invocation.
+
+Corrected driver:
+
+```bat
+D:\suspinfo.exe RelicCardinal.exe D:\aoe\susp_now.txt
+type D:\aoe\susp_now.txt >> D:\aoe\susp_hist.txt
+echo ---- >> D:\aoe\susp_hist.txt
+```
+
+Verified against `winhandler.exe`, which reports what a healthy process should:
+
+```
+tid 00ec suspend=0 user=1000ms start=winhandler.exe+12fd name=[]
+tid 0124 suspend=0 user=150ms start=winhandler.exe+1dd0 name=[]
+```
+
+`suspend=0` per thread is the healthy reading. **A successful Aegis kill should invert this** — every
+thread but one at `suspend=1`, with the remaining one spinning.
