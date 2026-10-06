@@ -1,0 +1,26 @@
+diff --git a/FEXCore/Source/Interface/Core/Frontend.cpp b/FEXCore/Source/Interface/Core/Frontend.cpp
+index 78d5f1a..d4a8966 100644
+--- a/FEXCore/Source/Interface/Core/Frontend.cpp
++++ b/FEXCore/Source/Interface/Core/Frontend.cpp
+@@ -1625,6 +1625,21 @@ void Decoder::DecodeLoop(const uint8_t* _InstStream, uint64_t GuestSizePause) {
+       }
+ 
+       EraseBlock = false; // Block contains at least one valid instruction, so unset erase
++
++      // A block that lives in a writable and executable region can be rewritten by the guest
++      // at any time. FEX's default handling (SMCChecks=mtrack) catches that by clearing the
++      // write permission on the guest's own page through the invalidation tracker. The guest
++      // can observe that through NtQueryVirtualMemory, which reports PAGE_EXECUTE_READ for a
++      // page the guest set to PAGE_EXECUTE_READWRITE -- internal instrumentation leaking into
++      // the guest's view of its own address space, and exactly what anti-tamper code looks for.
++      //
++      // Validate such blocks against guest memory at run time instead (the existing
++      // ForceFullSMCDetection path already does this per instruction), which needs no change
++      // to the page's protection and is therefore invisible to the guest.
++      if (!BlockIt->ForceFullSMCDetection && CheckRangeExecutable(BlockIt->Entry, 1) && ExecutableRangeWritable) {
++        BlockIt->ForceFullSMCDetection = true;
++      }
++
+       ++TotalInstructions;
+       ++DecodedSize;
+       ++BlockIt->NumInstructions;

@@ -78,3 +78,22 @@ the decisive confirmation is a run with `NtQueryVirtualMemory` virtualised, whic
 2. **Cheaper interim probe:** sample the game's runtime-allocated regions from a probe process. A region
    that was RWX and later reads `PAGE_EXECUTE_READ` without the guest asking for it is a trapped page.
 3. **Differential:** log what the guest is told for its own code pages under `mtrack` vs `none`.
+
+## Update (round 28): the fix exists, in FEX's own code
+
+Reading further found that FEX already contains an **invisible** alternative to the write trap, so the
+fix needs no new mechanism:
+
+- `ForceFullSMCDetection` makes the core validate each translated instruction against guest memory at
+  run time (`Core.cpp`, via `_ValidateCode`). It needs **no protection change**, so the guest sees
+  nothing. It is currently enabled only for Mono hacks.
+- The decoder already knows whether a block is in a writable executable region:
+  `CheckRangeExecutable()` populates `ExecutableRangeWritable`, and on ARM64EC `QueryExecutableRange`
+  returns `Writable = true` for exactly the `RWXIntervals` the trap is applied to.
+
+So the patch is three lines in `Decoder::DecodeLoop`: set `BlockIt->ForceFullSMCDetection` for blocks in
+writable executable regions. Cost is bounded to those blocks rather than the whole address space, which
+is what makes `SMCChecks=full` unusable.
+
+See [`patches/fex/0001-hide-smc-trap-from-guest.patch`](../patches/fex/0001-hide-smc-trap-from-guest.patch).
+**Written, not built or tested** — ARM64EC FEX needs llvm-mingw, which is not installed here.
