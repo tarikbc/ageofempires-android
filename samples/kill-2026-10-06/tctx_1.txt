@@ -1,0 +1,21 @@
+pid=0x134 proc=0000000000000040
+modules=86
+threads=61
+
+== tid 0138 user=64710ms name=[Game/Main Thread]
+  rip=6fffa663f4 (ntdll.dll+c63f4) rsp=41f0a0 rax=0 rcx=41bf20 rdx=0 rbx=6fffac0ce0
+  r8=0 r9=41beb0 r10=41bfc0 r11=41bf18 r12=41f198 r13=41f144 r14=756bace8 r15=4 rsi=6fffaf1000 rdi=6fffaf8190 rbp=41f250 efl=282
+  code@rip-16: e9 03 1e aa 70 04 00 d0 10 ee 47 f9 00 02 3f d6 c0 03 5f d6 c5 cf 01 00 08 20 80 d2 e9 03 1e aa 70 04 00 d0 10 ee 47 f9 00 02 3f d6 c0 03 5f d6 a9 cf 01 00 28 20 80 d2 e9 03 1e aa 70 04 00 d0
+  rip=6fffa663f4 (ntdll.dll+c63f4) rsp=41f0a0 rax=0 rcx=41bf20 rdx=0 rbx=6fffac0ce0
+  rip=6fffa663f4 (ntdll.dll+c63f4) rsp=41f0a0 rax=0 rcx=41bf20 rdx=0 rbx=6fffac0ce0
+  rip=6fffa663f4 (ntdll.dll+c63f4) rsp=41f0a0 rax=0 rcx=41bf20 rdx=0 rbx=6fffac0ce0
+  rip=6fffa663f4 (ntdll.dll+c63f4) rsp=41f0a0 rax=0 rcx=41bf20 rdx=0 rbx=6fffac0ce0
+  rip=6fffa663f4 (ntdll.dll+c63f4) rsp=41f0a0 rax=0 rcx=41bf20 rdx=0 rbx=6fffac0ce0
+
+== tid 0154 user=40ms name=[]
+  rip=6fffa66448 (ntdll.dll+c6448) rsp=2c6fe60 rax=7e9c00ea40 rcx=7ea00533c0 rdx=1 rbx=c53e140
+
+== tid 0170 user=0ms name=[]
+  rip=6fffa66480 (ntdll.dll+c6480) rsp=488fe60 rax=6fff720000 rcx=493e0 rdx=143e8051c rbx=493e0
+
+== tid 0174 user=46620ms name=[]

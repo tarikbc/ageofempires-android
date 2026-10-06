@@ -1,0 +1,147 @@
+
+== tid 0174 user=205600ms teb=000000007FF10000 st=0 start=0000000143E69304 RelicCardinal.exe+3e69304
+  stack base=0000000004C90000 limit=0000000004892000
+  deepest non-zero at 4c8ce10 (depth 12784 bytes)
+  [4c8ce10] 6fffa6e5fc ntdll.dll+ce5fc
+  [4c8d198] 6ff78ddcce ucrtbase.dll+1dcce
+  [4c8d1d8] 6ff78de978 ucrtbase.dll+1e978
+  [4c8d258] 6ff78df949 ucrtbase.dll+1f949
+  [4c8d270] 6ff78c0000 ucrtbase.dll+0
+  [4c8d2c8] 6ff78e018a ucrtbase.dll+2018a
+  [4c8d318] 6ff79f70b0 ucrtbase.dll+1370b0
+  [4c8d4a8] 143f2b774 RelicCardinal.exe+3f2b774
+  [4c8d4c8] 143f2b774 RelicCardinal.exe+3f2b774
+  [4c8d4e8] 6ff80c485c xtajit64.dll+2485c
+  [4c8d4f0] 6fffa66560 ntdll.dll+c6560
+  [4c8d528] 6ff82a6a68 xtajit64.dll+206a68
+  [4c8d530] 6ff80c1870 xtajit64.dll+21870
+  [4c8d538] 6ff82a6a68 xtajit64.dll+206a68
+  [4c8d540] 6fffa6e5fc ntdll.dll+ce5fc
+  [4c8d558] 6ff848b5a8 xtajit64.dll+3eb5a8
+  [4c8d568] 6ff82a6a68 xtajit64.dll+206a68
+  [4c8d570] 6ff80c1684 xtajit64.dll+21684
+  [4c8d5b8] 6ff8245720 xtajit64.dll+1a5720
+  [4c8d5c8] 143f2c000 RelicCardinal.exe+3f2c000
+  [4c8d5d0] 6ff848b5a8 xtajit64.dll+3eb5a8
+  [4c8d5d8] 143f2b000 RelicCardinal.exe+3f2b000
+  [4c8d5e8] 143f2c000 RelicCardinal.exe+3f2c000
+  [4c8d600] 6fffaf6000 ntdll.dll+156000
+  [4c8d608] 6ff8245608 xtajit64.dll+1a5608
+  [4c8d610] 6ff848b5d8 xtajit64.dll+3eb5d8
+  [4c8d618] 6ff82a6a01 xtajit64.dll+206a01
+  [4c8d620] 143f2b000 RelicCardinal.exe+3f2b000
+  [4c8d630] 143f2c000 RelicCardinal.exe+3f2c000
+  [4c8d658] 143e56ba1 RelicCardinal.exe+3e56ba1
+  [4c8d678] 6ff8269d1c xtajit64.dll+1c9d1c
+  [4c8d698] 6ff78ddcce ucrtbase.dll+1dcce
+  [4c8d6d8] 6ff78de978 ucrtbase.dll+1e978
+  [4c8d708] 143e56ba1 RelicCardinal.exe+3e56ba1
+  [4c8d710] 143e46f01 RelicCardinal.exe+3e46f01
+  [4c8d7a0] 6ff848b580 xtajit64.dll+3eb580
+  [4c8d7c0] 6fffaf1000 ntdll.dll+151000
+  [4c8d7d8] 6ff8269d90 xtajit64.dll+1c9d90
+  [4c8d7e0] 6ff81b42cc xtajit64.dll+1142cc
+  [4c8d7f0] 6ff81b4bf4 xtajit64.dll+114bf4
+  [4c8d800] 6ff848b580 xtajit64.dll+3eb580
+  [4c8d808] 6fffa83301 ntdll.dll+e3301
+  [4c8d818] 6ff848b560 xtajit64.dll+3eb560
+  [4c8d820] 6ff80a4c90 xtajit64.dll+4c90
+  [4c8d860] 6ff848b580 xtajit64.dll+3eb580
+  [4c8d880] 6ff80a4bb4 xtajit64.dll+4bb4
+  [4c8d8b0] 6fffa68a18 ntdll.dll+c8a18
+  [4c8d8b8] 6fffa689e0 ntdll.dll+c89e0
+  [4c8d8c8] 6fffaf7680 ntdll.dll+157680
+  [4c8d8d0] 6fffaf7670 ntdll.dll+157670
+  [4c8d8e8] 6fffaf1000 ntdll.dll+151000
+  [4c8d8f0] 6fffa68a80 ntdll.dll+c8a80
+  [4c8d9b0] 6fffaf1000 ntdll.dll+151000
+  [4c8d9e0] 6fffaf7680 ntdll.dll+157680
+  [4c8d9e8] 6fffaf7670 ntdll.dll+157670
+  [4c8d9f8] 6fffa6e594 ntdll.dll+ce594
+  [4c8da20] 6ff8269d90 xtajit64.dll+1c9d90
+  [4c8da30] 6fffa66e90 ntdll.dll+c6e90
+  [4c8da40] 6fffa8c067 ntdll.dll+ec067
+  [4c8da60] 6fffaf6e30 ntdll.dll+156e30
+  [4c8da70] 6fffa6e404 ntdll.dll+ce404
+  [4c8da80] 6fffa66e90 ntdll.dll+c6e90
+  [4c8de10] 143e46f01 RelicCardinal.exe+3e46f01
+  [4c8de48] 6fffa83398 ntdll.dll+e3398
+  [4c8de70] 143e46f01 RelicCardinal.exe+3e46f01
+  [4c8dea8] 6fffa8330c ntdll.dll+e330c
+  [4c8df58] 143e563ab RelicCardinal.exe+3e563ab
+  [4c8dfe8] 143e563ab RelicCardinal.exe+3e563ab
+  [4c8e0e0] 6fffa3485c ntdll.dll+9485c
+  [4c8e0e8] 6fffa3484c ntdll.dll+9484c
+  [4c8e188] 143f90aaf RelicCardinal.exe+3f90aaf
+  [4c8e1b8] 143e7232c RelicCardinal.exe+3e7232c
+  [4c8e220] 6fffaf1000 ntdll.dll+151000
+  [4c8e240] 6ff80a4c04 xtajit64.dll+4c04
+  [4c8e248] 143e7252c RelicCardinal.exe+3e7252c
+  [4c8e270] 6fffa68a18 ntdll.dll+c8a18
+  [4c8e278] 6fffa689e0 ntdll.dll+c89e0
+  [4c8e2b8] 6fffa68aa4 ntdll.dll+c8aa4
+  [4c8e348] 6ff80a75b8 xtajit64.dll+75b8
+  [4c8e380] 6fffa91490 ntdll.dll+f1490
+  [4c8e3b0] 6fffaf0cd0 ntdll.dll+150cd0
+  [4c8e3b8] 6fffaf0cc0 ntdll.dll+150cc0
+  [4c8e3c8] 6fffa66ca8 ntdll.dll+c6ca8
+  [4c8e3d8] 6fffa66a28 ntdll.dll+c6a28
+  [4c8e608] 6fffa66e90 ntdll.dll+c6e90
+  [4c8e610] 6fffa8c067 ntdll.dll+ec067
+  [4c8e628] 6fffaf6e30 ntdll.dll+156e30
+  [4c8e630] 6fffa6e404 ntdll.dll+ce404
+  [4c8e638] 6fffa66e90 ntdll.dll+c6e90
+  [4c8e678] 6fffaf7680 ntdll.dll+157680
+  [4c8e680] 6fffaf7670 ntdll.dll+157670
+  [4c8e6a8] 6fffaf1000 ntdll.dll+151000
+  [4c8e6c8] 6ff8269d90 xtajit64.dll+1c9d90
+  [4c8e6d8] 6fffa6e594 ntdll.dll+ce594
+  [4c8e990] 6fffa6e594 ntdll.dll+ce594
+  [4c8ea28] 6fffa6e594 ntdll.dll+ce594
+  [4c8f038] 6fffa678cc ntdll.dll+c78cc
+  [4c8f258] 6ff848b5a8 xtajit64.dll+3eb5a8
+  [4c8f270] 6ff8458130 xtajit64.dll+3b8130
+  [4c8f278] 6fffaf1000 ntdll.dll+151000
+  [4c8f288] 6ff8269d90 xtajit64.dll+1c9d90
+  [4c8f290] 6ff81b42cc xtajit64.dll+1142cc
+  [4c8f298] 6fffaf1000 ntdll.dll+151000
+  [4c8f2a0] 6ff82456e4 xtajit64.dll+1a56e4
+  [4c8f2a8] 6ff82456e4 xtajit64.dll+1a56e4
+  [4c8f2c0] 6ff848b5a8 xtajit64.dll+3eb5a8
+  [4c8f2e8] 6fffaf1000 ntdll.dll+151000
+  [4c8f2f8] 6ff82461ec xtajit64.dll+1a61ec
+  [4c8f330] 6ff80a4e94 xtajit64.dll+4e94
+  [4c8f340] 6fffa66f7c ntdll.dll+c6f7c
+  [4c8f388] 143f77392 RelicCardinal.exe+3f77392
+  [4c8f3a0] 6fffa833e0 ntdll.dll+e33e0
+  [4c8f458] 6fffa8c067 ntdll.dll+ec067
+  [4c8f4a8] 143e6db0b RelicCardinal.exe+3e6db0b
+  [4c8f9f8] 143e724cc RelicCardinal.exe+3e724cc
+  [4c8fa88] 143e7232c RelicCardinal.exe+3e7232c
+  [4c8faa8] 143e7254c RelicCardinal.exe+3e7254c
+  [4c8fb18] 143e7252c RelicCardinal.exe+3e7252c
+  [4c8fb38] 143e6cd0b RelicCardinal.exe+3e6cd0b
+  [4c8fb60] 14754a800 RelicCardinal.exe+754a800
+  raw@deepest:
+   4c8ce10: 0000006fffa6e5fc 0000000000000000 0000000000000000 0000000000000000
+   4c8ce30: 000000000000015c 000000000000024c 0000000000000000 0000000000000000
+   4c8ce50: 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+   4c8ce70: 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+   4c8ce90: 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+   4c8ceb0: 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+   4c8ced0: 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+   4c8cef0: 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+   4c8cf10: 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+   4c8cf30: 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+   4c8cf50: 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+   4c8cf70: 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+   4c8cf90: 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+   4c8cfb0: 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+   4c8cfd0: 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+   4c8cff0: 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+== tid 0138 user=64710ms teb=000000007FFC0000 st=0 start=0000000144FB0884 RelicCardinal.exe+4fb0884
+  stack base=0000000000420000 limit=0000000000022000
+  deepest non-zero at 420000 (depth 0 bytes)
+  raw@deepest:
+END
