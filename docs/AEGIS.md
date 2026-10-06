@@ -118,6 +118,22 @@ after the socket closes — is consistent with Aegis's runtime response to a che
 environment, Aegis acts. The list is not plaintext in the image (the metadata overlay is uniformly 7.99–8.00
 bits/byte), so it must be recovered at runtime from the decrypted metadata.
 
+## Runtime memory scan: Aegis is fully stealthy
+
+Wrote [`tools/memscan.c`](../tools/memscan.c) (scans a target process's committed memory for byte
+patterns and dumps context) and ran it against the live game.
+
+- **Zero hits for `Aegis`, `VirtTool`, `Virtualization Seed`, `Stealth-Startup`** anywhere in the
+  process's readable memory.
+- `Permit` produced only false positives (Wwise audio API names, Xbox privacy enums, Steam client
+  interface strings such as `ISteamParentalSettings_..._BIsAppInBlockList`).
+- `BlockList` matched only game/Steam strings — the Xbox privacy enum, the mod service's
+  `<BlockList>` XML, and the Steam client's interface table — never a protection list.
+
+So Aegis's block/permit lists are **not** plaintext at runtime: they are stored opaquely (hashes or
+encrypted), consistent with the log's "Stealth-Startup" claim. Recovering them by string scanning
+is not viable; the list must be located through Aegis's own code or its decrypted metadata.
+
 ## Files
 
 - `samples/aegis/Aegis_RelicCardinal.log` — the log verbatim.
