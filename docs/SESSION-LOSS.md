@@ -58,9 +58,26 @@ passed to a socket call is `WSAENOTSOCK`. That is a mechanism, not a coincidence
 error-code *transition* above: the first failure is one corrupted call, and from then on the socket
 table state is wrong for that thread.
 
-**Important:** that patch was written for `proton-11.0-1-arm64ec`. The device now runs
-`proton-11.0-99-arm64ec-1`, so its offsets do not apply — the patch is *not* currently in effect, and
-the README's device-state notes list ntdll as original.
+**Correction, checked by hash — that patch IS applied.** The deployed ntdll is not pristine:
+
+| file | sha256 | meaning |
+|---|---|---|
+| `lib/wine/aarch64-windows/ntdll.dll` | `606d0a2fb197d37b…` | equals `apply.py`'s `PRISTINE` (unpatched) |
+| `C:\windows\system32\ntdll.dll` (the one Wine loads) | `5325f69ecbce31f3…` | equals `apply.py`'s `EXPECTED[False]` — **patched** |
+
+Both are 7,077,888 bytes and the stub pattern `4c89542408` sits at `0xEC050` in the pristine copy
+and `0xEC057` in the deployed one — i.e. the 5-byte `jmp` to the code cave is present. So
+`proton-11.0-99-arm64ec-1`'s ntdll is byte-identical to `proton-11.0-1-arm64ec`'s, and **patch 1 is
+live**. (The deployed build is `EXPECTED[False]`, so the `--waitq` fix is *not* applied.)
+
+That weakens the mechanism above: if the clobbering stub were the whole story, the fix would have
+removed it. So either the fix is incomplete — other ARM64EC entry paths may clobber the same
+registers — or the invalid handle has a different cause, such as a race in Wine's socket teardown or a
+defect in Wine's schannel (the game drives TLS through schannel directly, and WinHTTP uses it too).
+
+**The error-code transition is still the strongest evidence:** `12152` before the failure, `12157`
+(`SECURE_FAILURE`) for *everything* afterwards. That is a TLS stack that stops working, not a server
+saying no. Wine's schannel is the prime suspect until something else explains that transition.
 
 ## Why this explains the Mac/Thor split
 
@@ -69,11 +86,10 @@ Same game files, same servers, no register clobbering, no socket corruption, no 
 
 ## Next steps
 
-1. Verify the defect still exists in the current build: locate `invoke_arm64ec_syscall` in
-   `proton-11.0-99-arm64ec-1`'s `aarch64-windows/ntdll.dll` and check whether the x64 stub still
-   clobbers `rdx/r8/r9/r10/rflags`.
-2. If it does, port `invoke_arm64ec_syscall.s` to that build (the apply script already refuses files
-   whose hash it does not know, so it needs new expected hashes and offsets).
+1. Reproduce the TLS breakdown outside the game: hammer HTTPS and then a long-lived WebSocket to
+   `dr-activerelease1-api.worldsedgelink.com` from a probe, and see whether TLS stops working after a
+   connection is torn down. If a simple probe reproduces `12157`, the culprit is Wine, not the game.
+2. Establish which schannel/secur32 DLLs are in use and whether an override changes it.
 3. Re-run the game and watch for `errno=10038` / status `1006` disappearing. **The success criterion is
    the log still growing past ~5 minutes**, not the process merely existing.
 
