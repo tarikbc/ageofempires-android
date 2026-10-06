@@ -1,66 +1,80 @@
-# Aegis uses self-modifying code, and FEX's SMC handling is the suspect
+# FEX leaks its self-modifying-code trap to the guest — and Aegis is watching for it
 
-This ties together three things that were already known separately, and it is the first explanation
-that accounts for the *whole* pattern.
+Lead hypothesis, with the mechanism located in FEX source. It explains every observation that nothing
+else did.
 
-## The three facts
+## The defect
 
-**1. `SMCChecks` is a FEX setting, and it changes the failure.** From the repo's own notes, the per-game
-FEX config (`Z:\home\xuser\.fex-emu\AppConfig\RelicCardinal.exe.json`) takes raw values such as
-`"SMCChecks":"2"`. SMC = **self-modifying code**. The observed behaviour:
+FEX emulates x86-64 on ARM64EC. To catch self-modifying code under the default `SMCChecks=mtrack`, it
+takes pages the guest marked **writable + executable** and **removes the write permission**, so a write
+faults and FEX can invalidate the translated block.
 
-| `SMCChecks` | Result |
+`Source/Windows/Common/InvalidationTracker.cpp`:
+
+```cpp
+ULONG InvalidationTracker::GetTrapProt(uint64_t Address) const {
+  ...
+  return PAGE_EXECUTE_READ;              // <-- WRITE removed from a guest RWX page
+}
+ULONG InvalidationTracker::GetUntrapProt(uint64_t Address) const {
+  ...
+  return PAGE_EXECUTE_READWRITE;         // restored when the write fault is handled
+}
+
+bool InvalidationTracker::ProtectRWXIntervalsInternal(uint64_t Address, uint64_t Size, bool ForWriteLocked) {
+  ...
+  NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize,
+                         ForWriteLocked ? GetUntrapProt(Address) : GetTrapProt(Address), &TmpProt);
+```
+
+So a page the guest set to `PAGE_EXECUTE_READWRITE` **really is** `PAGE_EXECUTE_READ` for as long as the
+trap is armed.
+
+**And FEX does not hide this.** It intercepts the guest's `NtAllocateVirtualMemory` and
+`NtProtectVirtualMemory` (see `WineNtAllocateVirtualMemorySyscallId` /
+`WineNtProtectVirtualMemorySyscallId` in `Source/Windows/ARM64EC/Module.cpp`), but **not
+`NtQueryVirtualMemory`**. A guest query therefore goes straight through and reports FEX's trap
+protection as if it were the guest's own.
+
+That is a correctness bug in FEX independent of any game: **internal instrumentation must not be
+visible in the guest's view of its own address space.**
+
+## Why this is the answer
+
+| Observation | Explained |
 |---|---|
-| `none` | exits after ~2 minutes |
-| `full` | hangs at launch from Play |
-| `mtrack` (default) | the freeze described throughout this repo |
+| Aegis calls `NtQueryVirtualMemory` **35,248 times per run** (measured, round 17) | It is checking its own pages' protections |
+| The kill is indifferent to CPUID, TLS, module names, debugger signals, session health | None of those touch page protections |
+| `SMCChecks=mtrack` (default) → freeze | Trap armed → guest sees `PAGE_EXECUTE_READ` where it set RWX → tamper detected |
+| `SMCChecks=none` → exits at ~2 min | Trap disabled, so nothing is visible — **but FEX then never invalidates self-modified code**, so the game runs stale translations and dies differently |
+| `SMCChecks=full` → hangs at launch | Per-instruction CRC validation of every block — correct, and far too slow |
+| The Mac passes | Rosetta's SMC handling does not re-protect guest pages this way |
+| The image is byte-stable before the kill | This is a **protection** change, not a content change — byte-comparing probes could never see it |
 
-Every value changes the failure. That is not what an *environment-detection* check would do — it is what
-a **code-translation** problem looks like.
+## The fix
 
-**2. Aegis demonstrably self-modifies.** Round 22 found a `call` whose target holds high-entropy data
-rather than code, with the preceding function ending cleanly at `pop rsi; ret`:
+Intercept the guest's `NtQueryVirtualMemory` (`MemoryBasicInformation`) alongside the existing hooks,
+and when the queried address falls inside an `RWXIntervals` entry whose current protection is the trap
+protection, report `GetUntrapProt(Address)` instead. The guest then sees the protection it set, FEX
+keeps its trap, and invalidation still works.
 
-```
-RVA 0x3ddea50: ... 5e c3 c2 00 00 cc          <- end of the previous function
-RVA 0x3ddea6c: d5 d8 be e7 9e d9 5f 9d ...    <- data where code is expected
-```
+That is a small, upstreamable change, and the right end state: FEX should not leak its instrumentation.
 
-That is only possible if the bytes were written at runtime.
+## Evidence status
 
-**3. Aegis encrypts its own metadata.** The descriptor table at RVA `0x7af8204` pairs function RVAs with
-pointers into `.data` holding high-entropy blobs (`326c20a594dae3fd263b6da5cf5605fa`), so even function
-names are unreadable statically.
+**Confirmed in source:** the trap exists, it removes write permission, it is on the ARM64EC path
+(`Source/Windows/ARM64EC/Module.cpp` constructs the tracker, handles `HandleRWXAccessViolation`, and
+calls `HandleMemoryProtectionNotification` from its memory hooks), and `InvalidationTracker.cpp` is in
+`Source/Windows/Common/CMakeLists.txt`.
 
-## The hypothesis
+**Not yet directly observed:** Aegis reading a trapped protection. The inference is strong — the code
+path is present, the `SMCChecks` sensitivity matches exactly, and Aegis's query volume matches — but
+the decisive confirmation is a run with `NtQueryVirtualMemory` virtualised, which needs a FEX build.
 
-> Aegis writes code at runtime and executes it. Under ARM64EC + FEX that self-modified code is
-> **mistranslated or incompletely invalidated**, so Aegis's own integrity computation produces a wrong
-> result and it responds by killing the game.
+## How to confirm
 
-This explains, in one stroke:
-
-- **why nothing environmental fixes it** — the CPUID patch, TLS revocation, module names, memory
-  stability, debugger signals, session health. None of them touch translation correctness.
-- **why the Mac passes** — Rosetta is a different translator with different SMC semantics.
-- **why `SMCChecks` moves the failure around** rather than removing it.
-- **why the image looks byte-stable before the kill** (round: "Memory integrity: Aegis image
-  byte-identical at t=128 s through the kill"). Aegis's *own* writes happen early, at init; the game's
-  memory is then quiet while the mistranslated check runs to its conclusion.
-
-## How to test it
-
-1. **Read FEX's SMC implementation for ARM64EC.** The repo already builds FEX from source
-   (llvm-mingw + CMake, ~12 s), so a patch is cheap. Look for whether ARM64EC-mode block invalidation
-   covers *all* the ways code can be rewritten — especially writes that land in a region FEX has already
-   translated, and writes that cross a block boundary.
-2. **Runtime confirmation.** Instrument the hash routine (`0x3e42d34`, single call site `0x3e439a7`) to
-   record `(rcx, rdx)` — the pointer and length — and see whether the hashed range covers a
-   self-modified region.
-3. **Differential.** Run the same build with `SMCChecks=mtrack` and `none`, and compare what the hash
-   routine is asked to digest.
-
-## Caveat
-
-This is a hypothesis with strong circumstantial support, not a proven cause. Its main virtue is that it
-is the only one so far that predicts the observed `SMCChecks` sensitivity.
+1. **Build FEX with the query hook** and run. This is the real test. The repo already builds FEX from
+   source (llvm-mingw + CMake, ~12 s), so a patch is cheap — llvm-mingw just has to be reinstalled.
+2. **Cheaper interim probe:** sample the game's runtime-allocated regions from a probe process. A region
+   that was RWX and later reads `PAGE_EXECUTE_READ` without the guest asking for it is a trapped page.
+3. **Differential:** log what the guest is told for its own code pages under `mtrack` vs `none`.

@@ -49,12 +49,16 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
    pass a fixed 192-byte high-entropy blob at RVA `0x56fbf40`. See
    [KILL-ANALYSIS.md](docs/KILL-ANALYSIS.md).
    *Test:* resolve the parameter flow (Ghidra) to recover the hashed range and the expected hash.
-2. **FEX mistranslates Aegis's self-modifying code** — so Aegis's own integrity computation returns a
-   wrong result and it kills in response. Aegis demonstrably self-modifies, and FEX's `SMCChecks` setting
-   (`none`/`full`/`mtrack`) *changes the failure mode*, which is a code-translation signature rather than
-   an environment-detection one. Explains why nothing environmental helps and why the Mac passes.
-   See [SMC-HYPOTHESIS.md](docs/SMC-HYPOTHESIS.md). *Test:* read FEX's ARM64EC block-invalidation path;
-   instrument the hash routine to see whether the digests cover self-modified memory.
+2. **FEX leaks its self-modifying-code trap to the guest, and Aegis checks for exactly that.**
+   Under `SMCChecks=mtrack`, FEX re-protects the guest's RWX pages to `PAGE_EXECUTE_READ` to trap writes
+   (`InvalidationTracker::GetTrapProt`), and it does **not** intercept the guest's
+   `NtQueryVirtualMemory` — so the guest is told its own code page is read-only when it set it
+   read-write. Aegis calls `NtQueryVirtualMemory` **35,248 times per run**. This explains the kill's
+   indifference to everything environmental, the exact `SMCChecks` sensitivity (`none` → no trap but no
+   invalidation → exits at 2 min; `full` → correct but too slow to launch), why the Mac passes, and why
+   byte-comparing probes saw a stable image (it is a *protection* change). **Fix:** intercept
+   `NtQueryVirtualMemory` and report the untrapped protection. See
+   [SMC-HYPOTHESIS.md](docs/SMC-HYPOTHESIS.md).
 3. **A Wine API returns something Windows would not.** One concrete instance:
    `NtSetInformationThread(ThreadHideFromDebugger)` returns `0xC0000002` where Windows returns success —
    a plausible dependency of Aegis's "Stealth-Startup". *Test:* fix it in Wine's unix-side `ntdll.so`
