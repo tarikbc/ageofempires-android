@@ -1,0 +1,56 @@
+
+Please wait, analyzing Build...
+
+Version Check: Passed.
+
+Release build detected
+
+Custom PDB RelicCardinal.pdb successfully loaded
+
+Patcher-Loader: Disabled
+Creating file RelicCardinal.exe
+Virtualization Seed: 1187590981
+Pre-Main Stealth Startup: Enabled
+Processing static functions -- this may take some time (minutes)...
+
+** Installed Stealth-Startup
+Please wait, processing instruction filter (233 out of 172731 fake instructions inserted)
+RTTI Processing: RelicCardinal.exe 
+RTTI Patching 21731 objects
+
+Attention, BlockList.json automatically included from the VirtTool directory
+
+Processing block file [642 items]: E:/P4Share/engine/source/foreign/Aegis/../../../tools/Foreign/Aegis/Retail/internal/BlockList.json
+ [Added 464 unique items]
+
+Processing block file [642 items]: E:\P4Share\engine\tools\Foreign\Aegis\Retail\internal\BlockList.json
+ [Added 0 unique items]
+
+Studio report list contains 6 items
+
+Studio block list contains 6 items
+
+Studio notify list contains 25 items
+
+Aegis block list contains 386 items
+
+Aegis report list contains 41 items
+
+DirectX Permit list contains 3 items
+
+Only-If permit list contains 17 items
+
+Permit (signed)  list contains 7 items
+
+Always permit list contains 0 items
+
+Added block list.
+
+Appending virtual map @ offset 0x8076800 for 10049732 bytes
+Patcher-Loader: Disabled
+Signed successfully. [Sig: 071aee0d1afc77e8, Seed: 1187590981]
+Instruction Count: 172498 (+233)
+DFH Bytes: 55356383
+Metadata Size: 10049804
+Virtualization Successful
+Creating Bundle: UNPROTECTED_RelicCardinal_Aegis_a35a954c9a3b98a9.abf
