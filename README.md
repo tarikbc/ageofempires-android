@@ -48,6 +48,7 @@ Sessions: 5–6 Oct 2026.
 | [`docs/GAMENATIVE-UI.md`](docs/GAMENATIVE-UI.md) | **Driving the GameNative UI**: the container-config path, the emulator/FEXCore selector, and the `uiautomator dump --windows` gotcha. |
 | [`docs/FEX-PATCH-LIVE.md`](docs/FEX-PATCH-LIVE.md) | **The FEX patch is live** (`eax=0x0 vendor=''` in the game's session) — and the game still dies in the same window. Includes the `C06T13R` error-code finding. |
 | [`docs/BACKEND-SESSION.md`](docs/BACKEND-SESSION.md) | **The game's backend session is broken**: DNS/TCP/TLS all work in-session, but the game's own requests fail with `12152`/`12157`. New lead for the ~1 min-after-socket-close kill. |
+| [`docs/TLS-REVOCATION-FIX.md`](docs/TLS-REVOCATION-FIX.md) | **Wine TLS to the AoE backend costs 5–19 s** (native: 0.94 s); `CertificateRevocation=0` cuts it 6.5x, removes the session-loss chain entirely — **and Aegis still kills**, disproving that theory. |
 | [`docs/SESSION-LOSS.md`](docs/SESSION-LOSS.md) | **The kill is downstream of losing the backend session**: the WebSocket dies with `errno=10038` (`WSAENOTSOCK`) then status `1006`, and Aegis kills ~73 s later. Also corrects a false-positive reproduction: the backend refuses unauthenticated upgrades with `200`, not `101`. |
 | [`docs/BACKEND-SESSION.md`](docs/BACKEND-SESSION.md) | **Measured the network end to end**: DNS/TCP/TLS fine, Wine's WebSocket holds 165 s, Wine's winhttp returns 200 from the real backend — only the game's own requests fail. |
 
