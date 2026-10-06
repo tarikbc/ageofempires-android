@@ -24,6 +24,7 @@ Sessions: 5–6 Oct 2026.
 | [`tools/gn_nav.py`](tools/gn_nav.py) | Drives the GameNative UI over adb (launch a game without touching the screen). |
 | [`tools/run_experiment.py`](tools/run_experiment.py) + [`tools/thor/`](tools/thor) | Watches the game for the network trigger and samples thread state in the kill window. |
 | [`docs/KILL-ANALYSIS.md`](docs/KILL-ANALYSIS.md) | The captured kill: which thread suspends the others, and where the protection code lives. |
+| [`docs/AEGIS.md`](docs/AEGIS.md) | **The protection identified: Aegis**, Relic's in-house virtualization/anti-tamper, with its build log. |
 
 ## Setup that works best
 
