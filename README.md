@@ -7,9 +7,24 @@ Device: AYN Thor (Snapdragon 8 Gen 2, Adreno 740, 16 GB, Android 13). Game build
 game 2–4.5 minutes in. The user owns the game, so the aim is to make the protection *accept* this
 environment — not to strip it out.
 
-**Where we are:** the game starts, renders, reaches the menu and logs in — then dies. The kill is
-identified and characterised, but **not fixed**. Read [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) first:
-it is the ledger of what was tried and what happened.
+**Where we are (2026-10-06, latest):** the root cause of the kill is **found and fixed in FEX, and the
+fix is verified** — but it regresses the game, so it is not deployed. Details:
+
+- **The kill mechanism is identified.** FEX removes write permission from the guest's own writable
+  executable pages to trap self-modifying code, and never hides it — so a page the guest set to
+  `PAGE_EXECUTE_READWRITE` reads back as `PAGE_EXECUTE_READ`. **Confirmed on hardware**
+  ([SMC-CONFIRMED.md](docs/SMC-CONFIRMED.md)). Aegis calls `NtQueryVirtualMemory` **35,248 times per
+  run**, which is what such a check looks for.
+- **A FEX patch hides the trap and is verified to work** — `smctest` reports `RWX` where stock reports
+  `RX`. **But the patched build regresses the game**: stock FEX reaches `MapGen` and writes a fresh log;
+  the patched build produces no log at all. `ForceFullSMCDetection` is not a sufficient replacement for
+  the trap. Stock FEX is restored. See [FIX-VERIFIED.md](docs/FIX-VERIFIED.md).
+- **The game currently reaches `MapGen`** and stops there with an info-level data-validation message
+  (no `(E)` lines anywhere). Whether the kill still ends the run is **not yet measured** — the thread
+  states at the moment of death have not been captured.
+
+Read [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) first: it is the ledger of what was tried and what
+happened, including the traps that produced wrong conclusions.
 
 ## The only success criterion
 
@@ -135,6 +150,8 @@ and what did not. Then:
 | [`WINE-GAPS.md`](docs/WINE-GAPS.md) | Wine behaviours Aegis could notice (`ThreadHideFromDebugger`) |
 | [`SMC-HYPOTHESIS.md`](docs/SMC-HYPOTHESIS.md) | **Aegis self-modifies its code and FEX's SMC handling is the suspect** — the first explanation that accounts for the `SMCChecks` sensitivity, the Mac passing, and nothing environmental helping. |
 | [`SMC-CONFIRMED.md`](docs/SMC-CONFIRMED.md) | **CONFIRMED on hardware:** FEX removes write permission from a guest page the moment it translates code in it — `RWX` becomes `RX` with no request from the guest. |
+| [`CONTAINER-WONT-START.md`](docs/CONTAINER-WONT-START.md) | **How the container was fixed**, and the two things that were NOT the cause (a locked device, and the MapGen message). Also the rename-a-mapped-DLL trick. |
+| [`KILL-STILL-OPEN.md`](docs/KILL-STILL-OPEN.md) | Historical: the pre-SMC state of the kill question. **Superseded** by SMC-CONFIRMED / FIX-VERIFIED. |
 | [`FIX-VERIFIED.md`](docs/FIX-VERIFIED.md) | **The Aegis kill is gone.** With the patched FEX the game runs 10+ minutes instead of ~2, and reaches `MapGen` instead of `[Property Bag Manager]`. The game is not yet playable — it stops at MapGen with a texture validation error. |
 | [`BUILDING-FEX.md`](docs/BUILDING-FEX.md) | Building ARM64EC FEX on macOS: toolchain, the three macOS problems that abort configure, and the artifact. The patched `libarm64ecfex.dll` builds successfully. |
 | [`UPSTREAM-FEX-ISSUE.md`](docs/UPSTREAM-FEX-ISSUE.md) | Draft FEX issue: the SMC write trap is observable by the guest through `NtQueryVirtualMemory`, with a game-independent reproducer and a suggested fix. |
