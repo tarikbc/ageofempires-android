@@ -128,6 +128,18 @@ What the code does:
   (`+0x676a0`). So the actual suspend/free calls are elsewhere (dynamic resolution, or outside the
   dumped window).
 
+### Structure refinements (full `.text` dumped)
+
+- `.text` is 91 MB (RVA `0x1000..0x056dd000`); the xxHash64 routines have **no direct `call
+  rel32` callers anywhere in `.text`** → they are reached through a function pointer/vtable, i.e.
+  the protection is a C++ object graph, not a flat call tree.
+- `+0x754a800` is in `.data` (`0x7542000..`), so that stack entry is a **data pointer**, not code.
+- The thread entry `+0x3e69309` is a **one-shot setup wrapper**: it seeds a random value (rdtsc ×2,
+  mixed with `not/shl/xor`), then `call [rdi+8]` — the **virtual function that is the real
+  protection loop** — and finally frees the object (`[rdi]`, `[rdi+0x1b0]`, `[rdi+0x1b8]`). The
+  actual check loop lives behind that pointer (`rdi` = the thread's argument object, with fields at
+  `+0x10`, `+0x1a8`, `+0x1ac`, `+0x1b0`, `+0x1b8`).
+
 ### Working hypothesis (the "why it fails")
 
 The protection periodically computes **xxHash64 (and/or SHA) over a memory region** and compares it
