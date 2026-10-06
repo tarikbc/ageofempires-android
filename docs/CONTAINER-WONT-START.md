@@ -66,3 +66,42 @@ container again.
 If the UI offers a container **variant** too, note that `.container` reports `containerVariant: bionic`
 while `appliedWineVersion` is a *Proton* build — a mismatch worth correcting in whichever direction the
 UI allows.
+
+
+## What the container used to point at
+
+`files/debug_reports/STEAM_1466860_1789404977441/header.json` (2026-09-14, `appVersion` 1.2.1) is a
+config dump from a working period:
+
+```
+wineVersion          : proton-11.0-1-arm64ec-1
+appliedWineVersion   : proton-11.0-1-arm64ec-1
+containerVariant     : bionic
+```
+
+Two things follow.
+
+**1. `bionic` + a Proton wine is a combination that has worked.** So the variant is not obviously wrong
+and does not need changing — that removes the risk of "fixing" the wrong half.
+
+**2. The selected version has changed since.** `.container` now names `proton-11.0-99-arm64ec-1`, and
+`Z:\opt\` did show that tree present. But Box64 still resolves `wine` through
+`…/imagefs/opt/wine/bin/`, which suggests GameNative's own wine link — the thing that should point at the
+selected tree — is stale or dangling. In other words the version names a tree that exists, while the
+path actually used does not.
+
+## Revised ask
+
+**Re-select the Wine version in the UI and Save** — even if the correct version already appears
+selected. That should make GameNative re-create its wine link for the container. Changing the variant is
+*not* indicated by the evidence, so leave `containerVariant` alone unless the UI refuses to save.
+
+Then start the container. `winhandler` appearing is the signal that the lookup succeeded; GameNative's
+own `wine_logs/wine_debug.log` will say so directly either way, and it is readable over adb:
+
+```sh
+adb shell cat /sdcard/Android/data/app.gamenative/files/wine_logs/wine_debug.log
+```
+
+If it ends with `Error: File is not found. (wine)` again, the link did not get re-created and the next
+step is the Wine/Proton Manager rather than the container's General tab.
