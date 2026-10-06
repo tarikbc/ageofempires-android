@@ -116,3 +116,37 @@ So the unambiguous version is one that never mentions `libarm64ecfex.dll` at all
 Whatever rule GameNative uses to pick the value, the answer is `xtajit64.dll`. **Import this one, not
 `namefix` (code 5).** Verify afterwards with `tools/modlist.c`: the emulator entry should read
 `C:\windows\system32\xtajit64.dll`.
+
+## Round 14: two shortcuts tried, neither works
+
+**Editing GameNative's stored manifest directly — not possible.** Wine can reach Unix paths through the
+`\??\unix\` prefix, but the imagefs is a chroot and the app's private directory is outside it:
+
+```
+Z:\ root:  bin  etc  home  lib  opt  share  Steamless  storage  tmp  usr  var     (no `data`)
+Z:\opt:    apps  mono-gecko-offline  proton-11.0-99-arm64ec-1  wine  winetricks
+```
+
+`contents/` is not mounted, so the `.wcp` contents GameNative stores cannot be edited from inside.
+Useful side-fact though: **`Z:\opt\proton-11.0-99-arm64ec-1` *is* the live Proton tree** — GameNative
+appends `-1` (the versionCode) to the versionName — so
+`Z:\opt\proton-11.0-99-arm64ec-1\lib\wine\aarch64-windows\ntdll.dll` is the file Wine actually
+loads. That confirms [NTDLL-NEVER-LOADED.md](NTDLL-NEVER-LOADED.md) with a concrete path.
+
+**Changing the registry mid-session and relaunching — no good either.** The registry *can* be set while
+a session is live (`reg add … /d xtajit64.dll`, verified), and GameNative's own UI then offered
+"Resume Game" rather than "Play". Tapping it produced no game process, so nothing was tested.
+
+Launching the game directly inside the session (`start "" RelicCardinal.exe` via winhandler, bypassing
+GameNative) *does* start it — and it dies at:
+
+```
+Loading step: [NetworkGlobal]
+```
+
+the same place the offline run died in round 11. GameNative's launcher evidently sets up the network
+environment (resolver shims, `LD_PRELOAD`, and so on) that a bare `start` does not, so this route cannot
+carry a module-name test.
+
+**Conclusion: the module-name change still requires importing
+`fexcore-2610-aoe-xtajitonly.wcp` (versionCode 7).** No shortcut was found.
