@@ -80,3 +80,22 @@ it was a process that never initialised.
 
 **Use Play for anything that will be judged.** Direct launches are useful only for probing the session
 (`smctest`, file operations), never for measuring game behaviour.
+
+
+### Refinement: Play can also produce a dud
+
+The table above is a tendency, not a guarantee. In round 44 a **Play** launch produced a process with
+**5 threads that vanished within 15 seconds and wrote nothing to the log** — the same dud signature. So
+"launched by Play" is not sufficient either.
+
+**The only reliable test is the log.** Before and after any run:
+
+```sh
+adb shell cat /sdcard/Download/aoe/watch.txt | head -1     # must name THIS run's start time
+```
+
+If the first line still names an older run, the run under test has written nothing and **no conclusion
+can be drawn from the process at all** — not its existence, not its thread count, not its CPU.
+
+Also noted: repeatedly force-stopping GameNative leaves the app/container in a state where launches
+produce duds. A clean app restart before a run under test is worth the extra minute.
