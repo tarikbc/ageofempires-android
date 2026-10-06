@@ -27,6 +27,7 @@ Sessions: 5–6 Oct 2026.
 | [`docs/AEGIS.md`](docs/AEGIS.md) | **The protection identified: Aegis**, Relic's in-house virtualization/anti-tamper, with its build log. |
 | [`docs/FEX-VENDOR-LEAK.md`](docs/FEX-VENDOR-LEAK.md) | **FEX advertises itself to the guest**: CPUID leaf `0x40000000` returns vendor `FEXIFEXIEMU`, and `HideHypervisorBit` does not hide it. |
 | [`docs/GAMENATIVE-UI.md`](docs/GAMENATIVE-UI.md) | **Driving the GameNative UI**: the container-config path, the emulator/FEXCore selector, and the `uiautomator dump --windows` gotcha. |
+| [`docs/FEX-PATCH-LIVE.md`](docs/FEX-PATCH-LIVE.md) | **The FEX patch is live** (`eax=0x0 vendor=''` in the game's session) — and the game still dies in the same window. Includes the `C06T13R` error-code finding. |
 
 ## Setup that works best
 
