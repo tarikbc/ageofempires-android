@@ -25,6 +25,7 @@ Sessions: 5–6 Oct 2026.
 | [`tools/run_experiment.py`](tools/run_experiment.py) + [`tools/thor/`](tools/thor) | Watches the game for the network trigger and samples thread state in the kill window. |
 | [`docs/KILL-ANALYSIS.md`](docs/KILL-ANALYSIS.md) | The captured kill: which thread suspends the others, and where the protection code lives. |
 | [`docs/AEGIS.md`](docs/AEGIS.md) | **The protection identified: Aegis**, Relic's in-house virtualization/anti-tamper, with its build log. |
+| [`docs/FEX-VENDOR-LEAK.md`](docs/FEX-VENDOR-LEAK.md) | **FEX advertises itself to the guest**: CPUID leaf `0x40000000` returns vendor `FEXIFEXIEMU`, and `HideHypervisorBit` does not hide it. |
 
 ## Setup that works best
 
