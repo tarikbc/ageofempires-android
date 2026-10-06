@@ -87,3 +87,60 @@ and the `waitq` sites branching — before drawing any conclusion from a game ru
 `C:\windows\system32` in this setup is not the source of Wine's builtin DLLs, so any future patch aimed
 at Wine internals must target the Proton tree. The FEX patch is unaffected: `xtajit64.dll` *is* loaded
 from `system32` and that one is genuinely live, which is why the CPUID change was measurable.
+
+## Why it was never loaded — and what happened when I tried
+
+The local Proton bundle **does contain the fix**:
+
+```
+proton-11.0-99-arm64ec.wcp  ->  lib/wine/aarch64-windows/ntdll.dll
+    sha256 5325f69ecbce31f3…  = apply.py's EXPECTED[False]   (invoke patch present)
+    rva 0xEC050 = 0xE9                                       (jmp to cave)
+  profile.json description: "Proton 11.0-1 arm64ec + ntdll fix: direct x64 syscalls
+                             keep rdx/r8/r9/r10/rflags like Windows (AoE IV Aegis)"
+```
+
+But the **deployed** tree's copy hashes to `606d0a2fb197d37b…` (`PRISTINE`). So the running tree did
+**not** come from that local bundle — it came from GameNative's **online** version
+(`Available online versions:` in the Wine/Proton Manager), which ships a stock ntdll.
+
+**Conclusion: the ntdll fix was never deployed, so it was never tested.** The earlier note that
+`--waitq` "did not stop the AoE IV freeze" is void — it never ran. And `invoke_arm64ec_syscall` has
+never run either, which means Wine's x64 syscall stub is still clobbering `rdx/r8/r9/r10/rflags` — the
+leading explanation for `errno=10038` (`WSAENOTSOCK`) and the HTTP failures.
+
+## Deploying it: the manager's rules, and a negative result
+
+The Wine/Proton Manager states its requirements plainly:
+
+> "Filename must begin with 'wine' or 'proton' (case-insensitive). **Packages must include bin/, lib/,
+> and prefixPack.txz.** All imports are bionic-compatible only."
+
+So a minimal bundle carrying just `lib/wine/aarch64-windows/ntdll.dll` is rejected — a full repack is
+required. Built and imported one:
+
+```
+proton-11.0-99-ntdlfix.wcp   267 MB, 2233 entries (same count as the original)
+  versionName 11.0-99-arm64ec-ntdlfix, versionCode 3
+  ntdll sha256 ce925da602e6abfe…  = EXPECTED[True]   (invoke AND waitq)
+  rva 0xEC050 = 0xE9,  rva 0xCDA74 = 0x17ff9c0b (branch)
+```
+
+The import succeeded — *"Proton proton-11.0-99-arm64ec-ntdlfix installed successfully"* — and it appears
+in the Wine Version dropdown as `proton-11.0-99-arm64ec-ntdlfix-3`.
+
+**But selecting it breaks the Wine session.** The game does not open: no `wineserver`, no game process,
+no `warnings.log`, and no probe output at all — the session never started. GameNative shows its
+"Does Not Open" feedback dialog. The container was reverted to `proton-11.0-99-arm64ec-1`.
+
+Note this is the *second* time an ntdll-patched Proton has failed to start here: the previous
+session's `proton-11.0-1-arm64ec-aoefix-1` hangs GameNative at `Uploading configuration_user`.
+
+## Next
+
+Isolate which patch breaks it. `EXPECTED[False]` (invoke only — the previous session's exact build) is
+available as `lib/wine/aarch64-windows/ntdll.dll` inside `proton-11.0-1-arm64ec-aoefix.wcp`, and can be
+packed the same way. If invoke-only starts and both-patches does not, the `--waitq` cave is at fault; if
+neither starts, the `invoke` trampoline is, and the fix has to be re-derived rather than deployed.
+
+Either way, `ntdllcheck.exe` decides it — the mapped image, not a disk hash.
