@@ -41,3 +41,42 @@ Rebooted the device to clear the second possibility.
 **Open container** (cog → assistant panel → Open container) worked repeatedly earlier in the session and
 gives `explorer` + `winhandler` in ~30 s with no game launch — worth retrying before concluding the
 container is broken.
+
+
+## The real cause of "the container will not start": a locked device
+
+Rounds 19 and 26 both concluded the container was wedged. **That was wrong.** The device was sitting on
+its lock screen, so every `input tap` was being delivered to the keyguard and silently discarded.
+GameNative never received a Play or Open-container request — which is exactly what the logs showed:
+*no container-start attempt at all*, only the app's usual GPU-stat polling.
+
+Diagnosis, in one command:
+
+```sh
+adb shell dumpsys trust | grep deviceLocked        # -> deviceLocked=1
+adb shell dumpsys window | grep -i mCurrentFocus   # -> ...Keyguard...
+```
+
+and the distinguishing test:
+
+```sh
+adb shell wm dismiss-keyguard     # works for a swipe-only keyguard
+adb shell input swipe 960 1600 960 600 200
+```
+
+Both had no effect, so the lock is **secure** and adb cannot bypass it. Only the owner can unlock.
+
+### Consequence for the workflow
+
+**Check the lock state before concluding anything about taps.** A locked screen produces symptoms that
+look exactly like a broken container: taps that do nothing, no process started, no error anywhere, and
+the app appearing healthy in `ps` because it was already running when the screen locked.
+
+Cheap guard to put at the top of any scripted UI work:
+
+```sh
+adb shell dumpsys trust | grep -q "deviceLocked=1" && echo "UNLOCK THE DEVICE FIRST"
+```
+
+This also means the notes previously recorded here — "the container stopped starting", "a reboot did
+not clear it" — describe a locked device, not a container fault. The container was never the problem.
