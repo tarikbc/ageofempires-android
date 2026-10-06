@@ -167,3 +167,37 @@ tap changed the page (it navigated the library). So this is a real state reset, 
 **Put `input keyevent 3` at the start of any scripted UI sequence on this device**, alongside the lock
 check. The two failure modes look identical from outside — nothing happens, nothing is logged — and the
 causes are unrelated.
+
+
+## Round 34: the Play tap does register, and the container gets as far as its X server
+
+With HOME first (see above), a tap on **Play** works, and logcat shows the container genuinely starting:
+
+```
+I app.gamenative: Remembering touchMouse as MutableState(value=null)
+I app.gamenative: Creating XServerView and XServer
+I app.gamenative: Starting up XServerScreen
+D Winlator_Renderer: Surface: 1280x720 container: 1280x720
+D ControlsProfile: Loading controllers for profile: Physical Controller Default (ID: 0) ...
+```
+
+**So the request reaches the app and the container begins.** What never appears is Wine:
+
+| process | count after 2.5 minutes |
+|---|---|
+| `winhandler` | 0 |
+| `wineserver` | 0 |
+| `box64` | 0 |
+| `RelicCardinal` | 0 |
+
+**The failure is therefore between "X server up" and "Wine starts"** — not in the tap handling, not in
+the container request, and not (this time) the lock screen. Earlier rounds concluded "no container-start
+attempt at all" from an absence of Wine processes; that was wrong. There *is* an attempt, and it gets
+partway.
+
+Also seen, repeatedly, and unexplained: `W app.gamenative: No lastPICSChangeNumber, skipping`, alongside
+periodic large GCs in the app.
+
+This is a much narrower target than "the container is broken" — the container starts, then stalls before
+Wine. Worth checking next: whether the prefix is being unpacked, whether `prefixPack.txz` extraction
+completes, and whether the container's Wine tree is intact.
