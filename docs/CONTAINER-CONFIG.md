@@ -124,3 +124,35 @@ stop the AoE IV freeze" is therefore worthless, and the kill correlating with th
 waitq fix is genuinely untested rather than disproved.
 
 **That is a better lead than the module-name question, and it is now the priority.**
+
+## Which fields you can actually change (round 18)
+
+There are two files, and they are not equivalent:
+
+| file | shape |
+|---|---|
+| `Z:\home\xuser\.container` | the **applied** copy — `extraData.appliedWineVersion`, `extraData.appliedContainerVariant`, … |
+| `Z:\home\xuser-STEAM_<appid>\.container` | the **source** copy — top-level `wineVersion`, `containerVariant`, `emulator`, `fexcoreVersion`, `envVars`, `drives` |
+
+Only some of it is honoured. Established by experiment:
+
+| field | edited in | took effect? |
+|---|---|---|
+| `envVars` (`WINEDEBUG=…`) | applied copy | **yes** — the round-17 capture really was on `+thread,+sync,+virtual` |
+| `wineVersion` / `extraData.appliedWineVersion` | both, separately | **no** — `WINELOADER` stayed `…/proton-11.0-99-arm64ec/lib/wine/aarch64-unix/wine` |
+
+So GameNative treats `envVars` as user configuration and reads it back, while the Wine version and
+FEXCore content are re-applied from its own store. **Environment changes are ours to make; a Wine-version
+or content change still needs the UI.**
+
+Practical consequence: the waitq ntdll cannot be deployed this way — it has to come from a
+`Proton`-type `.wcp`, i.e. an import — but anything FEX or Wine reads from the environment
+(`FEX_TSOENABLED`, `FEX_MULTIBLOCK`, `FEX_X87REDUCEDPRECISION`, `WINEDLLOVERRIDES`, `WINEDEBUG`,
+`BOX64_*`) can be changed freely.
+
+## `Open container` is the fast path
+
+GameNative can start the container as Windows, independently of any game — the AYN assistant panel's
+**Open container** entry (cog → panel → Open container). It brings up `explorer` plus `winhandler` in
+about 30 s, with no game launch, no save conflict, and no `/wcp` selection. Everything in this document
+was done through that session. It is the right way to run a probe or edit a config.
