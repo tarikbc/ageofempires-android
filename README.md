@@ -26,6 +26,7 @@ Sessions: 5–6 Oct 2026.
 | [`docs/KILL-ANALYSIS.md`](docs/KILL-ANALYSIS.md) | The captured kill: which thread suspends the others, and where the protection code lives. |
 | [`docs/AEGIS.md`](docs/AEGIS.md) | **The protection identified: Aegis**, Relic's in-house virtualization/anti-tamper, with its build log. |
 | [`docs/FEX-VENDOR-LEAK.md`](docs/FEX-VENDOR-LEAK.md) | **FEX advertises itself to the guest**: CPUID leaf `0x40000000` returns vendor `FEXIFEXIEMU`, and `HideHypervisorBit` does not hide it. |
+| [`docs/GAMENATIVE-UI.md`](docs/GAMENATIVE-UI.md) | **Driving the GameNative UI**: the container-config path, the emulator/FEXCore selector, and the `uiautomator dump --windows` gotcha. |
 
 ## Setup that works best
 

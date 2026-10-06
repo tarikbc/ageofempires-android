@@ -172,6 +172,25 @@ up (`wineserver`, `services.exe`, `winedevice`, `explorer`, `winhandler`, a `sta
 cursor. Whether that is caused by the patched FEXCore or is unrelated container state was not
 determined before stopping.
 
+### Resolved: install it under the name that is actually loaded
+
+The `.wcp` manifest chooses the target path, so the same patched DLL can be installed as *both*
+names. `fexcore-2610-aoe-nofex2.wcp` (`versionCode` 3) does exactly that:
+
+```json
+"files": [
+  { "source": "libarm64ecfex.dll", "target": "${system32}/libarm64ecfex.dll" },
+  { "source": "libarm64ecfex.dll", "target": "${system32}/xtajit64.dll"      },
+  { "source": "libwow64fex.dll",   "target": "${system32}/libwow64fex.dll"   }
+]
+```
+
+**How to tell whether the patch is live**, without guessing: copy the two DLLs out of the session and
+check offset `0x28644`. `000080d2010080d2` = patched; `200080d2c1a888d2` = stock. Then confirm the
+emulator actually in use — `dbgprobe`'s module list and `hypervisor leaf 0x40000000` line are the
+quickest read (`eax=0x0 vendor=''` = patched and loaded; `eax=0x40000001 vendor='FEXIFEXIEMU'` = the
+signature is still there).
+
 ### Next steps
 
 1. Restart the device (or GameNative) to clear the stuck container, and confirm the stock
