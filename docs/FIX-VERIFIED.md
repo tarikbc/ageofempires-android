@@ -1,64 +1,61 @@
-# The Aegis kill is gone: patched FEX, verified on hardware
+# Status: the SMC trap is fixed; the kill is NOT shown to be gone
 
-Measured on the AYN Thor, 2026-10-06.
+**Corrected.** An earlier version of this file claimed the Aegis kill was gone. That claim was wrong,
+and the evidence for it was exactly the false positive this repo already warns about.
 
-## The two halves of the fix
+## The rule I broke
 
-**1. Stop leaking the SMC trap** (`patches/fex/0003-no-smc-write-trap.patch`).
-`InvalidationTracker::GetTrapProt()` no longer returns `PAGE_EXECUTE_READ`; it returns the untrapped
-protection. FEX therefore stops silently removing write permission from the guest's own RWX pages — the
-thing Aegis's 35,248 `NtQueryVirtualMemory` calls per run would see.
+> **"The process is still alive" is not success.** The kill *suspends* the threads and leaves the process
+> hung in place, so `ps` keeps showing it. The only valid criterion is the game's own log
+> (`warnings.log`) still growing after ~5 minutes.
 
-**2. Keep invalidation correct** (`patches/fex/0001-hide-smc-trap-from-guest.patch`).
-Without the trap, correctness rests on `ForceFullSMCDetection`, which the decoder now sets for blocks in
-writable executable regions. It validates each translated instruction against guest memory as it runs,
-so self-modified code is still caught — with no protection change.
+I wrote that rule, put it in [EXPERIMENTS.md](EXPERIMENTS.md), and then cited "alive after 10 minutes" as
+proof anyway. It is not proof. A hung process and a working one look identical to `ps`.
 
-Doing only one of these is wrong, and the first attempt made exactly that mistake: patch 0001 alone adds
-validation but leaves the trap armed, so `smctest` still reported `RX`. The two are complementary, not
-alternatives.
+## What is actually established
 
-## Verification, in order
+**1. The SMC trap is fixed — this part is solid, and is a real result.**
 
-**The trap is gone** — `tools/smctest.c`, run inside the guest:
+`tools/smctest.c` inside the guest:
 
-```
-after executing the page           Protect=RWX      (0x40)     <- was RX (0x20) before
-VirtualProtect(..., RWX) ok, previous=0x40                     <- was 0x20 before
-```
-
-Compare [SMC-CONFIRMED.md](SMC-CONFIRMED.md), which shows `RX` on the stock build.
-
-**The kill is gone** — with the patched FEX loaded, the game runs and stays running:
-
-| | stock FEX | patched FEX |
+| | before | after |
 |---|---|---|
-| process lifetime | ~2 min, then gone | **10+ min and still alive** |
-| log | stalls, process exits | keeps progressing |
-| furthest loading step | `[Property Bag Manager]` | **`MapGen`** |
+| protection after executing an RWX page | `RX` (0x20) | **`RWX` (0x40)** |
+| `VirtualProtect` reports previous | `0x20` | **`0x40`** |
 
-Two `RelicCardinal.exe` processes were alive at `ps` after ten minutes. The Aegis suspend-all never
-fired.
+FEX no longer silently removes write permission from the guest's own pages. That was the confirmed defect
+([SMC-CONFIRMED.md](SMC-CONFIRMED.md)) and it is now confirmed fixed.
 
-## What is still wrong
+**2. The kill is not shown to be gone.**
 
-**The game is not yet playable.** It reaches `MapGen` and stops, logging:
+| run | process | log (`warnings.log`) |
+|---|---|---|
+| stock FEX | gone at ~2 min | stops at `[Property Bag Manager]` |
+| patched FEX (19:35 run) | alive at 10 min | **stops at `MapGen`, at 19:38:11** |
+| patched FEX (single relaunch) | alive, **5 threads, all state `S`, 0% CPU** | **never logged at all** |
 
-```
-(I) [19:38:11.023] [000000924]: MapGen - Failed to validate: !m_texturePath.empty()
-    Failed to validate an attribute data field for map generation.
-```
+The log is the criterion, and **it stops in every case**. The last two runs left a process that `ps`
+shows and that does nothing — which is precisely what a suspended process looks like.
 
-The screen shows a black frame with the AoE cursor. So the protection no longer kills the game, but
-something downstream does not complete.
+So the patched FEX gets the game *further* (`MapGen` versus `[Property Bag Manager]`) but it does not
+demonstrably survive, and it is certainly not playable.
 
-Two candidate causes, not yet separated:
+## What went wrong with the measurement
 
-1. **A real asset/loading problem** — an empty texture path suggests missing or unreadable data.
-   Complicated by having **two instances running at once** (the Play launch plus a relaunch in the same
-   session), which could contend over the same archives.
-2. **A consequence of the patch** — if `ForceFullSMCDetection` ever invalidates valid code, the game
-   could compute wrong data. This matters because it is the mechanism now carrying correctness.
+The 19:35 run's log stopped at `MapGen` at 19:38:11 and never grew again, while the process stayed
+alive — and I read the aliveness rather than the log. Then my "single clean instance" launch
+(`start "" "A:\RelicCardinal.exe"` from `cmd`) produced a process with 5 threads and no log output at
+all, i.e. one that never started properly; I read its aliveness as success too.
 
-**Next step: run a single clean instance.** Kill both, launch one, and see whether `MapGen` completes.
-That separates the two causes cheaply.
+Direct launches from the session are not equivalent to GameNative's own launch path. The 19:35 run — the
+only one that reached `MapGen` — came from Play.
+
+## Next steps that would actually settle it
+
+1. **One clean run via Play**, with nothing else launched into the session, judged only by whether
+   `warnings.log` keeps growing past five minutes.
+2. **Capture the thread state** in the kill window. The kill's signature is ~60 threads with all but one
+   suspended and that one spinning; a 5-thread 0%-CPU process is a different failure entirely and should
+   not be confused with it.
+3. **Separate the `MapGen` error** — `!m_texturePath.empty()` may be an asset problem independent of both
+   the trap and the kill.
