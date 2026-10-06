@@ -282,3 +282,63 @@ Aegis's obfuscation, and following it by hand is the wrong approach. Ghidra is r
 The repo's stated next step was correct; what failed was trusting remembered offsets. **Locate code by
 its constants, not by addresses quoted from an earlier session** — `tools/callers.py` does the
 enclosing-function and caller lookup once a routine is found.
+
+
+## Update (round 22): what the hash actually digests, and a trap in `text.bin`
+
+### The signature record
+
+Tracing one of the 68 stub call sites shows exactly what is hashed. At `0x3de8040..0x3de80b9`:
+
+```asm
+lea  rdx, [rbp+0xe0]
+lea  rcx, [rbp+0x2a8]
+call 0x3f76f5c                     ; fills [rbp+0x2a8]
+xorps xmm0, xmm0
+movups [rbp+0x128], xmm0           ; zero 32 bytes
+movups [rbp+0x138], xmm0
+mov  rax, [rbp+0x2a8]
+mov  [rbp+0x118], rax              ; record[0..8)   = qword A
+call 0x3f765f0
+mov  [rbp+0x120], rax              ; record[8..16)  = qword B
+mov  r8d, 0x440313
+lea  rdx, [rbp+0x128]
+lea  rcx, [rip + 0x3d0f172]        ; -> RVA 0x7af8204 (.data)
+call 0x3ddea6c                     ; writes 32 bytes -> record[16..48)
+mov  edx, 0x30                     ; length = 48
+lea  rcx, [rbp+0x118]
+call 0x3e43694                     ; hash(record, 48)
+mov  rcx, rax
+shr  rcx, 0x20
+xor  rax, rcx                      ; fold 64 -> 32 bits
+mov  [rip + 0x3d0b68f], rax        ; store to .data (~RVA 0x7af3748)
+```
+
+So each record is **two qwords plus a 32-byte digest**, and 48 = 8 + 8 + 32 exactly. The result is
+folded to 32 bits and written into a `.data` table. With 68 call sites of this shape, Aegis is
+**building per-module signature records** — which is consistent with the integrity hypothesis, and
+notably the game loads 85–86 modules.
+
+### Trap: `text.bin` has Aegis's self-modification baked in
+
+`call 0x3ddea6c` is a `call` whose target holds **high-entropy data, not code**:
+
+```
+RVA 0x3ddea50: ... 5e c3 c2 00 00 cc          <- end of the previous function (pop rsi; ret)
+RVA 0x3ddea6c: d5 d8 be e7 9e d9 5f 9d 7d fe c4 90 ...   <- data
+```
+
+That is only possible if the bytes were **overwritten at runtime**. `text.bin` was recovered from the
+live process, so Aegis's self-modification is frozen into it, and any `call` into such a region looks
+nonsensical statically. The original `.text` on disk is still packed and differs.
+
+**Consequence: static analysis of the restored `.text` alone will keep hitting walls like this.**
+Cross-check any surprising control flow against the on-disk image, and prefer runtime observation for
+the self-modified parts.
+
+### Also checked
+
+The SHA-256 round constants (`K[0..3]` = `0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5`) appear at
+RVAs `0xb4c0`, `0xb4d0`, `0x5bdc0`, `0x5bdd0`, `0x68820` — **none inside Aegis's region**. The SHA-256
+initialisation vector does not appear as a contiguous 4-dword run anywhere, so the 32-byte digest is
+not obviously a stock SHA-256.
