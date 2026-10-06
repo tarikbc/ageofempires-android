@@ -144,3 +144,48 @@ packed the same way. If invoke-only starts and both-patches does not, the `--wai
 neither starts, the `invoke` trampoline is, and the fix has to be re-derived rather than deployed.
 
 Either way, `ntdllcheck.exe` decides it — the mapped image, not a disk hash.
+
+## Round 8: the failure is isolated to the patched ntdll
+
+Two things were cleared up.
+
+**1. The prefix is healthy.** The earlier `aoefix` attempt hung mid prefix-migration, which could have
+poisoned the container and confounded the repack test. It did not: selecting the stock
+`proton-11.0-99-arm64ec-1` launches the game normally (confirmed with a live `wineserver` and a
+`RelicCardinal.exe` pid). So the failure of `proton-11.0-99-ntdlfix-3` was caused by the patched
+ntdll, not by a damaged prefix.
+
+**2. The baseline is re-confirmed.** With the stock Proton, `ntdllcheck.exe` on its own mapped image:
+
+```
+rva 0xEC050 (invoke patch site): 0x4c          -> PRISTINE
+rva 0xCDA74 (waitq site):        0x885ffd1f    -> PRISTINE
+rva 0xCDA00 (waitq site):        0x885ffd0c    -> PRISTINE
+system32 file @0xEC050:           e9 ab 00 00 00   <- patched file, ignored by the loader
+```
+
+**3. A hypothesis of mine that turned out wrong**, recorded so it is not re-tried: I suspected
+`apply.py` placed the invoke code cave outside the mapped section (cave at file offset `0xEC100`,
+`VirtualSize` set to `0xDC200`). It does not:
+
+```
+.text   VA=0x10000  VSize=0xdc0b5  RawSize=0xe0000  Raw=0x10000
+        applies patch VSize=0xdc200  -> maps VA 0x10000..0xec200
+        invoke cave VA 0xec100       -> inside; raw bytes to 0xf0000 also cover it
+        waitq cave rva 0xb491c       -> inside
+```
+
+The cave is mapped and file-backed, so the patch's layout is sound and the failure lies in the
+generated code or in deploying it, not in the section headers.
+
+## Status
+
+| build | ntdll | result |
+|---|---|---|
+| `proton-11.0-99-arm64ec-1` | pristine | launches normally |
+| `proton-11.0-99-ntdlfix-3` | invoke + waitq | **session never starts** (no `wineserver`, no log) |
+| `proton-11.0-99-invokeonly-4` | invoke only | built and pushed — **not yet imported** |
+
+Next is the third row: importing the invoke-only bundle isolates whether the `--waitq` cave or the
+`invoke` trampoline is responsible. If invoke-only starts, the waitq cave is at fault; if neither
+starts, the `invoke` trampoline itself needs re-deriving.
