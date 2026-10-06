@@ -1,68 +1,90 @@
-# The game's backend session is broken (new lead)
+# The game's backend session is broken
 
 Aegis's kill lands ~1 minute *after* `TlsConnection::Shutdown … errno=10038`
-([KILL-ANALYSIS.md](KILL-ANALYSIS.md)). That correlation was always suggestive, and the network is now
-the most concrete unexplained thing left, so it got measured directly.
+([KILL-ANALYSIS.md](KILL-ANALYSIS.md)). The network is therefore the most concrete unexplained
+thing, and it has now been measured from several directions. The short version: **the network and
+Wine's own networking are fine; the game's specific requests are not.**
 
 ## The network path itself is fine
 
-`tools/netprobe.c`, run inside the live session, from DNS up to TLS:
+`tools/netprobe.c`, in the live session, DNS up to TLS:
 
 ```
-WSAStartup rc=0
-
 DNS  www.ageofempires.com         rc=0 (81 ms)  -> 150.171.110.36
-DNS  api.ageofempires.com         rc=0 (32 ms)  -> 52.238.248.160
-DNS  www.microsoft.com            rc=0 (0 ms)  -> 2.20.130.2
-
 TCP  www.ageofempires.com         rc=0 err=0 (20 ms)
-TCP  www.microsoft.com            rc=0 err=0 (24 ms)
-
 HTTPS www.ageofempires.com       OK status=200 (9361 ms)
 HTTPS www.microsoft.com          OK status=200 (227 ms)
 ```
 
-Everything works. Note the last two lines though: the Age of Empires host answers in **9.4 s** where
-Microsoft's answers in **0.23 s** — ~40× slower. (The first attempt with no timeouts appeared to hang
-outright, which is why `netprobe` sets `WinHttpSetTimeouts`.)
+The AoE host is ~40x slower than Microsoft's (9.4 s vs 0.23 s), but it works. (An earlier unbounded
+attempt appeared to hang, which is why the probe sets `WinHttpSetTimeouts`.)
 
-## But the game's own requests fail
+## Wine's WebSocket layer is fine
 
-The game's log carries 39 HTTP failures, and the two error codes are specific:
+The game uses **WebSocket++/0.8.2** over Relic Link (`WebSocketManager.cpp`), and the request path is
+`/wss/` — found as a string in `RelicCardinal.exe`, along with the protocol constants:
 
-| count | `dwError` | meaning |
+```
+RL_MISSPOLL / RL_USE_WEBSOCKET_PERCENT / RL_KEEPALIVE
+"wss/"
+{"clientLibVersion":%d,"operation":%d,"sessionToken":"%s"}   <- matches the log line exactly
+{"operation":%d,"ackCount":%d}
+/game/login/readSession
+```
+
+Holding that WebSocket, native vs Wine:
+
+| client | path | result |
 |---|---|---|
-| 1 | `12157` | `ERROR_WINHTTP_SECURE_FAILURE` |
-| many | `12152` | `ERROR_WINHTTP_INVALID_SERVER_RESPONSE` |
+| Native Python (`tools/ws_native.py`, `tools/ws_paths.py`) | `/wss/` | `101`, survived 45 s |
+| `tools/wsprobe.c` inside Wine | `/wss/` | `101`, **still alive at 165 s** |
+| **the game** | `/wss/` | `101`, **died at 39 s** |
 
-`12152` dominates — Wine's winhttp is receiving responses it cannot parse. This is **not** a dead
-network: a plain `WinHttpSendRequest` to the same host from the same session returns `200`. So
-something about the game's requests — HTTP version, transfer encoding, redirect handling, or a TLS
-feature Wine's winhttp lacks — breaks them.
+Path check (native): `/wss/` → 101, `/wss/v1/` → 101, `/wss` → 302, `/game/wss/` → 404, `/` → 200.
+An unauthenticated upgrade to `/` is refused with `200`, so only `/wss/`-style paths are real.
 
-The log only exposes request IDs (`[ID 2]`, `[ID 3]`, …), not URLs, so the failing endpoints are not
-yet known. The single URL that does appear, `https://www.catcert.net/verarrel`, comes from a
-certificate-chain diagnostic, not the game's own traffic.
+## Wine's winhttp is fine
 
-## Why this could be the trigger
+`tools/apiprobe.c` against the real backend:
 
-- Aegis is a *server-aware* protection, and the kill fires ~1 min after the game's socket closes.
-- The Mac runs the same game files without the freeze — and would plausibly have a working winhttp.
-- The freeze happens **offline too**, which fits "no working backend session → kill" rather than
-  contradicting it.
+```
+leaderboards title=age4   ok http=200 bytes=399
+leaderboards title=age2   ok http=200 bytes=399
+game host /wss/           ok http=405 (GET not allowed)
+```
 
-That is a hypothesis, not a result. It is also the first lead that explains the Mac/Thor difference
-with a mechanism other than CPU emulation.
+`getAvailableLeaderboards?title=age4` returns the correct JSON through Wine, and 33 KB natively. So
+the same backend serves AoE IV exactly as the [aoe2-apis](https://github.com/ustacode/aoe2-apis)
+catalogue describes for AoE2 — swapping `title` is the whole trick.
 
-## Next experiments
+## So what is actually broken
 
-1. Find the failing URLs — the request IDs need mapping to hosts. Options: run the game with
-   `WINEDEBUG=+winhttp`, or capture traffic, or look at `libHttpClient` callers.
-2. Determine whether the breakage is HTTP/2, chunked encoding, or TLS-related. A `winhttp` override or
-   a Wine-side fix would follow from which one it is.
-3. Re-test offline-vs-online *with the FEX patch live*, since that combination has not been measured.
+The game's own HTTP calls fail with two codes, and the transition matters:
 
-`tools/netprobe.c` is the instrument; it builds with
-`x86_64-w64-mingw32-gcc -O1 -static -o netprobe.exe netprobe.c -lwinhttp -lws2_32`.
-(Note: `wininet.h` and `winhttp.h` collide in mingw 14 — including both fails to compile, so the probe
-uses WinHTTP only.)
+| phase | code | meaning |
+|---|---|---|
+| before the socket dies | `12152` | `ERROR_WINHTTP_INVALID_SERVER_RESPONSE` |
+| **after** | `12157` | `ERROR_WINHTTP_SECURE_FAILURE` — TLS cannot establish at all |
+
+The sequence in the game's log:
+
+```
+11:06:59.418  WebSocketConnection::OnConnect                 <- working
+11:06:59.422  Sending session token                          <- authenticated
+11:07:00.821  ProcessMessages: PresenceMessage               <- live data
+11:07:37.980  TlsConnection::Shutdown: SSL shut down failed; errno=10038
+11:07:38.139  OnConnectionClose; statusCode=1006             <- abnormal close
+11:07:38.292  Creating a websocket connection               <- reconnect...
+              (no further OnConnect -- the reconnect never succeeds)
+11:08:51      kill, ~73 s later
+```
+
+Since a bare Wine WebSocket to the same path survives 165 s and bare Wine HTTP to the same backend
+returns 200, neither "Wine cannot do WebSockets" nor "Wine cannot do TLS" explains this. The 399-byte
+truncation in `apiprobe` is the probe's own 400-byte read buffer, not the server.
+
+**Next step: capture the game's actual requests.** `WINEDEBUG=+winhttp` is the direct route, but
+`WINEDEBUG` is not in `HKCU\Environment` or the container's Environment tab, so it is being set by the
+launcher — that needs establishing before the channel can be enabled. Failing that, the container
+exposes a proxy setting and the Mac has `mitmproxy`, which would show the requests, at the cost of
+installing mitmproxy's CA into the prefix so Wine trusts it.
