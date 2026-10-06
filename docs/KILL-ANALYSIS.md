@@ -342,3 +342,51 @@ The SHA-256 round constants (`K[0..3]` = `0x428a2f98, 0x71374491, 0xb5c0fbcf, 0x
 RVAs `0xb4c0`, `0xb4d0`, `0x5bdc0`, `0x5bdd0`, `0x68820` — **none inside Aegis's region**. The SHA-256
 initialisation vector does not appear as a contiguous 4-dword run anywhere, so the 32-byte digest is
 not obviously a stock SHA-256.
+
+
+## Update (round 23): the dispatch is runtime-built — static analysis is exhausted here
+
+Chased every statically-visible lead to the kill, and they all dead-end the same way.
+
+**Zero references, as 8-byte pointers, anywhere in the unpacked image:**
+
+| address | what it is | 8-byte refs |
+|---|---|---|
+| `0x3e69304` | kill thread entry | 0 (only a `.pdata` RUNTIME_FUNCTION) |
+| `0x3e6b53c` | kill function | 0 |
+| `0x4906590` | `SuspendThread` thunk A | 0 |
+| `0x4906990` | `SuspendThread` thunk B | 0 |
+
+The `SuspendThread` sites are thin thunks with no direct callers:
+
+```asm
+0x4906990: sub rsp, 0x28
+0x4906994: mov rcx, qword ptr [rcx + 0x10]   ; handle out of a context struct
+0x490699d: call qword ptr [rip + ...]         ; SuspendThread via IAT
+```
+
+So every piece of kill machinery is reached through a dispatch table that **Aegis builds at runtime**. There
+is no static function-pointer table to follow, and the kill thread's entry is never passed literally to
+`CreateThread`. Combined with the self-modification trap found in round 22, this means:
+
+> **The hash-versus-expected comparison cannot be located statically.** The control flow is
+> runtime-resolved, and the code bytes in the recovered image are partly runtime-written.
+
+### Structure notes gathered on the way
+
+- The `.data` global at RVA `0x7af3748` (where a computed signature is stored) has **474 readers**,
+  clustered in a regular pattern — shared Aegis state rather than a signature table.
+- The evenly-spaced caller tables (32 callers ~`0x241` apart; 68 callers ~`0x927` apart) read as **the
+  same check function instantiated once per protected module**, not as a VM handler table.
+- The 48-byte records are therefore one per module, which is consistent with the game's 85–86 loaded
+  modules.
+
+### Consequence: the next step has to be runtime
+
+Static work has taken this as far as it goes. The remaining move is **in-process instrumentation**:
+patch the hash routine's entry (or its single call site at `0x3e439a7`) so it records `(rcx, rdx)` —
+the pointer and length — and then continues into the original code. That answers "what does Aegis
+hash" directly, without a debugger, which matters because Aegis is anti-debug.
+
+Risk to weigh: Aegis verifies its own image, so a patch could itself trip the check. Worth trying, and
+informative either way — if the game dies earlier when patched, that is itself a result.
