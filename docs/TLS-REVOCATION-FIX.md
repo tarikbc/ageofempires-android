@@ -127,3 +127,34 @@ selected version — hence shipping all four files together. GameNative warns th
 still lists only `2610-aoe-nofex2-3`, so the install has not taken effect and the waitq fix is
 **not** applied. Next step is to select `aoe4-fixes-4` and confirm the swap by hash
 (`ce925da602e6abfe…` = waitq build) before drawing any conclusion from a run.
+
+## Correction: the timing is noisy, and that changes the reading
+
+The numbers above were single samples. Repeating the native baseline six times:
+
+```
+run 1: http=200 time=1.075s connect=0.411s tls=0.805s
+run 2: http=200 time=0.814s connect=0.131s tls=0.529s
+run 3: http=200 time=0.814s connect=0.131s tls=0.528s
+run 4: http=200 time=0.813s connect=0.133s tls=0.531s
+run 5: http=200 time=0.813s connect=0.134s tls=0.532s
+run 6: http=200 time=0.797s connect=0.132s tls=0.529s
+```
+
+The server is **rock stable at ~0.8 s**, with a ~0.53 s TLS handshake. Wine, by contrast, has been
+measured at **1.8 s, 2.7 s, 5.3 s, 5.7 s, 9.0 s, 15.4 s, 17.2 s, 19.4 s and 23.1 s** for the same
+request — and the 2.7 s figure quoted earlier was a single favourable sample. So the honest claim is:
+
+- **The defect is real**: Wine is consistently slower than native, never faster, and sometimes 20x+.
+- **The size is not fixed.** It varies wildly run to run, which is exactly what you'd expect if the
+  cost is emulated crypto competing for CPU with the game's own emulation, rather than a fixed
+  per-connection penalty.
+- **`CertificateRevocation=0` still helps** (it removes a whole verification step) and the behavioural
+  effect was real — the session-loss chain vanished in that run. But it is a mitigation, not a cure,
+  and later runs showed `errno=10038`/`12157` returning occasionally.
+- The setting **does persist** — re-queried and still `CertificateRevocation = 0x0`.
+
+The practical consequence: the game's `12152` errors are best explained as its HTTP client timing out
+on a handshake whose cost is unpredictable, which is consistent with them appearing and disappearing
+across runs. Making that cost small and *stable* is the actual goal; trimming revocation was only part
+of it.
