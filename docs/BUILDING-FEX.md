@@ -13,7 +13,7 @@ export PATH=~/toolchains/llvm-mingw-20260922-ucrt-macos-universal/bin:$PATH
 arm64ec-w64-mingw32-clang --version      # must report target arm64ec-w64-windows-gnu
 ```
 
-`nasn` is required because `unittests/ASM/` is added **outside** the `if (NOT MINGW)` guard, so
+`nasm` is required because `unittests/ASM/` is added **outside** the `if (NOT MINGW)` guard, so
 configuring fails without it.
 
 ## Three macOS problems that must be fixed first
