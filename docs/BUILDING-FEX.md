@@ -66,3 +66,31 @@ This base still contains the **CPUID hypervisor vendor leak**
 (`FEXCore/Source/Interface/Core/CPUID.cpp:984`, `HypervisorID = "FEXIFEXIEMU"`). A `.wcp` built from a
 plain main checkout therefore reintroduces a problem the repo already solved once — the CPUID patch has
 to be carried too. See [FEX-VENDOR-LEAK.md](FEX-VENDOR-LEAK.md).
+
+
+## Two patches now, and a built bundle
+
+| Patch | What it does |
+|---|---|
+| [`0001-hide-smc-trap-from-guest.patch`](../patches/fex/0001-hide-smc-trap-from-guest.patch) | Blocks in writable executable regions use `ForceFullSMCDetection` instead of the invalidation tracker re-protecting the guest's own pages, so FEX stops leaking its SMC write trap through `NtQueryVirtualMemory`. |
+| [`0002-hide-vendor-signature-with-hypervisor-bit.patch`](../patches/fex/0002-hide-vendor-signature-with-hypervisor-bit.patch) | `CPUID.40000000h` returns zero when `HideHypervisorBit` is set, instead of the `FEXIFEXIEMU` vendor signature. Tied to the existing config, which the device already sets, so it needs no new option. |
+
+Both build together into `Bin/libarm64ecfex.dll` (5,586,944 bytes) and were packaged as
+`fexcore-aoe-smcfix.wcp` (`versionCode` 8, 1.39 MB) — a `FEXCore` bundle targeting only
+`libarm64ecfex.dll` and `libwow64fex.dll`, deliberately not `xtajit64.dll`, so GameNative keeps copying
+to the legitimate `xtajit64.dll` name.
+
+**The bundle has not reached the device yet.** `/sdcard` does not exist while the device is in
+`RUNNING_LOCKED`, so `adb push` fails with *"remote couldn't create file"*.
+
+## A locked device is detectable without dumpsys
+
+`adb shell ls /sdcard/` failing is the clearest signal, and cheaper than parsing `dumpsys trust`:
+
+```
+ls /sdcard/        -> No such file or directory     the user storage is not decrypted
+sm list-volumes    -> private mounted null          no emulated volume
+dumpsys user       -> State: RUNNING_LOCKED
+```
+
+User storage is only mounted after the first unlock following a boot, so this is unambiguous.
