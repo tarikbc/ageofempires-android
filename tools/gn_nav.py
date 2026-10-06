@@ -34,7 +34,9 @@ def sh(*args, timeout=60):
 def dump_xml(serial=None):
     """Dump the current UI hierarchy as an ElementTree root."""
     adb = ["adb"] + (["-s", serial] if serial else [])
-    sh(*adb, "shell", "uiautomator", "dump", "/sdcard/gn_ui.xml", timeout=30)
+    # Use --windows: a plain `dump` only sees the default window and goes stale on the Thor.
+    # GameNative's menus and the AYN assistant panel live in other windows.
+    sh(*adb, "shell", "uiautomator", "dump", "--windows", "/sdcard/gn_ui.xml", timeout=30)
     out = sh(*adb, "shell", "cat", "/sdcard/gn_ui.xml", timeout=30)
     x = out.stdout
     m = re.search(r"<\?xml.*", x, re.S)
