@@ -80,3 +80,57 @@ adb shell dumpsys trust | grep -q "deviceLocked=1" && echo "UNLOCK THE DEVICE FI
 
 This also means the notes previously recorded here — "the container stopped starting", "a reboot did
 not clear it" — describe a locked device, not a container fault. The container was never the problem.
+
+
+## Round 32: the deep-link key is `appid`, and taps are not reaching the app
+
+### The parameter name, read from the APK
+
+Guessing was the wrong approach and it was avoidable. Pulling the installed APK
+(`adb pull $(adb shell pm path app.gamenative | sed 's/package://')`) and searching the extracted
+`classes*.dex` for the scheme found the exact literal:
+
+```
+gamenative://run?appid=
+```
+
+**The key is `appid`, all lowercase.** Every earlier attempt used `appId`, `gameId` or `id`, which is why
+they were delivered and silently ignored. The app uses AndroidX Navigation deep links
+(`androidx/navigation/NavDeepLink$Builder`), so the pattern is a string constant in the DEX.
+
+**But it still does not launch a container.** `adb shell am start -a android.intent.action.VIEW -d
+'gamenative://run?appid=STEAM_1466860' app.gamenative` is accepted, the app starts if it was stopped,
+and nothing else happens — no session, nothing in logcat. Tried with the container id
+(`STEAM_1466860`) and the bare number (`1466860`), warm and cold. So either the value format is wrong,
+or that URI is only ever *generated* by the app (the assistant panel offers **Copy launch link** and
+**Create shortcut**) and the receiving path needs something more.
+
+### Taps are not reaching GameNative at all
+
+Every input form was tried and all are no-ops — the page does not change:
+
+| Form | Result |
+|---|---|
+| `input tap` (single, and 6 rapid taps) | nothing |
+| `input -d 0 tap` | nothing |
+| `input touchscreen tap` | nothing |
+| `input swipe x y x+1 y+1 80` (a tap with motion) | nothing |
+| tapping **Back** — which should visibly leave the page | nothing |
+
+A card tap *did* work earlier in the session (it navigated library → detail page), so input is not
+universally dead. Something about the current state is swallowing it.
+
+### Display geometry, which may explain the taps
+
+```
+Built-in Screen (display 0): 1080 x 1920   <- native portrait
+Screen-2       (display 4): 1080 x 1240
+GameNative window frame:     [0,0][1920,1080]   <- landscape, i.e. the display is rotated
+mCurrentFocus lists two windows:
+  rip.moth.cocoonshell/ExternalDisplayActivity
+  app.gamenative/app.gamenative.MainActivityAliasDefault
+```
+
+GameNative's window is on display 0 and `input -d 0` was tried explicitly. The AYN shell
+(`rip.moth.cocoonshell`) holds focus alongside it, which on a dual-screen handheld is plausibly where
+input is going. Worth knowing before blaming the app.
