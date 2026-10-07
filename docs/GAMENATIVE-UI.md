@@ -85,7 +85,7 @@ Opened during a game. Items used on 2026-10-07:
   Settings, Performance, "Enable in-game power control by default".
 
 **The menu pauses the game.** A 23.9 s stay in it was followed by AoE IV exiting with code 1 about 1 s later; a
-9.3 s stay was not ([README](../README.md), known limits).
+9.3 s stay was not ([RESEARCH-LOG.md](RESEARCH-LOG.md), known limits).
 
 A list at the bottom (`Mode` / `Task` / `Settings`, `60 FPS MODE`, `Top screen`, …) belongs to the AYN
 device panel, not GameNative — ignore those entries when parsing.
