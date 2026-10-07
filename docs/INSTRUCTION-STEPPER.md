@@ -91,11 +91,43 @@ blocks/s that did not fit the pattern; write faults fell from about 16,000/s to 
 handled 37,931 exceptions/s instead of 17,643/s (it runs about twice as fast, which also keeps its watchdog far from
 its limit).
 
+## The protection also scrambles its own code: patch 0014
+
+The write at `exe+0x3e557e3` fills code pages in `exe+0x3e1b000..0x3f57000` with pseudo-random qwords
+(`rax *= 0xda942043da942043`), and the code is decrypted again later. These are real code changes: with 0012 and 0013
+they were about 230 of the remaining 311 faults/s, each followed by a recompile of that page's code. FEX still produced
+about 4.3 MB of code per second: the 512 MB buffer filled in 119 s (analysis build) and in 144 and 180 s (build
+`20fdc47a`), the 128 MB one in about 30 s.
+
+[`patches/fex/0014-reuse-translations.patch`](../patches/fex/0014-reuse-translations.patch), on by default (the code
+reads `FEX_EXP_REUSE=0` as off; that switch was not tested): after a compile of code in a writable executable range,
+FEX keeps *entry address -> (hash of the decoded guest bytes, host code, code buffer)*. When that address has to be
+compiled again in the same code buffer, it decodes it, and if the bytes hash the same it puts the old host code back
+into the lookup cache (and write-protects the pages again) instead of compiling. The hash is taken right after the
+decode that the compile used. Counters: `CodeReuseStats` (marker `REUSE001`).
+
+Analysis build `ee366f55` (0012 + 0013 + 0014 + counters), same automated test:
+
+- 664 reuses/s and **0 hash mismatches** (568,474 reuses in the run): the decrypted code is the same every time.
+- Compiles: the loop thread 480/s -> 198/s (JIT time 0.166 -> 0.079 s/s), the main thread 234/s -> 120/s
+  (0.077 -> 0.052 s/s), both early in the match, compared with the analysis build without 0014.
+- Code growth: the 128 MB buffer lasted 154 s (about 30 s without 0014), and the 256 MB buffer had not filled after
+  585 s (81 s without 0014). Every replacement is a full recompile, which was the remaining big stutter.
+- 44.4 / 44.4 / 44.2 FPS at minutes 1 / 5 / 10, worst frame 250 / 50 / 50 ms.
+
+Release build `6990a221` (0002, 0004, 0006, 0007, 0009, 0010, 0012, 0013, 0014), same automated test (15:59):
+
+| Build | Match time | FPS | median | p99 | frames > 50 ms | frames > 100 ms | worst |
+|---|---|---|---|---|---|---|---|
+| `20fdc47a` (without 0014) | 1 / 5 / 10 / 20 min | 43.7 / 43.2 / 42.3 / 42.0 | 16.7 ms | 33.4 ms | 29 / 35 / 39 / 24 | 2 / 0 / 2 / 0 | 167 / 67 / 267 / 50 ms |
+| `6990a221` (with 0014) | 1 / 5 / 10 / 20 min | 43.3 / 43.5 / 43.3 / 42.1 | 16.7 ms | 33.4 ms | 18 / 18 / 16 / 24 | 1 / 0 / 0 / 0 | 267 / 50 / 50 / 50 ms |
+
+In the `6990a221` run the A.I. destroyed the idle player's town at game time 00:19:51, so its minute-20 window
+includes the end screen. The FPS stays the same; what 0014 removes is the full recompiles. In that run the code buffer grew to 256 MB in the
+first 4.7 minutes after the game started and was then not replaced for the 13.9 minutes until the check (759,256
+reuses, 0 mismatches). Without 0014 the 512 MB buffer was replaced every 2.4 to 3 minutes.
+
 ## What is left
 
-- **The protection also scrambles its own code after use.** The write at `exe+0x3e557e3` fills code pages in
-  `exe+0x3e1b000..0x3f57000` with pseudo-random qwords (`rax *= 0xda942043da942043`), and the code is decrypted again
-  later. These are real code changes: about 230 faults/s, each followed by a recompile of that page's code. With them
-  FEX still produced about 4.3 MB of code per second: with the 512 MB cap the buffer filled in 119 s (analysis build)
-  and in 144 and 180 s (release build `20fdc47a`), with 128 MB in about 30 s. Reusing a translation when the same bytes come back would remove that.
-- 292 blocks/s in the slot buffer do not fit the pattern and are compiled on each visit.
+- 292 blocks/s in the slot buffer do not fit the 0012 pattern and are compiled on each visit.
+- Code buffer replacements still happen at start-up while the buffer grows (16 MB doubling to 512 MB).
