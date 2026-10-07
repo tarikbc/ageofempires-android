@@ -63,6 +63,30 @@ a `.wcp` that has not been imported will **not** appear there.
 (e.g. `/sdcard/Download/fexcore-2610-aoe-nofex2.wcp`) → then select it in
 Edit container → Emulation → FEXCore Version.
 
+Path on 2026-10-07 (GameNative 1.2.1): library, top-right **Menu** (`(1841, 73)`), **Settings**, scroll down to
+**Contents Manager** (under Emulation), **Import .wcp from device**. That opens Android's file picker in
+Downloads; its search (`(1753, 110)`) finds the file by a one-word name such as `fexcore` (the keyboard split
+`fastcontinue` into two words). After the import the bundle is listed under Installed contents, FEXCore, as
+`<versionName> (<versionCode>)`. In the Emulation tab's FEXCore Version list it appears as
+`<versionName>-<versionCode>` below the built-in versions; the list scrolls. **A bundle whose `versionName` is
+already installed is unpacked and then dropped without a message** (2026-10-07: `aoe-fastcontinue` code 11 did not
+appear next to code 10); give every new bundle a new `versionName`.
+
+## The in-game Quick Menu
+
+Opened during a game. Items used on 2026-10-07:
+
+- **Controller** tab, **Edit Physical Controller**: per-game button bindings. Face buttons can be bound to other
+  gamepad buttons (A to B, X to Y and back), which swapped A/B and X/Y for AoE IV on the Thor.
+- **Performance HUD**: FPS, CPU and GPU load, temperatures on screen.
+- **Power Control** (tab 7 in logcat): GameNative's own CPU and GPU clock control. While it was on, the CPU caps
+  were 2.05 GHz (cores 3 to 6) and 1.98 GHz (core 7); turning it off restored 2.71 and 3.19 GHz (logcat
+  `PowerControl: Clean restore executed`) and raised AoE IV from 13.7 to about 25 FPS. Its default is in
+  Settings, Performance, "Enable in-game power control by default".
+
+**The menu pauses the game.** A 23.9 s stay in it was followed by AoE IV exiting with code 1 about 1 s later; a
+9.3 s stay was not ([README](../README.md), known limits).
+
 A list at the bottom (`Mode` / `Task` / `Settings`, `60 FPS MODE`, `Top screen`, …) belongs to the AYN
 device panel, not GameNative — ignore those entries when parsing.
 
