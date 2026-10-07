@@ -100,6 +100,18 @@ def susp_state():
     return counts, killer
 
 
+def start_exit_watch():
+    """Start probes/waitexit.exe in the container. If the game exits instead of freezing, GameNative closes the
+    container at once, so only this probe can record the exit code and copy the end of the log."""
+    local = os.path.join(os.path.dirname(os.path.abspath(__file__)), "probes", "waitexit.exe")
+    if os.path.exists(local):
+        adb("push", local, f"{DL}/waitexit.exe")
+    if not sh(f"ls {DL}/waitexit.exe 2>/dev/null").strip():
+        print("waitexit.exe missing (run tools/probes/build.sh); an exit will not be recorded", flush=True)
+        return
+    winexec("D:\\waitexit.exe", "")
+
+
 def launch():
     sh("am force-stop app.gamenative")
     time.sleep(4)
@@ -132,7 +144,7 @@ def main():
     if "deviceLocked=1" in sh("dumpsys trust"):
         sys.exit("device is locked; unlock it first")
     if not a.t0:
-        sh(f"rm -f {DL}/aoe/watch.txt {DL}/aoe/susp_now.txt {DL}/aoe/susp_hist.txt")
+        sh(f"rm -f {DL}/aoe/watch.txt {DL}/aoe/susp_now.txt {DL}/aoe/susp_hist.txt {DL}/aoe/exitcode.txt {DL}/aoe/final_log.txt")
     pid = ""
     if a.launch:
         # GameNative sometimes hangs on "Syncing cloud saves" after Play, with no way past it in the UI.
@@ -157,6 +169,8 @@ def main():
     t0 = a.t0 or time.time()
     run_start = time.strftime("%Y-%m-%d %H:%M")
     print(f"[{time.strftime('%H:%M:%S')}] pid={pid}; run started ~{run_start}", flush=True)
+    if not a.t0:
+        start_exit_watch()
     new = not os.path.exists(os.path.join(a.out, "timeline.tsv"))
     tl = open(os.path.join(a.out, "timeline.tsv"), "a")
     new and tl.write("t_s\tthreads\tcpu_pct\tlog_bytes\tgrowing\tsusp\tkiller\tstep\tlast\n")
@@ -197,8 +211,13 @@ def main():
             break
         time.sleep(max(0, 10 - (time.time() - now)))
     run_mon(False)  # the session usually outlives the game: copy the final log, not the last sample
-    for f in ("watch.txt", "susp_hist.txt"):
+    for f in ("watch.txt", "susp_hist.txt", "exitcode.txt", "final_log.txt"):
         adb("pull", f"{DL}/aoe/{f}", os.path.join(a.out, f))
+    if os.path.exists(os.path.join(a.out, "exitcode.txt")):
+        print(open(os.path.join(a.out, "exitcode.txt")).read().rstrip(), flush=True)
+    final, watch = os.path.join(a.out, "final_log.txt"), os.path.join(a.out, "watch.txt")
+    if os.path.exists(final) and (not os.path.exists(watch) or os.path.getsize(final) > os.path.getsize(watch)):
+        os.replace(final, watch)  # the game exited: waitexit's copy is the complete log
     print(f"[{time.strftime('%H:%M:%S')}] done after {int(time.time()-t0)}s; files in {a.out}", flush=True)
 
 

@@ -25,7 +25,7 @@ FIXED = [
     (re.compile(r"sessionToken=[A-Za-z0-9]+"), "sessionToken=<redacted>"),
     (re.compile(r"\[[A-Za-z .]+ (?:Standard|Daylight) Time UTC [+-]\d\d:\d\d\]"), "[<timezone>]"),
     (re.compile(r"/Users/[^/\s\"']+"), "<home>"),
-    (re.compile(r"/home/(?!xuser\b)[^/\s\"']+"), "<home>"),
+    (re.compile(r"/home/(?!xuser\b|runner\b)[^/\s\"']+"), "<home>"),  # runner: GitHub Actions build paths
     (re.compile(r"\b7656119\d{10}\b"), "<steamid64>"),
 ]
 
