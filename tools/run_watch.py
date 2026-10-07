@@ -118,6 +118,8 @@ def main():
     ap.add_argument("--minutes", type=float, default=10)
     ap.add_argument("--out", default="run_watch_out")
     ap.add_argument("--t0", type=float, default=0, help="epoch seconds the game process appeared (re-attach)")
+    ap.add_argument("--stop-after-frozen", type=int, default=0,
+                    help="stop this many seconds after the log stops growing while threads are suspended")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     if "deviceLocked=1" in sh("dumpsys trust"):
@@ -140,6 +142,7 @@ def main():
     tl = open(os.path.join(a.out, "timeline.tsv"), "a")
     new and tl.write("t_s\tthreads\tcpu_pct\tlog_bytes\tgrowing\tsusp\tkiller\tstep\tlast\n")
     last_size, last_ticks, last_t, tick, gone = -1, None, t0, 0, 0
+    frozen_since, suspended_seen = None, False
     while time.time() - t0 < a.minutes * 60:
         tick += 1
         if not game_pid():
@@ -159,6 +162,9 @@ def main():
         counts, killer = susp_state() if with_susp else ({}, "")
         growing = "" if last_size < 0 else ("yes" if size > last_size else "NO")
         last_size = size
+        if counts.get("1", 0) > 1:
+            suspended_seen = True
+        frozen_since = (frozen_since or now) if growing == "NO" else None
         susp = ",".join(f"s{k}:{v}" for k, v in sorted(counts.items())) if with_susp else ""
         t = int(now - t0)
         tl.write(f"{t}\t{threads}\t{cpu}\t{size}\t{growing}\t{susp}\t{killer}\t{step}\t{last}\n")
@@ -167,7 +173,11 @@ def main():
               + ("" if ok else "  (mon.bat did not finish)"), flush=True)
         if tick == 1:
             print(f"   log first line: {head}", flush=True)
+        if a.stop_after_frozen and suspended_seen and frozen_since and now - frozen_since >= a.stop_after_frozen:
+            print(f"t={t}s  log frozen with threads suspended; stopping", flush=True)
+            break
         time.sleep(max(0, 10 - (time.time() - now)))
+    run_mon(False)  # the session usually outlives the game: copy the final log, not the last sample
     for f in ("watch.txt", "susp_hist.txt"):
         adb("pull", f"{DL}/aoe/{f}", os.path.join(a.out, f))
     print(f"[{time.strftime('%H:%M:%S')}] done after {int(time.time()-t0)}s; files in {a.out}", flush=True)
