@@ -14,7 +14,7 @@ LOCALE [en-US]
 (I) [07:41:58.045] [000000312]: Loading step: [Single Instance Check]
 (I) [07:41:58.046] [000000312]: Loading step: [Async IO Queue]
 (I) [07:41:58.048] [000000312]: Loading step: [Config File]
-(I) [07:41:58.429] [000000312]: GAME -- Current Steam name is [tarikbc]
+(I) [07:41:58.429] [000000312]: GAME -- Current Steam name is [<steam-name>]
 (I) [07:41:58.430] [000000312]: GAME -- steam returned language 'english'
 (I) [07:41:58.431] [000000312]: GAME -- [Age of Empires IV] set to language [en]
 (I) [07:41:58.431] [000000312]: Loading step: [Render Window]
@@ -461,7 +461,7 @@ LOCALE [en-US]
 (I) [07:43:18.296] [000000432]: WebSocketConnection::OnConnect; m_resumeState=0
 (I) [07:43:18.300] [000000432]: WebSocketConnection::Process: Sending session token; clientLibVersion=191 sessionToken=<redacted>
 (E) [07:43:19.393] [000000708]: HTTPCLIENT: HCHttpCallPerform [ID 5] [TID 708l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=1 dwError=12152
-(I) [07:43:19.558] [000000432]: WebSocketConnection::ProcessMessages: message=[0,"PresenceMessage",<profile-id>,[[202,<profile-id>,"/steam/<steamid64>","{\"sharedHistory\":1,\"hardwareType\":0,\"inputDeviceType\":0}","tarikbc","tarikbc","",9127736,2329,7,2074438,null,"<steamid64>",3,[],1,"Online",[[1409823,"-2"]]]]]
+(I) [07:43:19.558] [000000432]: WebSocketConnection::ProcessMessages: message=[0,"PresenceMessage",<profile-id>,[[202,<profile-id>,"/steam/<steamid64>","{\"sharedHistory\":1,\"hardwareType\":0,\"inputDeviceType\":0}","<steam-name>","<steam-name>","",9127736,2329,7,2074438,null,"<steamid64>",3,[],1,"Online",[[1409823,"-2"]]]]]
 (I) [07:43:26.210] [000000312]: System was measured to be capable of copying [17071] MB/sec.
 (I) [07:43:26.445] [000000312]: 	[VPXDecoder::UpdateDisplayFrame] Video has fallen behind by 9.24 s. Seeking to catch up
 (I) [07:43:26.933] [000000312]: Loading WinCondition: data:scar\winconditions\chaotic_climate_mode.bin
@@ -554,7 +554,7 @@ LOCALE [en-US]
 (I) [07:43:51.059] [000000312]: [Match Flow] MatchSetup::StartMatch() - m_matchStatus = ST_STARTING [match type: 55, session id -2]
 (E) [07:44:02.073] [000000312]: SaveOfflineUserDataJob failed to complete on time.
 (I) [07:44:04.734] [000000312]: GetPartyStatsByID found 1 teams for user ID <profile-id>
-(I) [07:44:09.566] [000000432]: WebSocketConnection::ProcessMessages: message=[0,"PresenceMessage",<profile-id>,[[203,<profile-id>,"/steam/<steamid64>","{\"sharedHistory\":1,\"hardwareType\":0,\"inputDeviceType\":0}","tarikbc","tarikbc","",9127736,2329,7,2074438,null,"<steamid64>",3,[],2,"Online",[[1409823,"-2"]]]]]
+(I) [07:44:09.566] [000000432]: WebSocketConnection::ProcessMessages: message=[0,"PresenceMessage",<profile-id>,[[203,<profile-id>,"/steam/<steamid64>","{\"sharedHistory\":1,\"hardwareType\":0,\"inputDeviceType\":0}","<steam-name>","<steam-name>","",9127736,2329,7,2074438,null,"<steamid64>",3,[],2,"Online",[[1409823,"-2"]]]]]
 (I) [07:44:10.241] [000000312]: Match key created, UID=1248652778
 (E) [07:44:15.237] [000000432]: TlsConnection::Shutdown: socket 0/2016 SSL shut down failed; A system error occurred. errno=10038
 (I) [07:44:15.393] [000000432]: WebSocketConnection::Process: Connection closed
@@ -571,7 +571,7 @@ LOCALE [en-US]
 (I) [07:44:15.861] [000000312]: GAME -- Scenario: data:scenarios\campaign\angevin\ang_chp0_intro\ang_chp0_intro
 (I) [07:44:15.861] [000000312]: GAME -- Win Condition Qualified Name: 00000000000000000000000000000000:385555344
 (I) [07:44:15.861] [000000312]: GAME -- Win Condition Name: no_win_condition
-(I) [07:44:15.861] [000000312]: GAME -- Human Player: 0 tarikbc <profile-id> 0 english
+(I) [07:44:15.861] [000000312]: GAME -- Human Player: 0 <steam-name> <profile-id> 0 english
 (I) [07:44:15.861] [000000312]: GAME -- AI Player: 1 2 A.I. Easy -1 1 french
 (I) [07:44:15.861] [000000312]: GAME -- AI Player: 2 3 A.I. Easy -1 2 english
 (E) [07:44:16.221] [000000312]: WorldwideGetProfileByPlatformIDAsync - response was failure: -46 
