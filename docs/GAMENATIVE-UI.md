@@ -128,6 +128,12 @@ With no running container, the file cannot be replaced from Wine, and the app da
 In the FEXCore Version list, `ntdll-waitq-fix-1` is the last item and sits at the screen edge
 (`(1680, 1055)`).
 
+**Since 2026-10-07 evening** the Thor no longer has `2610-aoe-nofex2-3` or `ntdll-waitq-fix-1` (removed in the
+clean-up). Its FEXCore contents are `aoe4-perf2-20` (in use, DLL `6990a221`), `aoe4-perf-18` (`20fdc47a`, without
+patch 0014) and `aoe-fastcontinue2-11` (`eca1e25b`, without 0012 to 0014). GameNative writes the selected content's
+DLL at every start, so after a bad build, selecting one of these in the Emulation tab (`tools/gn_select_fex.py
+aoe4-perf2-20`) is enough; that switch was used many times that day, each time taking effect at the next start.
+
 ## Gotchas
 
 - GameNative **re-installs the files of the selected FEXCore Version on every launch** (Emulation tab).
