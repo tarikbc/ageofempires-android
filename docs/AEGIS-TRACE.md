@@ -31,10 +31,16 @@ ordinary API call, a RIP elsewhere is code issuing its own syscall.
 |---|---|---|
 | A | also recorded the x64 caller in FEX's `ExitFunctionEC` / `RetToEntryThunk` | `winhandler.exe` could no longer start programs (Play and the command channel both dead). Recovered by selecting FEXCore `2610-aoe-nofex2-3`, which reinstalls `460568b8` |
 | B | A without the two assembly changes | `winhandler` works. The game stalls in `Property Bag Manager` with 205 threads at 0 % CPU; the trace shows 206 `NtCreateThreadEx` calls |
-| C | B on top of patch 0006, saving all 32 vector registers around the logger, wrapped calls decoded by following the wrapper's `bl` | built (`1de00759`), not yet run |
+| C | B on top of patch 0006, saving all 32 vector registers around the logger, wrapped calls decoded by following the wrapper's `bl` | `1de00759`, run 2026-10-07 00:35: passes `Property Bag Manager`, then stops in `Autodetect Settings` at the second "Enumerating Graphics Adapters" (a normal run passes it in about 0.1 s). 48 threads, 1 to 2 % CPU, no thread suspended, for 7 minutes |
 
-Why B stalls is **not established**. Variant C tests one candidate: the logger is ordinary C++ code and may
-change vector registers that a raw syscall must preserve ([SYSCALL-RETURN.md](SYSCALL-RETURN.md)).
+Variant C tested one candidate for B's stall, the logger changing vector registers. The vector save did not
+make the build safe: the game still stops, in a different place. In C the main thread's last logged calls
+are `NtCreateThreadEx` (through ntdll's x64 code) and `NtResumeThread`, 36.26 s after the first entry; no
+thread first seen after that moment makes a logged call. In B, 192 `NtCreateThreadEx` calls came from the
+same ntdll address. So both trace builds go wrong around thread creation. **Why is not established**, and as
+built the trace cannot capture the kill.
+
+The gateway address changes between runs: `0x2dc04f0` in B, `0x2dd08e8` in C. So it is allocated at run time.
 
 ## First findings from variant B (before the stall)
 
