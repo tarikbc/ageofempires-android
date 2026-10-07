@@ -6,9 +6,15 @@
 | `0002` | Hides the CPUID `0x40000000` vendor. Verified live. Does not stop the kill. |
 | `0004` | Keeps the trap and reports the guest's own protection from `NtQueryVirtualMemory` / `NtProtectVirtualMemory`. Verified with `smctest2`; the game runs normally with it. **Does not stop the kill** (5 of 5 runs, [SMC-TRAP-HIDDEN.md](../../docs/SMC-TRAP-HIDDEN.md)). |
 | `0006` | On top of 0004: a raw x64 `syscall` returns `rcx` = return address and keeps `rdx`/`r10`, like hardware. Verified with `syscallregs`. **Does not stop the kill** (3 of 3 runs stopped: 2 suspended, 1 exited; [SYSCALL-RETURN.md](../../docs/SYSCALL-RETURN.md)). |
+| `0007` (2026-10-07) | In `RelicCardinal.exe` only: rewrites every exported `FF 25 disp32` thunk of an ARM64X image as `48 FF 25 disp32-1` when padding follows and the 7 bytes stay inside an executable section. **The game's hook check then flags nothing, and the start-up kill is gone**; 2 of 2 judged runs grew their log past the old window, then stopped 8 to 10 minutes in ([HOOK-CHECK.md](../../docs/HOOK-CHECK.md)). |
+| `0008` (2026-10-07) | Analysis tool: copies every distinct decoded block in `0x143800000..0x145000000` of the game process into a 96 MB buffer; `tools/probes/blkread.c` reads it out. The game runs normally with it. |
 
-Build: fresh clone of FEX `7d3090f`, apply 0002 and 0004 (and 0006 if wanted), the three macOS fixes from
-[BUILDING-FEX.md](../../docs/BUILDING-FEX.md), then `ninja arm64ecfex`.
+Build: fresh clone of FEX `7d3090f`, apply 0002 and 0004 (and 0006, 0007, 0008 if wanted, in that order), the three
+macOS fixes from [BUILDING-FEX.md](../../docs/BUILDING-FEX.md), then `ninja arm64ecfex`. The 0007/0008 results came
+from a tree that also had the (disabled) trace code of 0005; the patches apply to clean `7d3090f` and on top of
+0002+0004+0006, but a build of exactly that set has not been run yet. If the link fails with
+`misaligned ldr/str offset`, add `alignas(8)` to `NtDllRedirectionLUTSize` in `Module.cpp` (`Module.S` loads it
+with a 64-bit `ldr`).
 
 ## `0001-hide-smc-trap-from-guest.patch`
 

@@ -1,0 +1,129 @@
+--- a/FEXCore/Source/Interface/Core/Core.cpp
++++ b/FEXCore/Source/Interface/Core/Core.cpp
+@@ -518,6 +518,10 @@
+   return Thread.FrontendDecoder->CheckIfCacheable(Thread, reinterpret_cast<const uint8_t*>(GuestRIP), GuestRIP, MaxInst);
+ }
+ 
++// Patch 0008 (experiment): called with every decoded guest block before it is compiled (set by the frontend).
++extern "C" void (*FEXGuestBlockDumpHook)(uint64_t Entry, const uint8_t* Code, uint64_t Size);
++void (*FEXGuestBlockDumpHook)(uint64_t Entry, const uint8_t* Code, uint64_t Size) = nullptr;
++
+ ContextImpl::GenerateIRResult
+ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, bool ExtendedDebugInfo, uint64_t MaxInst) {
+   FEXCORE_PROFILE_SCOPED("GenerateIR");
+@@ -549,6 +553,12 @@
+ 
+     const auto* BlockInfo = Thread->FrontendDecoder->GetDecodedBlockInfo();
+     const auto& CodeBlocks = BlockInfo->Blocks;
++
++    if (FEXGuestBlockDumpHook) {
++      for (const auto& Block : CodeBlocks) {
++        FEXGuestBlockDumpHook(Block.Entry, reinterpret_cast<const uint8_t*>(Block.Entry), Block.Size);
++      }
++    }
+ 
+     Thread->OpDispatcher->BeginFunction(GuestRIP, &CodeBlocks, BlockInfo->TotalInstructionCount, BlockInfo->Is64BitMode,
+                                         AreMonoHacksActive() && MonoBackpatcherBlock.load(std::memory_order_relaxed) == GuestRIP);
+--- a/Source/Windows/ARM64EC/Module.cpp
++++ b/Source/Windows/ARM64EC/Module.cpp
+@@ -91,6 +91,16 @@
+ uint64_t WineNtProtectVirtualMemorySyscallId;
+ uint64_t WineNtRaiseExceptionSyscallId;
+ 
++// Patch 0008 (experiment): header of the decoded-block dump; tools/probes/blkread.c finds it by symbol RVA.
++struct {
++  uint64_t Marker; // "BLKDUMP1"
++  uint64_t Buffer;
++  uint64_t Capacity;
++  uint64_t WriteOffset;
++  uint64_t Dropped;
++  uint64_t Records;
++} BlockDumpInfo = {0x31504d55444b4c42ULL, 0, 0, 0, 0, 0};
++
+ NTSTATUS NtContinueNative(ARM64_NT_CONTEXT* NativeContext, BOOLEAN Alert);
+ NTSTATUS NtAllocateVirtualMemoryNative(HANDLE, PVOID*, ULONG_PTR, SIZE_T*, ULONG, ULONG);
+ NTSTATUS NtProtectVirtualMemoryNative(HANDLE, PVOID*, SIZE_T*, ULONG, ULONG*);
+@@ -346,6 +356,75 @@
+   PatchCallChecker();
+   return true;
+ }
++
++// Patch 0008 (experiment): copy every distinct decoded guest block in [BlockDumpLo, BlockDumpHi) of the game process
++// into an in-memory buffer as {u64 Entry, u32 Size, u32 Tid, u64 Ticks (cntvct_el0), bytes}, 8-byte aligned.
++// No syscalls happen on this path (the dedupe table and buffer are allocated up front), so it is safe inside the
++// compiler. A first version that wrote a file from here hung the game after one record.
++extern "C" void (*FEXGuestBlockDumpHook)(uint64_t Entry, const uint8_t* Code, uint64_t Size);
++namespace {
++constexpr uint64_t BlockDumpLo = 0x143800000, BlockDumpHi = 0x145000000;
++constexpr uint64_t BlockDumpCapacity = 96ULL << 20;
++constexpr uint64_t BlockDumpTableSize = 1ULL << 21;
++std::mutex BlockDumpMutex;
++uint64_t* BlockDumpTable;
++
++void BlockDump(uint64_t Entry, const uint8_t* Code, uint64_t Size) {
++  if (Entry < BlockDumpLo || Entry >= BlockDumpHi || !Size || Size > 0x10000) {
++    return;
++  }
++  uint64_t Hash = 0xcbf29ce484222325ULL ^ Entry;
++  for (uint64_t i = 0; i < Size; i++) {
++    Hash = (Hash ^ Code[i]) * 0x100000001b3ULL;
++  }
++  Hash |= 1;
++  std::scoped_lock Lock(BlockDumpMutex);
++  for (uint64_t Slot = Hash & (BlockDumpTableSize - 1);; Slot = (Slot + 1) & (BlockDumpTableSize - 1)) {
++    if (BlockDumpTable[Slot] == Hash) {
++      return;
++    }
++    if (!BlockDumpTable[Slot]) {
++      BlockDumpTable[Slot] = Hash;
++      break;
++    }
++  }
++  struct {
++    uint64_t Entry;
++    uint32_t Size;
++    uint32_t Tid;
++    uint64_t Ticks;
++  } Header {Entry, static_cast<uint32_t>(Size), static_cast<uint32_t>(reinterpret_cast<uint64_t>(reinterpret_cast<__TEB*>(NtCurrentTeb())->ClientId.UniqueThread)), 0};
++  __asm__ volatile("mrs %0, cntvct_el0" : "=r"(Header.Ticks));
++  const uint64_t Need = (sizeof(Header) + Size + 7) & ~7ULL;
++  if (BlockDumpInfo.WriteOffset + Need > BlockDumpInfo.Capacity) {
++    BlockDumpInfo.Dropped++;
++    return;
++  }
++  auto* Dst = reinterpret_cast<uint8_t*>(BlockDumpInfo.Buffer + BlockDumpInfo.WriteOffset);
++  memcpy(Dst, &Header, sizeof(Header));
++  memcpy(Dst + sizeof(Header), Code, Size);
++  BlockDumpInfo.Records++;
++  __atomic_store_n(&BlockDumpInfo.WriteOffset, BlockDumpInfo.WriteOffset + Need, __ATOMIC_RELEASE);
++}
++
++void InstallBlockDump() {
++  const auto* Params = reinterpret_cast<__TEB*>(NtCurrentTeb())->Peb->ProcessParameters;
++  const auto* Name = reinterpret_cast<const wchar_t*>(Params->ImagePathName.Buffer);
++  const size_t Len = Params->ImagePathName.Length / sizeof(WCHAR);
++  static constexpr wchar_t Game[] = L"RelicCardinal.exe";
++  constexpr size_t GameLen = sizeof(Game) / sizeof(wchar_t) - 1;
++  if (Len < GameLen || memcmp(Name + Len - GameLen, Game, GameLen * sizeof(wchar_t))) {
++    return;
++  }
++  BlockDumpTable = static_cast<uint64_t*>(::VirtualAlloc(nullptr, BlockDumpTableSize * 8, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
++  void* Buffer = ::VirtualAlloc(nullptr, BlockDumpCapacity, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
++  if (BlockDumpTable && Buffer) {
++    BlockDumpInfo.Buffer = reinterpret_cast<uint64_t>(Buffer);
++    BlockDumpInfo.Capacity = BlockDumpCapacity;
++    FEXGuestBlockDumpHook = BlockDump;
++  }
++}
++} // namespace
+ 
+ void HandleImageMap(uint64_t Address, bool MainImage = false) {
+   fextl::string ModulePath = FEX::Windows::GetSectionFilePath(Address);
+@@ -689,6 +768,7 @@
+   HandleImageMap(reinterpret_cast<uint64_t>(MainModule), true);
+ 
+   HandleImageMap(NtDllBase);
++  InstallBlockDump();
+ 
+   CPUFeatures.emplace(*CTX);
+ 
