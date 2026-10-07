@@ -47,6 +47,20 @@ Not established: what the 150 ms call computes, what `0x0e00000000000000` encode
 `+0x3e6b53c` on a machine where the game works (the game does not stop there, so either the path or that
 function's effect must differ).
 
+### The kill job talks to the wineserver very little (run 02:22, `WINEDEBUG=+seh,+server`)
+
+Same baseline; the kill thread was again `0174`. It woke at 02:25:34.935 (after 176.9 s this time) and entered
+`+0x3e6b53c` at 02:25:35.427. Its wineserver requests from waking until 0.5 s after that:
+
+- 52 `get_thread_info` on its own handle (`fffffffe`), in bursts at the same times as its illegal-instruction
+  steps (34.93 to 34.97, 35.22 to 35.26, 35.41 to 35.42);
+- **none** between 34.97 and 35.22, the gap that corresponds to the call that produces the verdict. So that
+  call needs no wineserver: it reads memory and computes;
+- after the gap, at 35.264: `create_event`, then `new_thread` (thread `0430`, entry `+0x3f74340`, which queries
+  itself, duplicates its own handle, reads that handle's thread info twice and exits);
+- at 35.432, inside `+0x3e6b53c`: `get_process_debug_info` on its own process, answer `PORT_NOT_SET` (no
+  debugger), as on Windows.
+
 ## A hook check that runs all the time: thread `0178`
 
 `0178` runs a loop of illegal instructions at `+0x3f551cd` … `+0x3f551e4` (324,038 exceptions in this run).
