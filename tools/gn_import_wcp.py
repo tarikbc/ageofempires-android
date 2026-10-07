@@ -28,10 +28,11 @@ time.sleep(14)
 g = GN(rw.SERIAL or None)
 g.tap(1841, 73)  # top-right Menu
 time.sleep(2)
-hits = find_nodes(g.dump(), text="Settings")
+# Two nodes read "Settings": the menu entry (right-hand panel, upper half) and a hint in the bottom bar.
+hits = [n for n in find_nodes(g.dump(), text="Settings") if bounds_center(n)[0] > 1000 and bounds_center(n)[1] < 700]
 if not hits:
     sys.exit("menu did not open")
-g.tap(*bounds_center(hits[-1]))
+g.tap(*bounds_center(hits[0]))
 time.sleep(3)
 for _ in range(8):
     hits = find_nodes(g.dump(), text="Contents Manager")
