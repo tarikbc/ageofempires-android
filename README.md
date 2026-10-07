@@ -16,7 +16,9 @@ stop it.
 camera turning runs at **42 to 44 FPS with a median frame of 16.7 ms**, against 26.7 FPS and 33.4 ms with the
 previous build, and frames over 100 ms fell from 71 to 2 in the first 90 s window (compositor frame times, same
 automated test, [INSTRUCTION-STEPPER.md](docs/INSTRUCTION-STEPPER.md)). The cause was the protection running code one
-instruction at a time from a scratch buffer, which cost FEX a fault and a compile per instruction.
+instruction at a time from a scratch buffer, which cost FEX a fault and a compile per instruction. Patch 0014 (build
+`6990a221`) keeps the same FPS (43.3 / 43.5 / 43.3 / 42.1 at minutes 1 / 5 / 10 / 20) and removes the full
+recompile that still came every 2 to 3 minutes: no frame over 100 ms after the first minute in that run.
 
 ![Frame times before and after patches 0012 and 0013](docs/img/frametimes-before-after.png)
 
@@ -45,15 +47,15 @@ instruction at a time from a scratch buffer, which cost FEX a fault and a compil
 **What it takes (as tested):**
 
 1. GameNative 1.2.1 container: Wine `proton-11.0-99-arm64ec-1`, variant `bionic`, 64-bit emulator FEXCore.
-2. FEX `7d3090f` with [patches](patches/fex) 0002, 0004, 0006, 0007, 0009, 0010, 0012 and 0013
-   ([BUILDING-FEX.md](docs/BUILDING-FEX.md)); 0009 only acts with `FEX_EXP_SKIP_CALLRET_RESET=1`. Without 0012 and
-   0013 the game also runs, at about 27 FPS.
+2. FEX `7d3090f` with [patches](patches/fex) 0002, 0004, 0006, 0007, 0009, 0010, 0012, 0013 and 0014
+   ([BUILDING-FEX.md](docs/BUILDING-FEX.md)); 0009 only acts with `FEX_EXP_SKIP_CALLRET_RESET=1`. Without 0012 to
+   0014 the game also runs, at about 27 FPS.
 3. That `libarm64ecfex.dll` packaged as a FEXCore content with [`tools/make_fex_wcp.py`](tools/make_fex_wcp.py),
    imported in GameNative (Settings, Contents Manager, Import .wcp from device) and selected in the container's
    Emulation tab, FEXCore Version (tested 2026-10-07 10:34 with `aoe-fastcontinue-10`: at the next start logcat
    shows GameNative applying `fexcore-aoe-fastcontinue-10`, and the installed DLL hashed `86d6da39`; since 11:17
-   `aoe-fastcontinue2-11`, DLL `eca1e25b`; since 14:52 `aoe4-perf-18`, DLL `20fdc47a`, with 0012 and 0013). The
-   earlier runs installed the DLL by hand instead
+   `aoe-fastcontinue2-11`, DLL `eca1e25b`; since 14:52 `aoe4-perf-18`, DLL `20fdc47a`, with 0012 and 0013; since
+   15:58 `aoe4-perf2-20`, DLL `6990a221`, with 0014 too). The earlier runs installed the DLL by hand instead
    ([GAMENATIVE-UI.md](docs/GAMENATIVE-UI.md)).
 4. Container `envVars`: `WINEDEBUG=-all FEX_EXP_SKIP_CALLRET_RESET=1`. 0010 is on by default since build
    `eca1e25b` (`FEX_EXP_FASTCONTINUE=0` turns it off; earlier builds needed `FEX_EXP_FASTCONTINUE=1`). 0009
@@ -220,10 +222,11 @@ below was needed to run the game; they stay as notes and were not tested further
 
 ## Next actions
 
-1. **Speed, what is left after 0012/0013:** the protection also scrambles some of its functions after use and
-   decrypts them again, about 230 times per second; FEX recompiles them each time and still fills its 512 MB code
-   buffer every 2 to 3 minutes, and each full recompile is one stutter of up to about 270 ms. Reusing the old
-   translation when the same bytes return is being tested ([INSTRUCTION-STEPPER.md](docs/INSTRUCTION-STEPPER.md)).
+1. **Speed, what is left after 0012 to 0014:** about 290 blocks/s in the protection's slot buffer do not fit
+   0012's pattern and are compiled on each visit, and the code buffer still grows (and so recompiles everything) a
+   few times in the first minutes. At about minute 20 of the 0014 run the GPU was 69 to 71 % busy at 615 MHz (sysfs
+   `gpu_busy_percentage`, 5 samples), against 22 to 38 % at the old 25 FPS, so the GPU's share of each frame is now
+   large too ([INSTRUCTION-STEPPER.md](docs/INSTRUCTION-STEPPER.md)).
 2. **Older speed note.** The game's EXE has no volatile metadata (`VolatileMetadataPointer` 0 in its load config), so FEX
    emulates x86 memory ordering (TSO) on every memory access. Test `FEX_TSOENABLED=0` for speed and stability. Also
    find what the main thread's about 3,000 short waits per second are (FEX locks or the game's own job system).
@@ -268,7 +271,7 @@ and [WINE-GAPS.md](docs/WINE-GAPS.md).
 |---|---|
 | Wine | `proton-11.0-99-arm64ec` |
 | CPU emulator | FEXCore; container variant `bionic` |
-| FEX DLL in use | `C:\windows\system32\libarm64ecfex.dll` built from FEX `7d3090f` + patches 0002, 0004, 0006, 0007, 0009, 0010, 0012, 0013 (SHA-1 `20fdc47a`), installed by GameNative from the FEXCore content `aoe4-perf-18`. Before that: the same without 0012 and 0013 (`eca1e25b`, content `aoe-fastcontinue2-11`) |
+| FEX DLL in use | `C:\windows\system32\libarm64ecfex.dll` built from FEX `7d3090f` + patches 0002, 0004, 0006, 0007, 0009, 0010, 0012, 0013, 0014 (SHA-1 `6990a221`), installed by GameNative from the FEXCore content `aoe4-perf2-20`. Before that: without 0014 (`20fdc47a`, `aoe4-perf-18`) and without 0012 to 0014 (`eca1e25b`, `aoe-fastcontinue2-11`) |
 | FEX switches | none needed with build `eca1e25b` (0010 on by default); the 11:24 run also had `FEX_TSOENABLED=0` |
 | DX wrapper | VKD3D (vkd3d-proton 2.14.1 + DXVK 2.4.1-gplasync) |
 | GPU driver | Turnip v26.2.0 R4 |
@@ -325,7 +328,7 @@ note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch
 
 | Path | What it is |
 |---|---|
-| [`patches/fex/`](patches/fex) | 0002 hides the CPUID vendor; 0004 hides the SMC trap from guest queries (works; does not stop the kill); 0006 makes a raw x64 `syscall` return registers like hardware (works; does not stop the kill); 0007 rewrites exported `FF 25` thunks so the game's hook check passes (moves the stop from ~3 to ~9 minutes); 0008 dumps the decoded code of the protection's range (analysis tool); 0009 skips the per-thread call-ret discard on each SMC fault (unsafe experiment; with 0007 it reached the first menu); 0010 resumes x64 code after an exception without Wine's wineserver round trip, on by default (with 0007 the game is playable past 15 minutes; one run without 0009, with TSO off, also passed 15 minutes); 0012 stops the protection's one-instruction-at-a-time code buffer from costing a fault and a compile per instruction, and 0013 raises FEX's code buffer cap to 512 MB (together 26.7 to 43.7 FPS in a skirmish). 0001/0003 stop the game at start-up. |
+| [`patches/fex/`](patches/fex) | 0002 hides the CPUID vendor; 0004 hides the SMC trap from guest queries (works; does not stop the kill); 0006 makes a raw x64 `syscall` return registers like hardware (works; does not stop the kill); 0007 rewrites exported `FF 25` thunks so the game's hook check passes (moves the stop from ~3 to ~9 minutes); 0008 dumps the decoded code of the protection's range (analysis tool); 0009 skips the per-thread call-ret discard on each SMC fault (unsafe experiment; with 0007 it reached the first menu); 0010 resumes x64 code after an exception without Wine's wineserver round trip, on by default (with 0007 the game is playable past 15 minutes; one run without 0009, with TSO off, also passed 15 minutes); 0012 stops the protection's one-instruction-at-a-time code buffer from costing a fault and a compile per instruction, 0013 raises FEX's code buffer cap to 512 MB (together 26.7 to 43.7 FPS in a skirmish); 0014 reuses translations when the protection decrypts the same code again (no periodic full recompile). 0001/0003 stop the game at start-up. |
 | [`patches/box64/`](patches/box64) | Against GameNative's Box64 (`Pipetto-crypto` `eb6fb21f`), in order: 0001 decode SSE/AVX stores so write faults reach Wine as writes; 0002 keep the guest's execute permission on `noexec` storage; 0003 send raw Windows syscalls to Wine's dispatcher when Wine installed no seccomp handler (39-bit address space). With all three, `proton-11.0-1-x86_64` runs the game to `Config File` ([BOX64-ROUTE.md](docs/BOX64-ROUTE.md)). |
 | [`patches/proton-arm64ec-ntdll/`](patches/proton-arm64ec-ntdll) | Two binary patches for the ARM64EC `ntdll.dll` (`invoke_arm64ec_syscall` register fix; `--waitq` spinlock fix). |
 | [`patches/gamenative/`](patches/gamenative) | Fresh Steam ticket per launch. Not built or tested. |
@@ -338,7 +341,7 @@ and what did not. Then:
 | Doc | Covers |
 |---|---|
 | [`AEGIS.md`](docs/AEGIS.md) | The protection: identity, build log, blocklist, timing constants |
-| [`INSTRUCTION-STEPPER.md`](docs/INSTRUCTION-STEPPER.md) | **Why it was slow**: the protection runs code one instruction at a time through 32-byte slots of a 16 MB buffer; under FEX each step was a write fault, an invalidation and a compile. Patch 0012 serves those slots by content, 0013 raises the code buffer cap. 26.7 to 43.7 FPS |
+| [`INSTRUCTION-STEPPER.md`](docs/INSTRUCTION-STEPPER.md) | **Why it was slow**: the protection runs code one instruction at a time through 32-byte slots of a 16 MB buffer; under FEX each step was a write fault, an invalidation and a compile. Patch 0012 serves those slots by content, 0013 raises the code buffer cap, 0014 reuses translations of code the protection decrypts again. 26.7 to 43.7 FPS, and no periodic full recompile |
 | [`TESTING.md`](docs/TESTING.md) | The automated test: launch, intros, skirmish, camera turn and frame times from adb; the in-game agent without cmd windows; what the HUD costs |
 | [`FAST-CONTINUE.md`](docs/FAST-CONTINUE.md) | **The fix for the watchdog**: every handled exception waited for one wineserver request in Wine's ARM64EC `NtContinue`; patch 0010 skips it. Exception cost 230 to 2.5 us, loop cycle about 1.1 s, game playable past 15 minutes |
 | [`WATCHDOG.md`](docs/WATCHDOG.md) | **The later stop is a lateness bucket** on the protection's loop (2 s per cycle allowed, 256 s total), the measured cycle times, and FEX's per-thread JIT/SMC/exception costs that make the cycles slow. |
