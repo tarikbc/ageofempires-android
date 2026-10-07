@@ -154,13 +154,21 @@ note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch
   copies `warnings.log` every 10 s and runs `suspinfo` every 20 s through
   [`tools/thor/mon.bat`](tools/thor/mon.bat) (push it to `D:\mon.bat`), and writes a timeline.
 - **Probes:** [`tools/probes`](tools/probes) (`build.sh` builds all), each writing to `D:\` — `tctx`,
-  `tstack`, `suspinfo`, `waitq`, `stk`, `stkscan`, `vq`, `vmmap`, `netprobe`, `selfchk`.
+  `tstack`, `suspinfo`, `waitq`, `stk`, `stkscan`, `vq`, `vmmap`, `netprobe`, `selfchk`, `syscallregs`
+  (registers after a raw `syscall`), `aegistrace` (copies the trace build's buffer out of the game),
+  `waitexit` (exit code and final log when the game exits; `run_watch.py` starts it).
+- **When the game exits instead of freezing, GameNative closes the container at once** (logcat: `Exit called:
+  processes_exited` 34 ms after the game's window went away), so the 10 s log copies miss the end. `waitexit`
+  copies the log at that moment. The game also keeps one `LogFiles\unhandled.<start time>.txt` per run
+  (49 read on 2026-10-07: lag, network and login-throttling warnings only).
+- **Syscall numbers:** [`tools/ntdll_syscall_table.py`](tools/ntdll_syscall_table.py) decodes them from an
+  ntdll's own stubs; the device's differ from upstream Wine ([WINE-SOURCE.md](docs/WINE-SOURCE.md)).
 
 ## Patches in this repo
 
 | Path | What it is |
 |---|---|
-| [`patches/fex/`](patches/fex) | 0002 hides the CPUID vendor; 0004 hides the SMC trap from guest queries (works; does not stop the kill). 0001/0003 stop the game at start-up. |
+| [`patches/fex/`](patches/fex) | 0002 hides the CPUID vendor; 0004 hides the SMC trap from guest queries (works; does not stop the kill); 0006 makes a raw x64 `syscall` return registers like hardware (works; effect on the kill being measured). 0001/0003 stop the game at start-up. |
 | [`patches/box64/`](patches/box64) | Decode SSE/AVX stores so write faults reach Wine as writes. Worth upstreaming. |
 | [`patches/proton-arm64ec-ntdll/`](patches/proton-arm64ec-ntdll) | Two binary patches for the ARM64EC `ntdll.dll` (`invoke_arm64ec_syscall` register fix; `--waitq` spinlock fix). |
 | [`patches/gamenative/`](patches/gamenative) | Fresh Steam ticket per launch. Not built or tested. |
@@ -173,6 +181,9 @@ and what did not. Then:
 | Doc | Covers |
 |---|---|
 | [`AEGIS.md`](docs/AEGIS.md) | The protection: identity, build log, blocklist, timing constants |
+| [`SYSCALL-RETURN.md`](docs/SYSCALL-RETURN.md) | **A raw x64 `syscall` returns `rcx` = status on the Thor, not the return address as on hardware.** Measured with `syscallregs`; patch 0006 fixes it; its runs. |
+| [`AEGIS-TRACE.md`](docs/AEGIS-TRACE.md) | Tracing the game's syscalls inside FEX: how, what broke, and the first finding (code outside every module walks the module list through raw `NtReadVirtualMemory`). |
+| [`WINE-SOURCE.md`](docs/WINE-SOURCE.md) | The device's Wine is GameNative's Proton 11.0-1 ARM64EC (commit `7c98acd6`); its syscall numbers; the ARM64EC suspend fixes it lacks; the newer 11.0-2 build. |
 | [`KILL-ANALYSIS.md`](docs/KILL-ANALYSIS.md) | The captured kill and the hash hypothesis (with next step) |
 | [`NTDLL-NEVER-LOADED.md`](docs/NTDLL-NEVER-LOADED.md) | Why both ntdll patches are void, and where Wine really loads ntdll from |
 | [`ANALYSIS-GOTCHAS.md`](docs/ANALYSIS-GOTCHAS.md) | Read before any offline analysis (`text.bin` indexing, packed vs unpacked, Mac tooling) |

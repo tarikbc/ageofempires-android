@@ -6,7 +6,8 @@
 Each build's DLL is pushed to D:\\fex_<name>.dll. Before every run it is installed as
 C:\\windows\\system32\\libarm64ecfex.dll by renaming the current file aside (a mapped DLL cannot be
 overwritten, but it can be renamed), and the installed file's SHA-1 is checked against the local one.
-Needs a live GameNative session (Open container, or the session a previous run left behind).
+Needs a live GameNative session (Open container, or the session a previous run left behind); when a
+run's game exited and took the session with it, a new one is opened through the UI.
 
 Each run is judged by tools/run_watch.py. The summary line per run gives: the session drop
 (errno=10038), the last line the game wrote, the largest number of threads seen at suspend count 1,
@@ -26,11 +27,45 @@ import run_watch as rw  # noqa: E402
 DL = "/sdcard/Download"
 
 
+def ensure_session():
+    """install() talks to winhandler. When the last run's game exited instead of freezing, GameNative closed the
+    container with it, so open a plain container session first (detail page, cog, "Open container")."""
+    if "winhandler.exe" in rw.sh("ps -A -o NAME"):
+        return True
+    from gn_nav import GN
+    for attempt in range(1, 4):
+        print(f"[{time.strftime('%H:%M:%S')}] no container session; opening one (attempt {attempt})", flush=True)
+        rw.sh("am force-stop app.gamenative")
+        time.sleep(4)
+        rw.sh("input keyevent 3")
+        time.sleep(1)
+        rw.sh("am start -n app.gamenative/.MainActivityAliasDefault")
+        time.sleep(12)
+        g = GN(rw.SERIAL or None)
+        try:
+            g.tap_text("Age of Empires IV: Anniversary Edition")
+            time.sleep(3)
+            g.tap(1651, 536)  # the cog next to Play
+            time.sleep(3)
+            g.tap_text("Open container")
+        except RuntimeError as e:
+            print(f"    {e}", flush=True)
+            continue
+        for _ in range(30):
+            time.sleep(3)
+            if "winhandler.exe" in rw.sh("ps -A -o NAME"):
+                time.sleep(5)
+                return True
+    return False
+
+
 def install(name):
     bat = (
         "@echo off\r\n"
-        'del /f "C:\\windows\\system32\\libarm64ecfex.old.dll" >nul 2>&1\r\n'
-        'move /y "C:\\windows\\system32\\libarm64ecfex.dll" "C:\\windows\\system32\\libarm64ecfex.old.dll" >nul 2>&1\r\n'
+        # A renamed-aside DLL can still be mapped by a frozen game process, so never reuse its name: delete the
+        # old copies that are free, and move the current one to a fresh name.
+        'del /f "C:\\windows\\system32\\libarm64ecfex.old*.dll" >nul 2>&1\r\n'
+        'move /y "C:\\windows\\system32\\libarm64ecfex.dll" "C:\\windows\\system32\\libarm64ecfex.old%RANDOM%%RANDOM%.dll" >nul 2>&1\r\n'
         f'copy /y D:\\fex_{name}.dll "C:\\windows\\system32\\libarm64ecfex.dll" >nul 2>&1\r\n'
         'copy /y "C:\\windows\\system32\\libarm64ecfex.dll" D:\\aoe\\fex_installed.dll >nul 2>&1\r\n'
         "echo %time% > D:\\aoe\\use_done.txt\r\n"
@@ -68,6 +103,8 @@ def summarise(outdir):
     if os.path.exists(wo):
         m = re.search(r"t=\s*(\d+)s\s+process gone", open(wo).read())
         gone = f"exited by t={m.group(1)}s" if m else "still alive"
+    ec = os.path.join(outdir, "exitcode.txt")
+    code = re.search(r"exit code (\S+)", open(ec).read()) if os.path.exists(ec) else None
     return {
         "start": first.replace("RelicCardinal started at ", "")[:16],
         "drop": drop[0] if drop else "none",
@@ -75,7 +112,7 @@ def summarise(outdir):
         "last_step": steps[-1] if steps else "",
         "max_suspended": max_s1,
         "kill_thread_ms": killer_user[-3:],
-        "end": gone,
+        "end": gone + (f" code {code.group(1)}" if code else ""),
     }
 
 
@@ -95,6 +132,8 @@ def main():
     results = []
     for rnd in range(a.rounds):
         for name, _ in builds:
+            if not ensure_session():
+                sys.exit("could not open a container session")
             got = install(name)
             if got != sha[name]:
                 sys.exit(f"install of {name} failed: device has {got!r}, expected {sha[name]}")
