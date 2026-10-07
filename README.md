@@ -30,7 +30,8 @@ things the emulator does differently from Windows. See [How it works](#how-it-wo
 - An Android device with a Snapdragon / Adreno GPU and GameNative 1.2.1. Only the AYN Thor was tested; similar
   Snapdragon 8 Gen 2 devices are the most likely to work.
 - Age of Empires IV on Steam, installed through GameNative.
-- The package from this repo: [`fexcore-aoe4-perf2.wcp`](fexcore-aoe4-perf2.wcp) (900 KB).
+- The package `fexcore-aoe4-perf2.wcp` (900 KB) from the
+  [latest release](https://github.com/tarikbc/aoe4-gamenative/releases/latest).
 - The graphics driver **Turnip v26.2.0 R4** (`Turnio_v26.2.0_R4.zip` from
   [StevenMXZ's release v26.2.0-R4](https://github.com/StevenMXZ/Adreno-Tools-Drivers/releases/tag/v26.2.0-R4)).
 
@@ -38,7 +39,7 @@ things the emulator does differently from Windows. See [How it works](#how-it-wo
 
 ### 1. Install the patched emulator and the driver
 
-1. Download [`fexcore-aoe4-perf2.wcp`](https://github.com/tarikbc/aoe4-gamenative/raw/main/fexcore-aoe4-perf2.wcp)
+1. Download [`fexcore-aoe4-perf2.wcp`](https://github.com/tarikbc/aoe4-gamenative/releases/latest/download/fexcore-aoe4-perf2.wcp)
    and the driver zip on the device (they land in the Download folder).
 2. In GameNative: **Menu → Settings → Contents Manager → Import .wcp from device**, and pick the `.wcp`.
    It shows up under the FEXCore type as `aoe4-perf2 (20)`.
@@ -57,7 +58,7 @@ Open the game in GameNative, tap the **cog** next to Play, then **Edit container
 | Graphics | DX Wrapper | `VKD3D` |
 | Emulation | 64-bit Emulator | `FEXCore` |
 | Emulation | FEXCore Version | **`aoe4-perf2-20`** |
-| Environment | add `WINEDEBUG` | `-all` |
+| Environment | add `WINEDEBUG` | `-all` (no Wine debug output, even when GameNative's Wine debug setting is on) |
 | Environment | add `FEX_EXP_SKIP_CALLRET_RESET` | `1` (roughly doubles the FPS) |
 
 Then tap **Save** (top right).
