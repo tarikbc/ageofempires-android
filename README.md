@@ -38,6 +38,12 @@ environment — not to strip it out.
   the old kill window with the log growing (to 479 s and 537 s). Both were still stopped later, 8 to 10 minutes in,
   by a decision on a protection worker thread. Found by dumping the decrypted code FEX compiles (patch 0008). See
   [HOOK-CHECK.md](docs/HOOK-CHECK.md).
+- **The later stop is a watchdog on the protection's own loop (2026-10-07).** Each cycle of that loop may take
+  2000 ms; the excess accumulates, and above 256 s the protection fails. On the Thor a cycle takes 2.2 to 5.8 s
+  (mean 4.3 s), so it overflows after about 8.5 minutes; replaying the formula over the measured cycles hits the
+  limit in the cycle where the failing check ran. About 40 % of that thread's time is FEX recompiling the
+  protection's decrypt-on-demand code (2,267 compiles/s, 2,085 SMC events/s) and handling exceptions. See
+  [WATCHDOG.md](docs/WATCHDOG.md).
 
 Read [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) first: it is the ledger of what was tried and what
 happened, including the traps that produced wrong conclusions.
@@ -101,10 +107,10 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
 
 ## Next actions
 
-0. **Find the check behind the later stop (with patch 0007).** About 510 s in, thread `016c` (start `+0x3e1b04c`)
-   enters the reaction function `0x143dd2550` and creates the kill jobs. Which of its ~130 call sites fired, and
-   what it checks, is open ([HOOK-CHECK.md](docs/HOOK-CHECK.md)). Next: record the guest registers and stack when
-   FEX first compiles that function.
+0. **Make the protection's loop fast enough for its watchdog (with patch 0007).** It allows 2 s per cycle on
+   average and fails after 256 s of total lateness ([WATCHDOG.md](docs/WATCHDOG.md)). Under FEX the cycle costs
+   about 40 % in recompiles of re-decrypted code and in exception handling. Next: cut that cost in FEX (reuse
+   compiled code when re-decrypted bytes are unchanged, cheaper SMC handling).
 1. **x86-64 Wine under Box64** (the setup Rosetta and the Steam Deck use: an x86-64 ntdll). Blocked on
    2026-10-06; on 2026-10-07 two Box64 patches got `proton-11.0-1-x86_64` through the game's start-up to
    `Config File`, where it now dies after the protection's illegal-instruction phase. Its hook check (thread
@@ -189,7 +195,7 @@ note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch
   `blkread` (copies patch 0008's block dump out of the game; `tools/blkparse.py` and `tools/blkmem.py` read it),
   `stkdump` (one thread's whole stack, for stale return addresses), `thunkprobe` (run as `RelicCardinal.exe`:
   counts the thunks patch 0007 rewrote), `cleancopy` (compares loaded system DLL exports with a fresh image
-  mapping). `tools/dettable.py` decodes a `peek` dump of the hook-check table.
+  mapping), `exccost` (time of one handled exception, as the protection uses them). `tools/dettable.py` decodes a `peek` dump of the hook-check table.
 - **When the game exits instead of freezing, GameNative closes the container at once** (logcat: `Exit called:
   processes_exited` 34 ms after the game's window went away), so the 10 s log copies miss the end. `waitexit`
   copies the log at that moment. The game also keeps one `LogFiles\unhandled.<start time>.txt` per run
@@ -214,6 +220,7 @@ and what did not. Then:
 | Doc | Covers |
 |---|---|
 | [`AEGIS.md`](docs/AEGIS.md) | The protection: identity, build log, blocklist, timing constants |
+| [`WATCHDOG.md`](docs/WATCHDOG.md) | **The later stop is a lateness bucket** on the protection's loop (2 s per cycle allowed, 256 s total), the measured cycle times, and FEX's per-thread JIT/SMC/exception costs that make the cycles slow. |
 | [`HOOK-CHECK.md`](docs/HOOK-CHECK.md) | **The start-up decision is an API hook check**: the decrypted code (via a FEX block dump), the 63-record table, why Wine's ARM64EC `FF 25` export thunks fail it, patch 0007 and its runs, and the later stop at ~9 minutes. |
 | [`KILL-TIMER.md`](docs/KILL-TIMER.md) | **The kill thread is a timed job** (wakes by timeout after ~200 s, then calls the suspend-all function with `0x0e00000000000000`), and the protection's hook-check loop, both read from `WINEDEBUG=+seh` exception traces. |
 | [`SYSCALL-RETURN.md`](docs/SYSCALL-RETURN.md) | **A raw x64 `syscall` returns `rcx` = status on the Thor, not the return address as on hardware.** Measured with `syscallregs`; patch 0006 fixes it; its runs. |

@@ -105,6 +105,8 @@ Run at 04:45 with 0007 and 0008 (the working tree above plus the dump installed)
 In the unpatched dump the same functions ran on the main thread at start-up: `0x143dd2550` at 1.091 s and
 `+0x3e691f4` at 1.093 s.
 
+What fires at about 510 s is a watchdog on thread `016c`'s loop: see [WATCHDOG.md](WATCHDOG.md).
+
 ## Refuted on the way: the declared code range
 
 ARM64EC kernelbase declares `.text` as its code range (`BaseOfCode 0x10000`, `SizeOfCode 0xf0000`), while the x64
