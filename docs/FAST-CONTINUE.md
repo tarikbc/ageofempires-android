@@ -33,6 +33,14 @@ cycle fell from about 2.6 to 3.2 s to about 1.15 s, the watchdog bucket stayed a
 
    So every `NtContinue` back to x64 code, which is how every handled exception ends, waits for wineserver once.
 
+**Where that query comes from (source read 2026-10-07).** Upstream Wine (wine-mirror `master`) and Valve's
+`proton_11.0` decide "self" with `self = (handle == GetCurrentThread())` and make no request for the current
+thread. The query was added in GameNative/proton-wine by `189b5e87` "WIP: ntdll: ARM64EC suspend support"
+(2026-04-09) and reverted there by `a301e77d` (2026-07-17). The device's build `7c98acd6` (release of 2026-05-02)
+still has it; GameNative's Proton 11.0-2 (`555aa70f`, 2026-09-28) has the plain compare again. So with 11.0-2 the
+round trip should be gone without patch 0010. **Not tested:** 11.0-2 has not run on the Thor yet
+([WINE-SOURCE.md](WINE-SOURCE.md): its profile asks for a fresh ARM64EC container).
+
 **Side effect to know:** `WINEDEBUG=+server` in one process turned on the request trace for the whole
 wineserver. After the first `exccost` run with it, the trace kept logging the game's requests too, until the
 container was restarted.
