@@ -4,6 +4,13 @@ Everything tried, and what actually happened. **The binary outcome is always the
 game's own log (`warnings.log`) keep growing past ~5 minutes? "Process still alive" is not success —
 the kill *suspends* the threads and leaves the process hung, so `ps` still shows it.
 
+## Solved (2026-10-07)
+
+| Tried | Result |
+|---|---|
+| FEX patch 0007: rewrite Wine's exported `FF 25` thunks to `48 FF 25` in the game process | The game's API hook check flags nothing; the start-up kill is gone ([HOOK-CHECK.md](HOOK-CHECK.md)) |
+| FEX patch 0010 (`FEX_EXP_FASTCONTINUE=1`): resume x64 code after an exception without Wine's wineserver round trip | Protection loop about 1.1 s per cycle, watchdog bucket 0; the game played past 15 minutes in two runs, the second with the exact repo patch set ([FAST-CONTINUE.md](FAST-CONTINUE.md)) |
+
 ## Ruled out — tested, game still died
 
 | Tried | Result |
@@ -20,8 +27,11 @@ the kill *suspends* the threads and leaves the process hung, so `ps` still shows
 | Memory integrity: Aegis image byte-identical at t=128 s through the kill | Not tampering |
 | Debugger signals (`KdDebuggerEnabled`, `OutputDebugString`, `NtQueryObject`) | All correct under Wine |
 | Healthy backend session for the whole run | **Still died** — so session loss is not causal |
+| Hide FEX's SMC trap from the guest (patch 0004: `NtQueryVirtualMemory` and `NtProtectVirtualMemory` report the guest's own protection; trap still armed, verified with `smctest2`) | **Killed 5 of 5.** In-game counters: 732,206 queries filtered, 0 touched a trapped page. [SMC-TRAP-HIDDEN.md](SMC-TRAP-HIDDEN.md) |
+| No session drop (`errno=10038` absent in runs 4 and A1, 2026-10-06) | Killed on time anyway |
+| x86-64 Wine under Box64 (`proton-11.0-1-x86_64`, `proton-10.0-4-x86_64`) | **Blocked, not a result:** dies within seconds (execute fault at `ucrtbase.dll`'s entry; or in `Config File` after 16,394 illegal-instruction exceptions). [BOX64-ROUTE.md](BOX64-ROUTE.md) |
 | `SMCChecks`: `none` | Exits ~2 min |
-| `SMCChecks`: `full` | Hangs at launch from Play |
+| `SMCChecks`: `full` | Hangs at launch from Play (config dated 00:12 on 2026-10-06, before the round-17 debug channels; reproduced on the clean baseline at 21:13). Note: full mode keeps the trap armed in this FEX revision. |
 | `SMCChecks`: `mtrack` (default) | The freeze described here |
 
 ## Void — the test never ran
@@ -29,6 +39,7 @@ the kill *suspends* the threads and leaves the process hung, so `ps` still shows
 | Tried | Why it proves nothing |
 |---|---|
 | "Original vs patched Wine `ntdll`" | The **mapped** ntdll is pristine; Wine loads its own tree's ntdll, not `system32`'s. Both patches have never executed. Any conclusion from this is worthless. |
+| Evening runs, 19:52 to 20:29 on 2026-10-06 ("patched FEX regresses", "the wall is MapGen", the X-connection reading) | Launched with leftover `WINEDEBUG=+thread,+sync,+virtual,+timestamp,+tid` from round 17, which slowed the game until it stalled in `Property Bag Manager`. See [WINEDEBUG-LEFTOVER.md](WINEDEBUG-LEFTOVER.md). |
 
 ## Confirmed working (infrastructure)
 
@@ -62,6 +73,19 @@ the kill *suspends* the threads and leaves the process hung, so `ps` still shows
 **And the root cause was self-inflicted:** an earlier attempt to switch Proton versions left the container
 pointing at a tree that was never installed.
 
+## Measured on the clean baseline (2026-10-06, `WINEDEBUG=-all`)
+
+| Run | FEX DLL | Result |
+|---|---|---|
+| 20:51 | `460568b8` (CPUID-patched, SMC trap present) | Loads to `GEWorld`. Session drops at 20:53:47 (`errno=10038`, `1006`). Kill between 20:54:28 and 20:54:34: 60 threads at suspend 1, kill thread `+0x3e69304` spinning. Log frozen at 89,477 bytes. |
+| 20:58 | `b4dbf32d` (no-trap, patches 0001 + 0003) | Never starts: one Windows thread (the main thread), 0 % CPU, no log, for 3+ minutes. |
+| 21:13 | `460568b8` with `SMCChecks=2` (full; trap still armed) | Same as 20:58: one Windows thread, 0 % CPU, no log. Removing the trap is not needed for this stop; full-SMC validation is the shared factor. |
+
+Details in [KILL-REMEASURED.md](KILL-REMEASURED.md).
+
+A failed launch is not a result: GameNative sometimes hangs on "Syncing cloud saves" after Play (run A4).
+Force-stop the app and start again; `run_watch.py --launch` now does this after 90 s.
+
 ## Fixed along the way
 
 | Problem | Fix |
@@ -70,6 +94,7 @@ pointing at a tree that was never installed.
 | D3D12: "No adapter found which supports Direct3D 12" | Use the VKD3D wrapper, not DXVK alone |
 | Stale Steam ticket (GameNative bug) | Delete `<game>/.steam_coldclient_used` per launch, or enable Bionic Steam |
 | `12152`/`12157` / `XAL_TELEMETRY` errors | **Noise.** They are Xbox Live calls, downstream of the asio failure. The endpoints answer fine from Wine. |
+| Runs stalling in `Property Bag Manager` (evening of 2026-10-06) | Leftover `WINEDEBUG` channels in `envVars`. Set both config copies to `WINEDEBUG=-all`; the next run took 22 s for that step and loaded to `GEWorld`. |
 
 
 ## Launch-path trap: a direct launch is not a real run

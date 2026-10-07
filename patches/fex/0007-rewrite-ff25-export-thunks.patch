@@ -1,0 +1,123 @@
+--- a/Source/Windows/ARM64EC/Module.cpp
++++ b/Source/Windows/ARM64EC/Module.cpp
+@@ -57,6 +57,7 @@
+ #include <optional>
+ #include <unordered_map>
+ #include <utility>
++#include <string_view>
+ #include <ntstatus.h>
+ #include <windef.h>
+ #include <winternl.h>
+@@ -345,6 +346,93 @@
+   FillNtDllLUTs(NtDll);
+   PatchCallChecker();
+   return true;
++}
++
++// Experiment: Wine's ARM64EC DLLs export some functions as bare x64 `jmp [rip+disp32]` thunks (FF 25), where x86-64
++// Wine puts a hot-patch prolog first and Windows uses `48 FF 25`. Inline-hook detectors treat a function that starts
++// with FF 25 as hooked. Rewrite each such exported thunk as `48 FF 25 disp32-1`: the same jump, one byte longer.
++struct {
++  uint64_t Marker; // "THUNKFX1"
++  uint64_t Images;
++  uint64_t Rewritten;
++  uint64_t Skipped;
++  uint64_t Walked; // 1 game process, 2 other process
++} ThunkFixStats = {0x3158464b4e554854ULL, 0, 0, 0, 0};
++
++void RewriteExportThunks(uint64_t Address) {
++  if (!Address || reinterpret_cast<IMAGE_DOS_HEADER*>(Address)->e_magic != IMAGE_DOS_SIGNATURE) {
++    return;
++  }
++  auto* Nt = reinterpret_cast<IMAGE_NT_HEADERS64*>(Address + reinterpret_cast<IMAGE_DOS_HEADER*>(Address)->e_lfanew);
++  if (Nt->Signature != IMAGE_NT_SIGNATURE || Nt->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
++    return;
++  }
++  bool HasThunks = false;
++  const auto* Section = IMAGE_FIRST_SECTION(Nt);
++  for (int i = 0; i < Nt->FileHeader.NumberOfSections; i++, Section++) {
++    if (!memcmp(Section->Name, ".hexpthk", 8)) {
++      HasThunks = true;
++    }
++  }
++  const auto& Dir = Nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
++  if (!HasThunks || !Dir.VirtualAddress || !Dir.Size) {
++    return;
++  }
++  ThunkFixStats.Images++;
++  const auto* Exports = reinterpret_cast<IMAGE_EXPORT_DIRECTORY*>(Address + Dir.VirtualAddress);
++  const auto* Functions = reinterpret_cast<const uint32_t*>(Address + Exports->AddressOfFunctions);
++  for (uint32_t i = 0; i < Exports->NumberOfFunctions; i++) {
++    const uint32_t Rva = Functions[i];
++    if (!Rva || (Rva >= Dir.VirtualAddress && Rva < Dir.VirtualAddress + Dir.Size) || Rva >= Nt->OptionalHeader.SizeOfImage) {
++      continue;
++    }
++    auto* Code = reinterpret_cast<uint8_t*>(Address + Rva);
++    if (Code[0] != 0xff || Code[1] != 0x25) {
++      continue;
++    }
++    // Only rewrite when the byte after the 6-byte jump is padding, so nothing that follows is overwritten.
++    if (Code[6] != 0x00 && Code[6] != 0xcc && Code[6] != 0x90) {
++      ThunkFixStats.Skipped++;
++      continue;
++    }
++    // The longer form must also stay inside an executable section: FEX only runs code within a section's
++    // VirtualSize, and the last thunk of a section can end exactly there (kernelbase .text does).
++    bool InSection = false;
++    Section = IMAGE_FIRST_SECTION(Nt);
++    for (int j = 0; j < Nt->FileHeader.NumberOfSections; j++, Section++) {
++      if ((Section->Characteristics & IMAGE_SCN_MEM_EXECUTE) && Rva >= Section->VirtualAddress &&
++          Rva + 7 <= Section->VirtualAddress + Section->Misc.VirtualSize) {
++        InSection = true;
++      }
++    }
++    if (!InSection) {
++      ThunkFixStats.Skipped++;
++      continue;
++    }
++    int32_t Disp;
++    memcpy(&Disp, Code + 2, sizeof(Disp));
++    Disp -= 1;
++    uint8_t New[7] = {0x48, 0xff, 0x25};
++    memcpy(New + 3, &Disp, sizeof(Disp));
++    void* ProtAddress = Code;
++    SIZE_T ProtSize = sizeof(New);
++    ULONG Prot;
++    if (NtProtectVirtualMemoryNative(NtCurrentProcess(), &ProtAddress, &ProtSize, PAGE_EXECUTE_READWRITE, &Prot)) {
++      ThunkFixStats.Skipped++;
++      continue;
++    }
++    memcpy(Code, New, sizeof(New));
++    NtProtectVirtualMemoryNative(NtCurrentProcess(), &ProtAddress, &ProtSize, Prot, &Prot);
++    ThunkFixStats.Rewritten++;
++  }
++}
++
++void RewriteLoadedExportThunks() {
++  auto* Ldr = reinterpret_cast<__TEB*>(NtCurrentTeb())->Peb->LdrData;
++  auto* Head = &Ldr->InMemoryOrderModuleList;
++  for (auto* Entry = Head->Flink; Entry != Head; Entry = Entry->Flink) {
++    RewriteExportThunks(reinterpret_cast<uint64_t>(CONTAINING_RECORD(Entry, LDR_DATA_TABLE_ENTRY, InMemoryOrderLinks)->DllBase));
++  }
+ }
+ 
+ void HandleImageMap(uint64_t Address, bool MainImage = false) {
+@@ -904,6 +992,18 @@
+     std::scoped_lock Lock(ThreadCreationMutex);
+     HandleImageMap(reinterpret_cast<uint64_t>(Address));
+   }
++  if (!ThunkFixStats.Walked) {
++    // Experiment scope: only the game process.
++    const auto* Params = reinterpret_cast<__TEB*>(NtCurrentTeb())->Peb->ProcessParameters;
++    const std::wstring_view Image(reinterpret_cast<const wchar_t*>(Params->ImagePathName.Buffer), Params->ImagePathName.Length / sizeof(WCHAR));
++    ThunkFixStats.Walked = Image.ends_with(L"RelicCardinal.exe") ? 1 : 2;
++    if (ThunkFixStats.Walked == 1) {
++      RewriteLoadedExportThunks();
++    }
++  }
++  if (ThunkFixStats.Walked == 1) {
++    RewriteExportThunks(reinterpret_cast<uint64_t>(Address));
++  }
+ 
+ 
+   return STATUS_SUCCESS;

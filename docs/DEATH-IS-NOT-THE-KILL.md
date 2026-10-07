@@ -1,5 +1,10 @@
 # Measured: the run does not end with the kill's signature
 
+> **Note (2026-10-06, 21:10).** The run described here (20:29) was launched with leftover debug channels
+> (`WINEDEBUG=+thread,+sync,+virtual,+timestamp,+tid`), so its timeline describes a slowed run
+> ([WINEDEBUG-LEFTOVER.md](WINEDEBUG-LEFTOVER.md)). The kill measured properly, with `suspinfo` on a clean
+> baseline, is in [KILL-REMEASURED.md](KILL-REMEASURED.md).
+
 First trustworthy run in this session with thread-state sampling. It changes the working theory.
 
 ## The run

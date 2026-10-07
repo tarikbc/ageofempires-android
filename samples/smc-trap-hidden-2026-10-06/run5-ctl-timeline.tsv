@@ -1,0 +1,7 @@
+t_s	threads	cpu_pct	log_bytes	growing	susp	killer	step	last
+4	24		9597				Loading step: [ModManager]	(I) [21:35:53.852] [000000308]: ARC -- a:\cardinal\archives\artmongolsha.sga 200608 B [ID:a1f4098626c97e577b13118c1ad32ece] [Ver:ce3b2b536a4
+18	21	198	14779	yes	s0:17	killer tid=0168 susp=0 user=0ms	Loading step: [Property Bag Manager]	(I) [21:36:04.001] [000000308]: UTIL -- Failed to Load BinaryConfig file: 'data:art\fx\fx_objects\fx_campfire\fx_campfire.simbox', error: 'U
+62	79	167	16109	yes			Loading step: [NetworkGlobal]	(I) [21:36:17.515] [000000308]: Loading step: [NetworkGlobal]
+76	78	222	68554	yes	s0:69	killer tid=0168 susp=0 user=0ms	Loading step: [IEngineInitializable]	(I) [21:37:05.835] [000000520]: WebSocketConnection::ProcessMessages: message=[0,"PresenceMessage",<profile-id>,[[263,<profile-id>,"/steam/<steamid>
+120	77	169	75196	yes			Loading step: [IEngineInitializable]	(I) [21:37:20.233] [000000308]: FILESYSTEM -- filepath failure, missing alias 'peruserdata:savedShoppingCart.sav'
+134	0	-1573	83584	yes	s0:62	killer tid=0168 susp=0 user=30ms	Loading step: [Tuning Variant]	(I) [21:38:04.267] [000000940]: Setting scenario tuning variant [campaign]
