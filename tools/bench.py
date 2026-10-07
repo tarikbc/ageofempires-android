@@ -7,10 +7,11 @@
                                         both the film and the title)
     bench.py spin on|off                hold the right stick right (one evdev write, it stays held) / centre it
     bench.py record SECONDS [--csv F]   frame times from the compositor (tools/frametimes.py), printed as a summary
-    bench.py run LABEL [--at 1,5,10] [--out DIR]
+    bench.py run LABEL [--at 1,5,10] [--out DIR] [--attach]
                                         all of it: launch the game (run_watch.py --launch --quiet), boot, skirmish, then
                                         90 s of frame times at each match minute in --at; one line per window is
-                                        appended to DIR/results.tsv (default ./bench_out)
+                                        appended to DIR/results.tsv (default ./bench_out); --attach starts from a
+                                        game that already shows its main PLAY page
 
 The menu path was tested on 2026-10-07 with GameNative's A/B and X/Y swap (physical B = the game's A):
 title B; main page RIGHT RIGHT B (Single Player); RIGHT B (Skirmish); RIGHT B (lobby "Solo Battle vs A.I.", 1v1,
@@ -63,14 +64,16 @@ def main_menu_visible():
 
 
 def boot(timeout=300):
-    """Press B (skips the intro films and the title screen) until the main PLAY page shows."""
+    """Press physical A (the game's B with the A/B swap) until the main PLAY page shows. It skips the intro films and
+    the title screen, and closes notices shown over the menu (e.g. "Server Maintenance", whose game-A button opens a
+    browser). The screen is checked before every press, so the main menu itself never gets a B (back)."""
     dev = thor_pad.node()
     end = time.time() + timeout
     while time.time() < end:
         if main_menu_visible():
             print("main menu")
             return
-        press(dev, "B", settle=6)
+        press(dev, "A", settle=6)
     sys.exit("the main menu did not appear")
 
 
@@ -99,39 +102,50 @@ def spin(on):
                                     (thor_pad.EV_SYN, 0, 0)])
 
 
-def run(label, at, out):
+def run(label, at, out, attach=False):
     import run_watch
     os.makedirs(out, exist_ok=True)
-    log = open(os.path.join(out, f"run_watch_{label}.log"), "w")
+    if attach:  # the game already runs and shows its main PLAY page
+        watcher = None
+        skirmish(from_menu=True)
+        return measure(label, at, out, time.time() - 12)
+    log = open(os.path.join(out, f"run_watch_{label}.log"), "w", buffering=1)
     watcher = subprocess.Popen([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "run_watch.py"),
                                 "--launch", "--quiet", "--minutes", str(max(at) + 15), "--out", os.path.join(out, f"rw_{label}")],
                                stdout=log, stderr=subprocess.STDOUT)
     try:
+        # Wait for run_watch's own "pid=" line: a game process left from an earlier run is still there until
+        # run_watch force-stops GameNative, and pressing buttons then would disturb the launch.
         end = time.time() + 600
-        while not run_watch.game_pid():
+        log_path = os.path.join(out, f"run_watch_{label}.log")
+        while "pid=" not in open(log_path).read():
             if time.time() > end or watcher.poll() is not None:
                 sys.exit("the game did not start (see run_watch log)")
             time.sleep(5)
         print(f"[{label}] {time.strftime('%H:%M:%S')} game process up", flush=True)
         boot()
         skirmish(from_menu=True)
-        t0 = time.time() - 12  # skirmish() returns about 12 s after the match starts
-        for minute in at:
-            time.sleep(max(0, t0 + minute * 60 - time.time()))
-            if not run_watch.game_pid():
-                print(f"[{label}] game process gone before minute {minute}", flush=True)
-                break
-            ts = frametimes.record(90)
-            line = f"{label}\tminute {minute}\t{time.strftime('%Y-%m-%d %H:%M')}\t{frametimes.summary(ts)}"
-            print(line, flush=True)
-            with open(os.path.join(out, "results.tsv"), "a") as f:
-                f.write(line + "\n")
-            with open(os.path.join(out, f"frames_{label}_m{minute}.csv"), "w") as f:
-                f.write("present_ns,frame_ms\n")
-                for a, b in zip(ts, ts[1:]):
-                    f.write(f"{b},{(b - a) / 1e6:.3f}\n")
+        measure(label, at, out, time.time() - 12)  # skirmish() returns about 12 s after the match starts
     finally:
         watcher.terminate()
+
+
+def measure(label, at, out, t0):
+    import run_watch
+    for minute in at:
+        time.sleep(max(0, t0 + minute * 60 - time.time()))
+        if not run_watch.game_pid():
+            print(f"[{label}] game process gone before minute {minute}", flush=True)
+            break
+        ts = frametimes.record(90)
+        line = f"{label}\tminute {minute}\t{time.strftime('%Y-%m-%d %H:%M')}\t{frametimes.summary(ts)}"
+        print(line, flush=True)
+        with open(os.path.join(out, "results.tsv"), "a") as f:
+            f.write(line + "\n")
+        with open(os.path.join(out, f"frames_{label}_m{minute}.csv"), "w") as f:
+            f.write("present_ns,frame_ms\n")
+            for a, b in zip(ts, ts[1:]):
+                f.write(f"{b},{(b - a) / 1e6:.3f}\n")
 
 
 def main():
@@ -145,7 +159,7 @@ def main():
     elif args[0] == "run":
         at = [int(x) for x in args[args.index("--at") + 1].split(",")] if "--at" in args else [1, 5, 10]
         out = args[args.index("--out") + 1] if "--out" in args else "bench_out"
-        run(args[1], at, out)
+        run(args[1], at, out, attach="--attach" in args)
     elif args[0] == "spin":
         spin(args[1] == "on")
     elif args[0] == "record":

@@ -68,6 +68,9 @@ recompile that still came every 2 to 3 minutes: no frame over 100 ms after the f
    and Y to X (confirmed by the user on the Thor).
 6. GameNative's power profile for the container (`.config/.power-profile`, see Speed below) with the CPU held at
    full clock and the GPU at its top levels, and the game's display mode left at (or set back to) borderless.
+7. The Thor's display at 120 Hz (`peak_refresh_rate` and `min_refresh_rate` 120, set before the game starts): frames
+   then step at 8.3 ms instead of 16.7 ms, and frames over 50 ms fell from 18 to 2 to 4 per 90 s. Other levers that
+   were measured and did not help are in [TUNING.md](docs/TUNING.md).
 
 **Known limits:**
 
@@ -342,6 +345,7 @@ and what did not. Then:
 |---|---|
 | [`AEGIS.md`](docs/AEGIS.md) | The protection: identity, build log, blocklist, timing constants |
 | [`INSTRUCTION-STEPPER.md`](docs/INSTRUCTION-STEPPER.md) | **Why it was slow**: the protection runs code one instruction at a time through 32-byte slots of a 16 MB buffer; under FEX each step was a write fault, an invalidation and a compile. Patch 0012 serves those slots by content, 0013 raises the code buffer cap, 0014 reuses translations of code the protection decrypts again. 26.7 to 43.7 FPS, and no periodic full recompile |
+| [`TUNING.md`](docs/TUNING.md) | After the FEX fixes: 120 Hz display (kept), and what was measured and reverted (GPU clock, core pinning, TSO off, settings, Turnip GMEM, AVX off, present wait off, BCn cache) |
 | [`TESTING.md`](docs/TESTING.md) | The automated test: launch, intros, skirmish, camera turn and frame times from adb; the in-game agent without cmd windows; what the HUD costs |
 | [`FAST-CONTINUE.md`](docs/FAST-CONTINUE.md) | **The fix for the watchdog**: every handled exception waited for one wineserver request in Wine's ARM64EC `NtContinue`; patch 0010 skips it. Exception cost 230 to 2.5 us, loop cycle about 1.1 s, game playable past 15 minutes |
 | [`WATCHDOG.md`](docs/WATCHDOG.md) | **The later stop is a lateness bucket** on the protection's loop (2 s per cycle allowed, 256 s total), the measured cycle times, and FEX's per-thread JIT/SMC/exception costs that make the cycles slow. |
