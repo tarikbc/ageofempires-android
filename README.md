@@ -41,19 +41,21 @@ stop it.
    0009 only acts with `FEX_EXP_SKIP_CALLRET_RESET=1`.
 3. That `libarm64ecfex.dll` packaged as a FEXCore content with [`tools/make_fex_wcp.py`](tools/make_fex_wcp.py),
    imported in GameNative (Settings, Contents Manager, Import .wcp from device) and selected in the container's
-   Emulation tab, FEXCore Version (tested 2026-10-07 10:34: `aoe-fastcontinue-10`; at the next start logcat shows
-   GameNative applying `fexcore-aoe-fastcontinue-10`, and the installed DLL hashed `86d6da39`). The earlier runs
-   installed the same DLL by hand instead ([GAMENATIVE-UI.md](docs/GAMENATIVE-UI.md)).
+   Emulation tab, FEXCore Version (tested 2026-10-07 10:34 with `aoe-fastcontinue-10`: at the next start logcat
+   shows GameNative applying `fexcore-aoe-fastcontinue-10`, and the installed DLL hashed `86d6da39`; since 11:17
+   `aoe-fastcontinue2-11`, DLL `eca1e25b`). The earlier runs installed the DLL by hand instead
+   ([GAMENATIVE-UI.md](docs/GAMENATIVE-UI.md)).
 4. Container `envVars`: `WINEDEBUG=-all FEX_EXP_SKIP_CALLRET_RESET=1`. 0010 is on by default since build
    `eca1e25b` (`FEX_EXP_FASTCONTINUE=0` turns it off; earlier builds needed `FEX_EXP_FASTCONTINUE=1`). 0009
    (`FEX_EXP_SKIP_CALLRET_RESET=1`) is not needed against the watchdog (11:24 run), but it roughly doubles the
    match FPS (see Speed below).
+5. For the controls: the Thor's controller set to Xbox style (Thor settings), and in the game Settings, Controls,
+   input set to Gamepad. In the tested run the game then quit by itself (log: `Requesting game quit with reason:
+   Contrast Change`), and it had to be started again from GameNative. To swap A/B and X/Y for this game only:
+   GameNative's in-game Quick Menu, Controller tab, Edit Physical Controller, binding A to gamepad B, B to A, X to Y
+   and Y to X (confirmed by the user on the Thor).
 6. GameNative's power profile for the container (`.config/.power-profile`, see Speed below) with the CPU held at
    full clock and the GPU at its top levels, and the game's display mode left at (or set back to) borderless.
-5. For the controls: the Thor's controller set to Xbox style (Thor settings), and in the game Settings, Controls,
-   input set to Gamepad. To swap A/B and X/Y for this game only, GameNative's in-game Quick Menu, Controller tab,
-   Edit Physical Controller, binding A to gamepad B, B to A, X to Y and Y to X (confirmed by the user on the Thor). In the tested run the game then quit by itself (log: `Requesting game quit with reason:
-   Contrast Change`), and it had to be started again from GameNative.
 
 **Known limits:**
 
