@@ -68,7 +68,9 @@ Path on 2026-10-07 (GameNative 1.2.1): library, top-right **Menu** (`(1841, 73)`
 Downloads; its search (`(1753, 110)`) finds the file by a one-word name such as `fexcore` (the keyboard split
 `fastcontinue` into two words). After the import the bundle is listed under Installed contents, FEXCore, as
 `<versionName> (<versionCode>)`. In the Emulation tab's FEXCore Version list it appears as
-`<versionName>-<versionCode>` below the built-in versions; the list scrolls.
+`<versionName>-<versionCode>` below the built-in versions; the list scrolls. **A bundle whose `versionName` is
+already installed is unpacked and then dropped without a message** (2026-10-07: `aoe-fastcontinue` code 11 did not
+appear next to code 10); give every new bundle a new `versionName`.
 
 ## The in-game Quick Menu
 
