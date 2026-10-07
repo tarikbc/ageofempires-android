@@ -182,7 +182,7 @@ and what did not. Then:
 |---|---|
 | [`AEGIS.md`](docs/AEGIS.md) | The protection: identity, build log, blocklist, timing constants |
 | [`SYSCALL-RETURN.md`](docs/SYSCALL-RETURN.md) | **A raw x64 `syscall` returns `rcx` = status on the Thor, not the return address as on hardware.** Measured with `syscallregs`; patch 0006 fixes it; its runs. |
-| [`AEGIS-TRACE.md`](docs/AEGIS-TRACE.md) | Tracing the game's syscalls inside FEX: how, what broke, and the first finding (code outside every module walks the module list through raw `NtReadVirtualMemory`). |
+| [`AEGIS-TRACE.md`](docs/AEGIS-TRACE.md) | Tracing the game's syscalls inside FEX: how, what broke, and the first findings: most raw syscalls pass one gateway in private memory, a second gateway in the exe allocates and protects memory from 0.3 s, and one thread walks the module list through `NtReadVirtualMemory`. |
 | [`WINE-SOURCE.md`](docs/WINE-SOURCE.md) | The device's Wine is GameNative's Proton 11.0-1 ARM64EC (commit `7c98acd6`); its syscall numbers; the ARM64EC suspend fixes it lacks; the newer 11.0-2 build. |
 | [`KILL-ANALYSIS.md`](docs/KILL-ANALYSIS.md) | The captured kill and the hash hypothesis (with next step) |
 | [`NTDLL-NEVER-LOADED.md`](docs/NTDLL-NEVER-LOADED.md) | Why both ntdll patches are void, and where Wine really loads ntdll from |

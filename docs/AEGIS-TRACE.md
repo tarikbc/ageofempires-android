@@ -38,16 +38,29 @@ change vector registers that a raw syscall must preserve ([SYSCALL-RETURN.md](SY
 
 ## First findings from variant B (before the stall)
 
-From the first 4 s of the run (trace dump at 23:42, 4,293 entries):
+From the last dump of that run (`trace_04`, 5,124 entries, up to 184.6 s after the first entry):
 
-- **Code outside every module issues raw syscalls.** 1,023 `NtReadVirtualMemory` calls on the game's own
-  process (handle `-1`) come from a `syscall` instruction at RIP `0x2dc04f0`, which is in no loaded image, on
-  the main thread, starting 0.3 s after launch and repeating every ~15 ms.
-- **They read the loader's module list.** The three addresses read in each round are `0x7ffd0018`,
-  `ntdll+0x150f40` and a heap address. `ntdll+0x150f40` is `ldr+0x20` in the device ntdll's symbols, the
-  `InMemoryOrderModuleList` head of `PEB_LDR_DATA`; `PEB+0x18` is the `Ldr` pointer on x64. So that code walks
-  the loaded-module list through raw syscalls instead of reading memory directly.
+- **Most of the game's raw syscalls go through one gateway in private memory.** 4,343 of the 4,783 entries
+  with a recorded `syscall` RIP come from RIP `0x2dc04f0`, which is in no loaded image: 30 different syscalls (file,
+  wait, event, section, memory, thread and process calls) from 21 threads, starting 0.292 s after the first
+  entry. So `0x2dc04f0` is a general syscall gateway, not code dedicated to one check. Who builds it is not
+  established.
+- **A second gateway sits inside the exe, just past the region the kill thread lives in.** From 0.292 s:
+  `NtProtectVirtualMemory` (166) and `NtQuerySystemTime` (7) at `+0x3f9113a`, `NtAllocateVirtualMemory` (24)
+  and `NtQueryPerformanceCounter` (1) at `+0x3f9105c`, `NtFlushInstructionCache` (48) at `+0x3f911ad`. That
+  is allocate, protect and flush-icache: the calls an unpacker or code generator makes.
+- The remaining 194 come from ntdll's own x64 code (`0x6fffa8b0b5`): 192 `NtCreateThreadEx`, 2
+  `NtQuerySystemTime`. 192 thread creations from 2 threads is not normal; it matches the variant-B stall
+  (205 threads), so it is probably an effect of the trace build.
+- **One thread reads the loader's module list through `NtReadVirtualMemory` on its own process.** All 1,023
+  `NtReadVirtualMemory` calls (handle `-1`) are on thread `13c`, through the `0x2dc04f0` gateway. From 0.297 s
+  every ~15 ms it reads `0x7ffd0018`, `ntdll+0x150f40` and a heap address: `ntdll+0x150f40` is `ldr+0x20` in
+  the device ntdll's symbols, the `InMemoryOrderModuleList` head of `PEB_LDR_DATA`, and `PEB+0x18` is the
+  `Ldr` pointer on x64. At 3.384 s it reads a run of heap addresses 0x140 bytes apart.
 
-Who that code belongs to is an inference: it runs before `main`, from memory outside the image, and avoids
-plain memory reads, which fits Aegis's "Pre-Main Stealth Startup" and its module blocklist (AEGIS.md). It is
-**not proven** to be Aegis.
+Whose code this is is an inference: it starts before `main`, the exe-side gateway allocates and protects
+memory at the same moment, and it avoids plain memory reads, which fits Aegis's "Pre-Main Stealth Startup"
+and its module blocklist (AEGIS.md). It is **not proven** to be Aegis.
+
+Why it matters for patch 0006: every one of these syscalls returns through Wine's `invoke_arm64ec_syscall`,
+so all of them saw `rcx` = status on the stock setup ([SYSCALL-RETURN.md](SYSCALL-RETURN.md)).

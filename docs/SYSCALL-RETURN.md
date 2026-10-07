@@ -1,8 +1,9 @@
 # Registers after a raw `syscall`: Wine ARM64EC differs from hardware (FEX patch 0006)
 
-2026-10-06/07. Aegis issues raw x64 `syscall` instructions from code outside every module
-([AEGIS-TRACE.md](AEGIS-TRACE.md)). So what those instructions leave in the registers is something it can
-check, the same way it can check timing.
+2026-10-06/07. The game issues many syscalls as raw x64 `syscall` instructions (4,783 in the first 3 minutes
+of one traced run), mostly through a gateway in private memory and one inside the exe
+([AEGIS-TRACE.md](AEGIS-TRACE.md)). So what those instructions leave in
+the registers is something the code behind them can check, the same way it can check timing.
 
 ## What hardware does
 
