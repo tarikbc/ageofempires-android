@@ -143,6 +143,9 @@ note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch
 - **Container config:** `Z:\home\xuser\.container` — editable from inside Wine; `envVars` is honoured.
 - **Per-game FEX settings:** `Z:\home\xuser\.fex-emu\AppConfig\RelicCardinal.exe.json`.
 - **Emulator DLL name:** set by `HKLM\Software\Microsoft\Wow64\amd64`.
+- **Before committing any log or run output:** `python3 tools/redact.py --check samples docs` must report
+  nothing. Game logs carry the Steam name, SteamID64, Relic profile ID and session tokens;
+  `tools/redact.py samples` replaces them with placeholders.
 - **Compare FEX builds:** [`tools/ab_fex.py`](tools/ab_fex.py) installs each build in turn (rename trick,
   hash checked) and judges a run on each. [`tools/smctest2.c`](tools/smctest2.c) shows whether the SMC trap
   is visible and still catching rewrites; [`tools/probes/fexstats.c`](tools/probes/fexstats.c) reads patch

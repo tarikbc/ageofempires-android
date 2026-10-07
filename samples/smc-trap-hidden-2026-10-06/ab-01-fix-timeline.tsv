@@ -4,6 +4,6 @@ t_s	threads	cpu_pct	log_bytes	growing	susp	killer	step	last
 62	78	214	66092	yes			Loading step: [IEngineInitializable]	(I) [21:42:12.520] [000000316]: UI Async loading data:ui\intro\pages\IntroVideoPage.xaml
 106	76	184	69339	yes	s0:67	killer tid=0178 susp=0 user=0ms	Loading step: [IEngineInitializable]	(I) [21:42:26.068] [000000316]: [PlayfabManager] : Playfab Login Succeeded
 120	74	163	77279	yes			Loading step: [IEngineInitializable]	(E) [21:43:02.987] [000000524]: XAL_TELEMETRY: HTTP request 000000005DCCF8F0 failed with 0x80004005, system error code 2147954552, message:
-164	71	2	77508	yes	s0:1,s1:60	killer tid=0178 susp=0 user=30ms	Loading step: [IEngineInitializable]	(I) [21:43:12.035] [000000316]: GetPartyStatsByID found 1 teams for user ID 4851727
-179	71	0	77508	NO			Loading step: [IEngineInitializable]	(I) [21:43:12.035] [000000316]: GetPartyStatsByID found 1 teams for user ID 4851727
-223	71	0	77508	NO	s0:1,s1:60	killer tid=0178 susp=0 user=30ms	Loading step: [IEngineInitializable]	(I) [21:43:12.035] [000000316]: GetPartyStatsByID found 1 teams for user ID 4851727
+164	71	2	77508	yes	s0:1,s1:60	killer tid=0178 susp=0 user=30ms	Loading step: [IEngineInitializable]	(I) [21:43:12.035] [000000316]: GetPartyStatsByID found 1 teams for user ID <profile-id>
+179	71	0	77508	NO			Loading step: [IEngineInitializable]	(I) [21:43:12.035] [000000316]: GetPartyStatsByID found 1 teams for user ID <profile-id>
+223	71	0	77508	NO	s0:1,s1:60	killer tid=0178 susp=0 user=30ms	Loading step: [IEngineInitializable]	(I) [21:43:12.035] [000000316]: GetPartyStatsByID found 1 teams for user ID <profile-id>

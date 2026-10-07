@@ -20,13 +20,14 @@ import sys
 import tempfile
 import time
 
-SERIAL = os.environ.get("THOR_SERIAL", "64ff2273")
+# adb picks the device itself when one is connected; set ANDROID_SERIAL (read by adb) when several are.
+SERIAL = os.environ.get("THOR_SERIAL", "")
 DL = "/sdcard/Download"
 KILL_ENTRY = "RelicCardinal.exe+3e69304"
 
 
 def adb(*args, timeout=60):
-    return subprocess.run(["adb", "-s", SERIAL, *args], capture_output=True, text=True, timeout=timeout)
+    return subprocess.run(["adb", *(["-s", SERIAL] if SERIAL else []), *args], capture_output=True, text=True, timeout=timeout)
 
 
 def sh(cmd, timeout=60):

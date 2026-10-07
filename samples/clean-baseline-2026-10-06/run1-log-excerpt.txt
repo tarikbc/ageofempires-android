@@ -1,4 +1,4 @@
-RelicCardinal started at 2026-10-06 20:51 [Argentina Standard Time UTC -03:00]
+RelicCardinal started at 2026-10-06 20:51 [<timezone>]
 (I) [20:51:43.449] [000000312]: Version [16.3.11308.0] Info [[Cardinal][cardinal][release_16_3_0][rtm][4178464]]
 (I) [20:51:46.075] [000000312]: Loading step: [Additional crash information]
 (I) [20:51:46.077] [000000312]: Loading step: [Platform]
