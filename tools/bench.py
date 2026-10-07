@@ -25,6 +25,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import frametimes  # noqa: E402
+import thermals  # noqa: E402
 import thor_pad  # noqa: E402
 
 SERIAL = "64ff2273"
@@ -137,8 +138,10 @@ def measure(label, at, out, t0):
         if not run_watch.game_pid():
             print(f"[{label}] game process gone before minute {minute}", flush=True)
             break
+        sampler = thermals.Sampler().start()
         ts = frametimes.record(90)
-        line = f"{label}\tminute {minute}\t{time.strftime('%Y-%m-%d %H:%M')}\t{frametimes.summary(ts)}"
+        heat = sampler.stop()
+        line = f"{label}\tminute {minute}\t{time.strftime('%Y-%m-%d %H:%M')}\t{frametimes.summary(ts)}\t{heat}"
         print(line, flush=True)
         with open(os.path.join(out, "results.tsv"), "a") as f:
             f.write(line + "\n")

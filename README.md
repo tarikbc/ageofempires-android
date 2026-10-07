@@ -7,7 +7,29 @@ Device: AYN Thor (Snapdragon 8 Gen 2, Adreno 740, 16 GB, Android 13). Game build
 game 2–4.5 minutes in (until 2026-10-07, see the status below). The user owns the game, so the aim is to make the protection *accept* this
 environment — not to strip it out.
 
-## Status: it runs (2026-10-07)
+## Current state (2026-10-07, 20:00)
+
+AoE IV runs on the Thor and can be played with the Thor's controls (the game's controller UI). Tested matches ran
+past 20 minutes. Speed in a 1v1 skirmish with the camera turning (compositor frame times, `tools/bench.py`):
+**42 to 46 FPS**, median frame 25.3 ms at 120 Hz, frames over 100 ms 0 to 2 per 90 s.
+
+| Part | Setting |
+|---|---|
+| GameNative | 1.2.1, container variant `bionic` |
+| Wine | `proton-11.0-99-arm64ec-1` |
+| CPU emulator | FEXCore content `aoe4-perf2-20`: [`fexcore-aoe4-perf2.wcp`](fexcore-aoe4-perf2.wcp) in this repo, FEX `7d3090f` + [patches](patches/fex) 0002, 0004, 0006, 0007, 0009, 0010, 0012, 0013, 0014 (`libarm64ecfex.dll`, SHA-1 `6990a221`) |
+| Container `envVars` | `WRAPPER_MAX_IMAGE_COUNT=0 ZINK_DESCRIPTORS=lazy ZINK_DEBUG=compact,deck_emu MESA_SHADER_CACHE_DISABLE=false MESA_SHADER_CACHE_MAX_SIZE=512MB mesa_glthread=true WINEESYNC=1 MESA_VK_WSI_PRESENT_MODE=mailbox TU_DEBUG=noconform VKD3D_SHADER_MODEL=6_0 PULSE_LATENCY_MSEC=144 BOX64_AVX=1 VKD3D_DEBUG=warn WINEDEBUG=-all FEX_EXP_SKIP_CALLRET_RESET=1` (read back from both `.container` copies) |
+| GPU driver | Turnip v26.2.0 R4 (v26.3.0-R6, T30 and Balemuni Apex v2 compared in [TUNING.md](docs/TUNING.md)) |
+| Display | 120 Hz (`peak_refresh_rate` and `min_refresh_rate` 120), set before the game starts |
+| Power profile | `.config/.power-profile` of the container: `enablePowerControl` true, governor `SCHEDUTIL`, CPU 307200 to 3187200 kHz, GPU levels 7 and 8 (615 to 680 MHz); holding the CPU at full clock gave no FPS and no lower temperature ([TUNING.md](docs/TUNING.md)) |
+| Game | `configuration_system.lua`: `resolution` 1280:720, `windowmode` 0 (the user's borderless choice), `verticalsync` false, `frameratelimit` 0; controls set to Gamepad in the game; A/B and X/Y swapped in GameNative's Edit Physical Controller |
+
+Where the speed came from: [INSTRUCTION-STEPPER.md](docs/INSTRUCTION-STEPPER.md) (patches 0012 to 0014, 26.7 → 43.7
+FPS), [TUNING.md](docs/TUNING.md) (display, drivers, and what did not help). How to measure without touching the
+Thor: [TESTING.md](docs/TESTING.md). The `.wcp` files `aoe4-fixes.wcp` and `fexcore-2610-aoe-nofex*.wcp` in the
+repo root are from the investigation and do not run the game.
+
+## Status history (2026-10-07)
 
 AoE IV runs on the Thor and can be played, with the Thor's controls, past the points where the protection used to
 stop it.
@@ -50,7 +72,9 @@ recompile that still came every 2 to 3 minutes: no frame over 100 ms after the f
 2. FEX `7d3090f` with [patches](patches/fex) 0002, 0004, 0006, 0007, 0009, 0010, 0012, 0013 and 0014
    ([BUILDING-FEX.md](docs/BUILDING-FEX.md)); 0009 only acts with `FEX_EXP_SKIP_CALLRET_RESET=1`. Without 0012 to
    0014 the game also runs, at about 27 FPS.
-3. That `libarm64ecfex.dll` packaged as a FEXCore content with [`tools/make_fex_wcp.py`](tools/make_fex_wcp.py),
+3. That `libarm64ecfex.dll` packaged as a FEXCore content with [`tools/make_fex_wcp.py`](tools/make_fex_wcp.py)
+   (the current one is in this repo: [`fexcore-aoe4-perf2.wcp`](fexcore-aoe4-perf2.wcp), versionName `aoe4-perf2`,
+   versionCode 20, DLL `6990a221`),
    imported in GameNative (Settings, Contents Manager, Import .wcp from device) and selected in the container's
    Emulation tab, FEXCore Version (tested 2026-10-07 10:34 with `aoe-fastcontinue-10`: at the next start logcat
    shows GameNative applying `fexcore-aoe-fastcontinue-10`, and the installed DLL hashed `86d6da39`; since 11:17
@@ -66,8 +90,9 @@ recompile that still came every 2 to 3 minutes: no frame over 100 ms after the f
    Contrast Change`), and it had to be started again from GameNative. To swap A/B and X/Y for this game only:
    GameNative's in-game Quick Menu, Controller tab, Edit Physical Controller, binding A to gamepad B, B to A, X to Y
    and Y to X (confirmed by the user on the Thor).
-6. GameNative's power profile for the container (`.config/.power-profile`, see Speed below) with the CPU held at
-   full clock and the GPU at its top levels, and the game's display mode left at (or set back to) borderless.
+6. GameNative's power profile for the container (`.config/.power-profile`, see Speed below) with the CPU allowed up
+   to full clock and the GPU at its top levels, and the game's display mode left at (or set back to) borderless.
+   Earlier runs held the CPU minimum at full clock too; a later comparison showed no gain from that.
 7. The Thor's display at 120 Hz (`peak_refresh_rate` and `min_refresh_rate` 120, set before the game starts): frames
    then step at 8.3 ms instead of 16.7 ms, and frames over 50 ms fell from 18 to 2 to 4 per 90 s. Other levers that
    were measured and did not help are in [TUNING.md](docs/TUNING.md).
