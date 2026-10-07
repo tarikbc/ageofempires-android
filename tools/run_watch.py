@@ -112,6 +112,24 @@ def start_exit_watch():
     winexec("D:\\waitexit.exe", "")
 
 
+def start_dialog_click():
+    """Start probes/dlgclick.exe: when the game's "unable to determine your video card's installed driver version"
+    dialog appears (its one-day "Don't show" choice expired), click "Don't show this message"; loading waits on it."""
+    local = os.path.join(os.path.dirname(os.path.abspath(__file__)), "probes", "dlgclick.exe")
+    if not os.path.exists(local):
+        print("dlgclick.exe missing (run tools/probes/build.sh); the driver dialog will not be dismissed", flush=True)
+        return
+    adb("push", local, f"{DL}/dlgclick.exe")
+    with tempfile.NamedTemporaryFile("w", suffix=".bat", delete=False, newline="") as f:
+        f.write('@echo off\r\nstart "" D:\\dlgclick.exe "Age of Empires IV" "show this message" 600\r\n')
+        tmp = f.name
+    try:
+        adb("push", tmp, f"{DL}/dlgclick.bat")
+    finally:
+        os.unlink(tmp)
+    winexec("cmd", "/c D:\\dlgclick.bat")
+
+
 def launch():
     sh("am force-stop app.gamenative")
     time.sleep(4)
@@ -139,6 +157,8 @@ def main():
     ap.add_argument("--t0", type=float, default=0, help="epoch seconds the game process appeared (re-attach)")
     ap.add_argument("--stop-after-frozen", type=int, default=0,
                     help="stop this many seconds after the log stops growing while threads are suspended")
+    ap.add_argument("--start", action="append", default=[],
+                    help="a D:\\ batch file to run in the session as soon as the game process exists (repeatable)")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     if "deviceLocked=1" in sh("dumpsys trust"):
@@ -171,6 +191,12 @@ def main():
     print(f"[{time.strftime('%H:%M:%S')}] pid={pid}; run started ~{run_start}", flush=True)
     if not a.t0:
         start_exit_watch()
+        time.sleep(2)
+        start_dialog_click()
+    for bat in a.start:
+        # space the requests out: one sent while winhandler was busy was lost (2026-10-07)
+        time.sleep(2)
+        winexec("cmd", f"/c {bat}")
     new = not os.path.exists(os.path.join(a.out, "timeline.tsv"))
     tl = open(os.path.join(a.out, "timeline.tsv"), "a")
     new and tl.write("t_s\tthreads\tcpu_pct\tlog_bytes\tgrowing\tsusp\tkiller\tstep\tlast\n")
