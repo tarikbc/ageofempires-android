@@ -64,6 +64,22 @@ Until then the container's GameNative power profile held every CPU core at its m
 
 Holding the clock brought no FPS and no lower temperature, so the scaling profile is the one in use.
 
+## `WINEDEBUG=-all` in the container: still needed here (20:39 to 20:43)
+
+GameNative 1.2.1 sets `WINEDEBUG` itself and then merges the container's `envVars`, which win: `-all` when Settings →
+Debug → Wine debug is off, else `+` and the channels listed on that screen (`XServerScreen.kt`). Read from
+GameNative's own logcat line `Env Vars (Final Guest)` at three "Open container" starts:
+
+| Container `envVars` | `WINEDEBUG` given to Wine |
+|---|---|
+| with `WINEDEBUG=-all` (as set up) | `-all` |
+| without it | `+warn` |
+| with it again | `-all` |
+
+GameNative's Wine debug setting was on here with the channel `warn` (its `wine_debug.log` was written at that start),
+so without the variable Wine would print its warnings. The variable stays. With Wine debug off in GameNative it should
+change nothing (from the code; not tested). The container's config was put back byte for byte afterwards.
+
 ## Where the frame time goes (60 Hz, 16:50, `tools/threadcpu.py`)
 
 Main thread 52.6 % of one core, render thread 34.6 %, the protection's loop 21.9 %, `vkd3d_queue` 9.6 %, eight

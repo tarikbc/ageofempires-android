@@ -309,7 +309,7 @@ and [WINE-GAPS.md](WINE-GAPS.md).
 | Wine debug | `WINEDEBUG=-all` in `envVars` (set 2026-10-06 20:49). The session started from it does not define `WINEDEBUG` at all (read with `set` at 21:10), so no trace channels are on |
 
 **Debug output slows the game.** Turn it off in Settings → Debug, in the container Environment tab, and
-note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch is off.
+note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch is off. (Correction, 2026-10-07: GameNative 1.2.1's code passes the channels only when Wine debug is on, and it was on on this Thor; see [TUNING.md](TUNING.md).)
 
 ## Tools that work over ADB
 
