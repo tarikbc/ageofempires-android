@@ -1,0 +1,91 @@
+--- a/Source/Windows/ARM64EC/Module.S
++++ b/Source/Windows/ARM64EC/Module.S
+@@ -164,6 +164,10 @@
+   ldr x16, [x16, #:lo12:HookProtectVirtualMemoryId]
+   cmp x8, x16
+   b.eq 2f
++  adrp x16, HookContinueId
++  ldr x16, [x16, #:lo12:HookContinueId]
++  cmp x8, x16
++  b.eq 3f
+   adrp x16, WineSyscallDispatcher
+   ldr x16, [x16, #:lo12:WineSyscallDispatcher]
+   br x16
+@@ -173,6 +177,9 @@
+ 2:
+   mov x30, x9
+   b "#NtProtectVirtualMemoryHooked"
++3:
++  mov x30, x9
++  b "#NtContinueHooked"
+ 
+   // A replacement for the standard ARM64EC call checker that ignores any FFS patches and always redirects to a function's
+   // native implementation. As the only library FEX calls into is NTDLL, this is done using a LUT generated at init time.
+--- a/Source/Windows/ARM64EC/Module.cpp
++++ b/Source/Windows/ARM64EC/Module.cpp
+@@ -99,6 +99,7 @@
+ void** WineSyscallDispatcherPtr;
+ uint64_t HookQueryVirtualMemoryId = ~0ULL;
+ uint64_t HookProtectVirtualMemoryId = ~0ULL;
++uint64_t HookContinueId = ~0ULL; // patch 0010
+ // Counters that show, from outside the process, that the filter is live in it and how often it changed a result.
+ // Marker is "SMCHIDE1" in memory, so the block can also be found by scanning.
+ struct {
+@@ -883,6 +884,41 @@
+ }
+ } // namespace
+ 
++extern "C" BOOLEAN WINAPI RtlIsEcCode(ULONG_PTR Ptr);
++
++// Patch 0010: counters for the fast continue path, at file scope so a probe can find them by the marker.
++struct FastContinueStatsType {
++  uint64_t Marker;
++  uint64_t Fast;
++  uint64_t Slow;
++};
++FastContinueStatsType FastContinueStats = {0x31544e4f43545346ULL, 0, 0}; // "FSTCONT1"
++uintptr_t KiUserEmulationDispatcherNative;
++
++// Patch 0010: NtContinue to x64 code without the syscall. Wine's unix NtContinue (signal_set_full_context) sets the
++// context, then for a non-EC target calls NtGetContextThread(GetCurrentThread()), copies that context below the
++// target stack and enters KiUserEmulationDispatcher. In GameNative's Proton 11 ARM64EC, NtGetContextThread starts with
++// NtQueryInformationThread(ThreadBasicInformation) to find out whether the handle is the current thread, which is a
++// wineserver round trip. So every exception the guest handles and resumes waits for wineserver. This does the same
++// re-entry directly: KiUserEmulationDispatcher converts the context into the CPU area and BeginSimulation resets sp to
++// the emulator stack base, so a copy near that base is consumed before it can be overwritten. Not done for alertable
++// continues (APC delivery), partial contexts, or EC targets. A suspend request that is pending is then served at the
++// thread's next syscall instead of here.
++extern "C" NTSTATUS NtContinueHooked(ARM64_NT_CONTEXT* Context, BOOLEAN Alertable) {
++  constexpr ULONG FullFlags = 0x7; // CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT (ARM64)
++  if (!Alertable && Context && (Context->ContextFlags & FullFlags) == FullFlags && KiUserEmulationDispatcherNative &&
++      !RtlIsEcCode(Context->Pc)) {
++    const auto CPUArea = GetCPUArea();
++    // Context lives on the thread stack (the NtContinue wrapper's frame), never on the emulator stack.
++    const uintptr_t Dest = (CPUArea.EmulatorStackBase() - 0x400 - sizeof(ARM64_NT_CONTEXT)) & ~uintptr_t {15};
++    memcpy(reinterpret_cast<void*>(Dest), Context, sizeof(ARM64_NT_CONTEXT));
++    __atomic_fetch_add(&FastContinueStats.Fast, 1, __ATOMIC_RELAXED);
++    JumpSetStack(KiUserEmulationDispatcherNative, Dest);
++  }
++  __atomic_fetch_add(&FastContinueStats.Slow, 1, __ATOMIC_RELAXED);
++  return NtContinueNative(Context, Alertable);
++}
++
+ extern "C" NTSTATUS NtQueryVirtualMemoryHooked(HANDLE Process, LPCVOID Address, MEMORY_INFORMATION_CLASS Class, PVOID Buffer,
+                                                SIZE_T Length, SIZE_T* ResultLength) {
+   const NTSTATUS Status = NtQueryVirtualMemoryNative(Process, Address, Class, Buffer, Length, ResultLength);
+@@ -1017,6 +1053,15 @@
+   if (QueryIdVerified && WineSyscallDispatcherPtr && WineNtProtectVirtualMemorySyscallId) {
+     HookQueryVirtualMemoryId = WineNtQueryVirtualMemorySyscallId;
+     HookProtectVirtualMemoryId = WineNtProtectVirtualMemorySyscallId;
++    // Patch 0010, off unless FEX_EXP_FASTCONTINUE=1
++    if (const char* Fast = getenv("FEX_EXP_FASTCONTINUE"); Fast && Fast[0] == '1') {
++      const uintptr_t EmuFFS = reinterpret_cast<uintptr_t>(GetProcAddress(NtDll, "KiUserEmulationDispatcher"));
++      if (EmuFFS > NtDllBase && EmuFFS - NtDllBase < NtDllRedirectionLUTSize && NtDllRedirectionLUT[EmuFFS - NtDllBase]) {
++        KiUserEmulationDispatcherNative = NtDllRedirectionLUT[EmuFFS - NtDllBase] + NtDllBase;
++        HookContinueId = WineNtContinueSyscallId;
++      }
++      LogMan::Msg::IFmt("Fast continue: id {}, dispatcher {:X}", HookContinueId, KiUserEmulationDispatcherNative);
++    }
+     __atomic_store_n(WineSyscallDispatcherPtr, reinterpret_cast<void*>(&SyscallDispatcherHook), __ATOMIC_RELEASE);
+     LogMan::Msg::IFmt("SMC trap hidden from guest queries (query id {}, protect id {})", HookQueryVirtualMemoryId,
+                       HookProtectVirtualMemoryId);

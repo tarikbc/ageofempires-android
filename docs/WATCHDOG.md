@@ -99,10 +99,17 @@ The watchdog still fired. Replaying the measured cycles, the bucket held 120 s a
 the kill entry `+0x3e69304` existed, and the main thread's CPU time stopped increasing (212,010 ms in two samples 40 s
 apart).
 
+A second run with the same patches (game process at 08:59:26) got further: past the Accessibility screen into the
+tutorial's opening scene and its first task, game clock 00:40 at 09:09
+([screenshot](img/first-gameplay-2026-10-07.jpg)). Replaying the bucket over that run's dumped cycles put the overflow
+at 824 s (09:13:15); at 09:13:52 the game process used 1 % CPU (5 ticks in 5 s), and the screen no longer changed.
+
 0009 is not safe in general: a return can land in the old translation of code that changed while its caller was
 suspended. The protection's decrypt-on-demand pattern did not visibly break in this run.
 
-## What follows
+## What followed
 
-In the menu the loop needs to get from about 2.8 s to under 2 s per cycle. The remaining cost is recompiling whole
-pages after each decrypt or re-encrypt, the per-fault invalidation work, and the exceptions themselves.
+In the menu the loop needed to get from about 2.8 s to under 2 s per cycle. Most of the missing time was not
+compiling: the loop thread was blocked most of each cycle, waiting for wineserver once per handled exception. FEX
+patch 0010 removes that wait; the cycle then averaged about 1.1 s and the bucket stayed at 0 in a run that was
+still being played 15 minutes in. See [FAST-CONTINUE.md](FAST-CONTINUE.md).

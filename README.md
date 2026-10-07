@@ -7,7 +7,14 @@ Device: AYN Thor (Snapdragon 8 Gen 2, Adreno 740, 16 GB, Android 13). Game build
 game 2–4.5 minutes in. The user owns the game, so the aim is to make the protection *accept* this
 environment — not to strip it out.
 
-**Where we are (2026-10-07, 00:35):**
+**Where we are (2026-10-07, 09:45):**
+
+- **The game runs and is playable (2026-10-07, 09:42).** With FEX patches 0007, 0009 and 0010
+  (`FEX_EXP_FASTCONTINUE=1`), the main menu was on screen 2 min 43 s after the game process appeared, and a
+  Skirmish against the AI was being played 15 minutes in ([screenshot](docs/img/skirmish-15min-2026-10-07.jpg)),
+  past the point where every earlier run froze. The protection's loop cycle fell from about 2.6 to 3.2 s to about
+  1.1 s and its watchdog bucket stayed at 0. The cause was one wineserver round trip per handled exception in
+  Wine's ARM64EC `NtContinue` path; 0010 resumes x64 code without it. See [FAST-CONTINUE.md](docs/FAST-CONTINUE.md).
 
 - **The kill is measured on a clean baseline.** With `WINEDEBUG=-all` the game loads its menu world in under
   three minutes. Then, 2 min 3 s to 3 min 2 s after start, every thread but one goes to Windows suspend
@@ -111,11 +118,11 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
 
 ## Next actions
 
-0. **Make the protection's loop fast enough for its watchdog (with patch 0007).** It allows 2 s per cycle on
-   average and fails after 256 s of total lateness ([WATCHDOG.md](docs/WATCHDOG.md)). Under FEX the cycle costs
-   about 40 % in recompiles of re-decrypted code and in exception handling. With 0009 the menu is reached but cycles
-   there still average 2.8 s. Next: in FEX, stop re-trapping pages that are rewritten all the time and validate their
-   blocks instead, so re-decrypted code reuses its translation; make the per-fault invalidation cheaper.
+0. **Confirm the running setup with the exact repo patches and without 0009.** The playable runs used a job-local
+   FEX tree (0002, 0004, 0006, 0007, 0009, 0010 plus analysis experiments). Run the exact set
+   0002+0004+0006+0007+0009+0010 (it builds, `86d6da39`), then the same without 0009, which is unsafe in general
+   ([FAST-CONTINUE.md](docs/FAST-CONTINUE.md)). Then the game's controller UI (Settings, Controls, Gamepad, restart)
+   with GameNative's virtual gamepad.
 1. **x86-64 Wine under Box64** (the setup Rosetta and the Steam Deck use: an x86-64 ntdll). Blocked on
    2026-10-06; on 2026-10-07 two Box64 patches got `proton-11.0-1-x86_64` through the game's start-up to
    `Config File`, where it now dies after the protection's illegal-instruction phase. Its hook check (thread
@@ -200,7 +207,7 @@ note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch
   `blkread` (copies patch 0008's block dump out of the game; `tools/blkparse.py` and `tools/blkmem.py` read it),
   `stkdump` (one thread's whole stack, for stale return addresses), `thunkprobe` (run as `RelicCardinal.exe`:
   counts the thunks patch 0007 rewrote), `cleancopy` (compares loaded system DLL exports with a fresh image
-  mapping), `exccost` (time of one handled exception, as the protection uses them). `tools/dettable.py` decodes a `peek` dump of the hook-check table.
+  mapping), `exccost` (time of one handled exception, as the protection uses them), `affin` (lists a process's threads with start address, CPU time and affinity; can pin the threads that start at one address). `tools/dettable.py` decodes a `peek` dump of the hook-check table.
 - **When the game exits instead of freezing, GameNative closes the container at once** (logcat: `Exit called:
   processes_exited` 34 ms after the game's window went away), so the 10 s log copies miss the end. `waitexit`
   copies the log at that moment. The game also keeps one `LogFiles\unhandled.<start time>.txt` per run
@@ -212,7 +219,7 @@ note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch
 
 | Path | What it is |
 |---|---|
-| [`patches/fex/`](patches/fex) | 0002 hides the CPUID vendor; 0004 hides the SMC trap from guest queries (works; does not stop the kill); 0006 makes a raw x64 `syscall` return registers like hardware (works; does not stop the kill); 0007 rewrites exported `FF 25` thunks so the game's hook check passes (moves the stop from ~3 to ~9 minutes); 0008 dumps the decoded code of the protection's range (analysis tool); 0009 skips the per-thread call-ret discard on each SMC fault (unsafe experiment; with 0007 it reached the first menu). 0001/0003 stop the game at start-up. |
+| [`patches/fex/`](patches/fex) | 0002 hides the CPUID vendor; 0004 hides the SMC trap from guest queries (works; does not stop the kill); 0006 makes a raw x64 `syscall` return registers like hardware (works; does not stop the kill); 0007 rewrites exported `FF 25` thunks so the game's hook check passes (moves the stop from ~3 to ~9 minutes); 0008 dumps the decoded code of the protection's range (analysis tool); 0009 skips the per-thread call-ret discard on each SMC fault (unsafe experiment; with 0007 it reached the first menu); 0010 resumes x64 code after an exception without Wine's wineserver round trip (with 0007 and 0009 the game is playable past 15 minutes). 0001/0003 stop the game at start-up. |
 | [`patches/box64/`](patches/box64) | Against GameNative's Box64 (`Pipetto-crypto` `eb6fb21f`), in order: 0001 decode SSE/AVX stores so write faults reach Wine as writes; 0002 keep the guest's execute permission on `noexec` storage; 0003 send raw Windows syscalls to Wine's dispatcher when Wine installed no seccomp handler (39-bit address space). With all three, `proton-11.0-1-x86_64` runs the game to `Config File` ([BOX64-ROUTE.md](docs/BOX64-ROUTE.md)). |
 | [`patches/proton-arm64ec-ntdll/`](patches/proton-arm64ec-ntdll) | Two binary patches for the ARM64EC `ntdll.dll` (`invoke_arm64ec_syscall` register fix; `--waitq` spinlock fix). |
 | [`patches/gamenative/`](patches/gamenative) | Fresh Steam ticket per launch. Not built or tested. |
@@ -225,6 +232,7 @@ and what did not. Then:
 | Doc | Covers |
 |---|---|
 | [`AEGIS.md`](docs/AEGIS.md) | The protection: identity, build log, blocklist, timing constants |
+| [`FAST-CONTINUE.md`](docs/FAST-CONTINUE.md) | **The fix for the watchdog**: every handled exception waited for one wineserver request in Wine's ARM64EC `NtContinue`; patch 0010 skips it. Exception cost 230 to 2.5 us, loop cycle about 1.1 s, game playable past 15 minutes |
 | [`WATCHDOG.md`](docs/WATCHDOG.md) | **The later stop is a lateness bucket** on the protection's loop (2 s per cycle allowed, 256 s total), the measured cycle times, and FEX's per-thread JIT/SMC/exception costs that make the cycles slow. |
 | [`HOOK-CHECK.md`](docs/HOOK-CHECK.md) | **The start-up decision is an API hook check**: the decrypted code (via a FEX block dump), the 63-record table, why Wine's ARM64EC `FF 25` export thunks fail it, patch 0007 and its runs, and the later stop at ~9 minutes. |
 | [`KILL-TIMER.md`](docs/KILL-TIMER.md) | **The kill thread is a timed job** (wakes by timeout after ~200 s, then calls the suspend-all function with `0x0e00000000000000`), and the protection's hook-check loop, both read from `WINEDEBUG=+seh` exception traces. |
