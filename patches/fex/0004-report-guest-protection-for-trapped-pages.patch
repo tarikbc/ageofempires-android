@@ -1,0 +1,328 @@
+diff --git a/Source/Windows/ARM64EC/Module.S b/Source/Windows/ARM64EC/Module.S
+index 2489e653c..187b8a416 100644
+--- a/Source/Windows/ARM64EC/Module.S
++++ b/Source/Windows/ARM64EC/Module.S
+@@ -147,6 +147,32 @@ DIRECT_SYSCALL_WRAPPER("#NtRaiseExceptionNative", WineNtRaiseExceptionSyscallId)
+   // when called by FEX).
+ DIRECT_SYSCALL_WRAPPER("#NtAllocateVirtualMemoryNative", WineNtAllocateVirtualMemorySyscallId)
+ DIRECT_SYSCALL_WRAPPER("#NtProtectVirtualMemoryNative", WineNtProtectVirtualMemorySyscallId)
++DIRECT_SYSCALL_WRAPPER("#NtQueryVirtualMemoryNative", WineNtQueryVirtualMemorySyscallId)
++
++  // Installed into ntdll's __wine_syscall_dispatcher pointer. Wine's syscall stubs enter here with the syscall number
++  // in x8, the stub's caller's return address in x9 and x30 pointing at the stub's own ret. Every syscall but the two
++  // below goes straight on to Wine's dispatcher with all registers untouched. Those two branch to a C++ wrapper with
++  // x30 set to the original caller, as if the caller had called the wrapper, and the wrapper issues the real syscall
++  // through the saved dispatcher (the *Native wrappers above).
++.global SyscallDispatcherHook
++SyscallDispatcherHook:
++  adrp x16, HookQueryVirtualMemoryId
++  ldr x16, [x16, #:lo12:HookQueryVirtualMemoryId]
++  cmp x8, x16
++  b.eq 1f
++  adrp x16, HookProtectVirtualMemoryId
++  ldr x16, [x16, #:lo12:HookProtectVirtualMemoryId]
++  cmp x8, x16
++  b.eq 2f
++  adrp x16, WineSyscallDispatcher
++  ldr x16, [x16, #:lo12:WineSyscallDispatcher]
++  br x16
++1:
++  mov x30, x9
++  b "#NtQueryVirtualMemoryHooked"
++2:
++  mov x30, x9
++  b "#NtProtectVirtualMemoryHooked"
+ 
+   // A replacement for the standard ARM64EC call checker that ignores any FFS patches and always redirects to a function's
+   // native implementation. As the only library FEX calls into is NTDLL, this is done using a LUT generated at init time.
+diff --git a/Source/Windows/ARM64EC/Module.cpp b/Source/Windows/ARM64EC/Module.cpp
+index 633f252c3..0174fa7a1 100644
+--- a/Source/Windows/ARM64EC/Module.cpp
++++ b/Source/Windows/ARM64EC/Module.cpp
+@@ -90,8 +90,18 @@ uint64_t WineNtContinueSyscallId;
+ uint64_t WineNtAllocateVirtualMemorySyscallId;
+ uint64_t WineNtProtectVirtualMemorySyscallId;
+ uint64_t WineNtRaiseExceptionSyscallId;
++uint64_t WineNtQueryVirtualMemorySyscallId = ~0ULL;
++
++// The guest-visible SMC trap fix: Wine's syscall stubs load their dispatcher from the exported
++// __wine_syscall_dispatcher pointer on every call, so replacing it with SyscallDispatcherHook (Module.S) lets FEX
++// correct what NtQueryVirtualMemory and NtProtectVirtualMemory report for pages the SMC trap has re-protected.
++void** WineSyscallDispatcherPtr;
++uint64_t HookQueryVirtualMemoryId = ~0ULL;
++uint64_t HookProtectVirtualMemoryId = ~0ULL;
++extern void* SyscallDispatcherHook;
+ 
+ NTSTATUS NtContinueNative(ARM64_NT_CONTEXT* NativeContext, BOOLEAN Alert);
++NTSTATUS NtQueryVirtualMemoryNative(HANDLE, LPCVOID, MEMORY_INFORMATION_CLASS, PVOID, SIZE_T, SIZE_T*);
+ NTSTATUS NtAllocateVirtualMemoryNative(HANDLE, PVOID*, ULONG_PTR, SIZE_T*, ULONG, ULONG);
+ NTSTATUS NtProtectVirtualMemoryNative(HANDLE, PVOID*, SIZE_T*, ULONG, ULONG*);
+ NTSTATUS NtRaiseExceptionNative(EXCEPTION_RECORD*, ARM64_NT_CONTEXT*, BOOL);
+@@ -266,6 +276,8 @@ void ParseWineSyscallNumbers(HMODULE NtDll) {
+       WineNtProtectVirtualMemorySyscallId = CurSyscallId;
+     } else if (strcmp(it->Name, "NtRaiseException") == 0) {
+       WineNtRaiseExceptionSyscallId = CurSyscallId;
++    } else if (strcmp(it->Name, "NtQueryVirtualMemory") == 0) {
++      WineNtQueryVirtualMemorySyscallId = CurSyscallId;
+     }
+   }
+ }
+@@ -322,6 +334,7 @@ bool InitSyscalls() {
+ 
+   const auto WineSyscallDispatcherPtr = reinterpret_cast<void**>(GetProcAddress(NtDll, "__wine_syscall_dispatcher"));
+   if (WineSyscallDispatcherPtr) {
++    ::WineSyscallDispatcherPtr = WineSyscallDispatcherPtr;
+     WineSyscallDispatcher = *WineSyscallDispatcherPtr;
+     ParseWineSyscallNumbers(NtDll);
+   } else {
+@@ -624,6 +637,77 @@ public:
+ };
+ } // namespace Exception
+ 
++namespace {
++struct WorkingSetExEntry {
++  void* VirtualAddress;
++  ULONG_PTR Attributes; // bit 0 Valid, bits 4-14 Win32Protection
++};
++
++void FixupBasicInformation(MEMORY_BASIC_INFORMATION* Info) {
++  if (Info->State != MEM_COMMIT) {
++    return;
++  }
++
++  const auto Base = reinterpret_cast<uint64_t>(Info->BaseAddress);
++  const ULONG Visible = InvalidationTracker->GuestVisibleProtection(Base, Info->Protect);
++  bool AnyFixed = Visible != Info->Protect;
++  Info->Protect = Visible;
++
++  // A trapped page splits the guest's region in two. Merge following pages that look the same to the guest, so the
++  // region boundaries match what the guest would see without the trap.
++  uint64_t Next = Base + Info->RegionSize;
++  for (int i = 0; i < 256; i++) {
++    if (!AnyFixed && !InvalidationTracker->IsTrapped(Next)) {
++      break;
++    }
++    MEMORY_BASIC_INFORMATION NextInfo;
++    if (NtQueryVirtualMemoryNative(NtCurrentProcess(), reinterpret_cast<void*>(Next), MemoryBasicInformation, &NextInfo, sizeof(NextInfo), nullptr) ||
++        NextInfo.AllocationBase != Info->AllocationBase || NextInfo.State != Info->State || NextInfo.Type != Info->Type ||
++        NextInfo.AllocationProtect != Info->AllocationProtect) {
++      break;
++    }
++    const ULONG NextVisible = InvalidationTracker->GuestVisibleProtection(Next, NextInfo.Protect);
++    if (NextVisible != Visible) {
++      break;
++    }
++    AnyFixed |= NextVisible != NextInfo.Protect;
++    Info->RegionSize += NextInfo.RegionSize;
++    Next += NextInfo.RegionSize;
++  }
++}
++} // namespace
++
++extern "C" NTSTATUS NtQueryVirtualMemoryHooked(HANDLE Process, LPCVOID Address, MEMORY_INFORMATION_CLASS Class, PVOID Buffer,
++                                               SIZE_T Length, SIZE_T* ResultLength) {
++  const NTSTATUS Status = NtQueryVirtualMemoryNative(Process, Address, Class, Buffer, Length, ResultLength);
++  if (Status || Process != NtCurrentProcess() || !InvalidationTracker) {
++    return Status;
++  }
++
++  if ((Class == MemoryBasicInformation || Class == MemoryBasicInformationCapped) && Length >= sizeof(MEMORY_BASIC_INFORMATION)) {
++    FixupBasicInformation(static_cast<MEMORY_BASIC_INFORMATION*>(Buffer));
++  } else if (Class == MemoryWorkingSetExInformation) {
++    auto* Entries = static_cast<WorkingSetExEntry*>(Buffer);
++    for (SIZE_T i = 0; i < Length / sizeof(WorkingSetExEntry); i++) {
++      if (!(Entries[i].Attributes & 1)) {
++        continue;
++      }
++      const ULONG Prot = (Entries[i].Attributes >> 4) & 0x7ff;
++      const ULONG Visible = InvalidationTracker->GuestVisibleProtection(reinterpret_cast<uint64_t>(Entries[i].VirtualAddress), Prot);
++      Entries[i].Attributes = (Entries[i].Attributes & ~(ULONG_PTR(0x7ff) << 4)) | (ULONG_PTR(Visible & 0x7ff) << 4);
++    }
++  }
++  return Status;
++}
++
++extern "C" NTSTATUS NtProtectVirtualMemoryHooked(HANDLE Process, PVOID* AddressPtr, SIZE_T* SizePtr, ULONG NewProt, ULONG* OldProt) {
++  const NTSTATUS Status = NtProtectVirtualMemoryNative(Process, AddressPtr, SizePtr, NewProt, OldProt);
++  if (!Status && OldProt && Process == NtCurrentProcess() && InvalidationTracker) {
++    *OldProt = InvalidationTracker->GuestVisibleProtection(reinterpret_cast<uint64_t>(*AddressPtr), *OldProt);
++  }
++  return Status;
++}
++
+ extern "C" void SyncThreadContext(CONTEXT* Context) {
+   ProcessPendingCrossProcessEmulatorWork();
+   auto* Thread = GetCPUArea().ThreadState();
+@@ -697,6 +781,25 @@ NTSTATUS ProcessInit() {
+                                                           PAGE_EXECUTE_READ);
+   *reinterpret_cast<uint8_t*>(X64ReturnInstr) = 0xc3;
+ 
++  // Install the syscall filter last, once InvalidationTracker exists. FEX's own *Native wrappers keep using the saved
++  // WineSyscallDispatcher, so they bypass it.
++  // Only install it if the syscall number FEX derived for NtQueryVirtualMemory matches the `movz x8, #id` that ntdll's
++  // own stub for it starts with; a wrong number would send unrelated syscalls through the wrappers.
++  bool QueryIdVerified = false;
++  if (const auto QueryFFS = reinterpret_cast<uintptr_t>(GetProcAddress(NtDll, "NtQueryVirtualMemory"));
++      QueryFFS > NtDllBase && QueryFFS - NtDllBase < NtDllRedirectionLUTSize && NtDllRedirectionLUT[QueryFFS - NtDllBase]) {
++    const uint32_t Insn = *reinterpret_cast<const uint32_t*>(NtDllBase + NtDllRedirectionLUT[QueryFFS - NtDllBase]);
++    QueryIdVerified = (Insn & 0xffe0001fU) == 0xd2800008U && ((Insn >> 5) & 0xffffU) == WineNtQueryVirtualMemorySyscallId;
++  }
++
++  if (QueryIdVerified && WineSyscallDispatcherPtr && WineNtProtectVirtualMemorySyscallId) {
++    HookQueryVirtualMemoryId = WineNtQueryVirtualMemorySyscallId;
++    HookProtectVirtualMemoryId = WineNtProtectVirtualMemorySyscallId;
++    __atomic_store_n(WineSyscallDispatcherPtr, reinterpret_cast<void*>(&SyscallDispatcherHook), __ATOMIC_RELEASE);
++    LogMan::Msg::IFmt("SMC trap hidden from guest queries (query id {}, protect id {})", HookQueryVirtualMemoryId,
++                      HookProtectVirtualMemoryId);
++  }
++
+   const uintptr_t KiUserExceptionDispatcherFFS = reinterpret_cast<uintptr_t>(GetProcAddress(NtDll, "KiUserExceptionDispatcher"));
+   Exception::KiUserExceptionDispatcher = NtDllRedirectionLUT[KiUserExceptionDispatcherFFS - NtDllBase] + NtDllBase;
+ 
+diff --git a/Source/Windows/Common/InvalidationTracker.cpp b/Source/Windows/Common/InvalidationTracker.cpp
+index 155403d35..d9e605cc4 100644
+--- a/Source/Windows/Common/InvalidationTracker.cpp
++++ b/Source/Windows/Common/InvalidationTracker.cpp
+@@ -47,6 +47,9 @@ void InvalidationTracker::HandleMemoryProtectionNotification(uint64_t Address, u
+   const auto AlignedBase = Address & FEXCore::Utils::FEX_PAGE_MASK;
+   const auto AlignedSize = (Address - AlignedBase + Size + FEXCore::Utils::FEX_PAGE_SIZE - 1) & FEXCore::Utils::FEX_PAGE_MASK;
+ 
++  // The guest has just set this protection itself, so it is what the guest should see from now on.
++  ForgetTrapped(AlignedBase, AlignedSize);
++
+   const bool NeedsInvalidate = [&]() {
+     std::unique_lock Lock(IntervalsLock);
+ 
+@@ -186,6 +189,7 @@ InvalidationTracker::InvalidateContainingSectionResult InvalidationTracker::Inva
+   InvalidateIntervalInternal(SectionBase, SectionSize);
+ 
+   if (Free) {
++    ForgetTrapped(SectionBase, SectionSize);
+     std::unique_lock Lock(IntervalsLock);
+     XIntervals.Remove({SectionBase, SectionBase + SectionSize});
+     RWXIntervals.Remove({SectionBase, SectionBase + SectionSize});
+@@ -206,6 +210,7 @@ void InvalidationTracker::InvalidateAlignedInterval(uint64_t Address, uint64_t S
+   InvalidateIntervalInternal(AlignedBase, AlignedSize);
+ 
+   if (Free) {
++    ForgetTrapped(AlignedBase, AlignedSize);
+     std::unique_lock Lock(IntervalsLock);
+     XIntervals.Remove({AlignedBase, AlignedBase + AlignedSize});
+     RWXIntervals.Remove({AlignedBase, AlignedBase + AlignedSize});
+@@ -236,7 +241,9 @@ bool InvalidationTracker::HandleRWXAccessViolation(FEXCore::Core::InternalThread
+       ULONG TmpProt;
+       void* TmpAddress = reinterpret_cast<void*>(FaultAddress);
+       SIZE_T TmpSize = 1;
+-      NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, UntrapProt, &TmpProt);
++      if (!NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, UntrapProt, &TmpProt)) {
++        ForgetTrapped(reinterpret_cast<uint64_t>(TmpAddress), TmpSize);
++      }
+     }
+     DetectMonoBackpatcherBlock(Thread, HostPc);
+     return true;
+@@ -309,6 +316,9 @@ void InvalidationTracker::DisableSMCDetection() {
+     }
+     Address += Query.Size;
+   } while (Query.Size);
++
++  std::scoped_lock TLock(TrappedLock);
++  TrappedIntervals.Clear();
+ }
+ 
+ ULONG InvalidationTracker::GetTrapProt(uint64_t Address) const {
+@@ -360,10 +370,28 @@ bool InvalidationTracker::ProtectRWXIntervalsInternal(uint64_t Address, uint64_t
+         }
+         HitRWXInterval = true;
+       }
+-      void* TmpAddress = reinterpret_cast<void*>(Address);
+-      SIZE_T TmpSize = static_cast<SIZE_T>(std::min(End, Address + Query.Size) - Address);
+-      ULONG TmpProt;
+-      NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, ForWriteLocked ? GetUntrapProt(Address) : GetTrapProt(Address), &TmpProt);
++      const uint64_t RangeEnd = std::min(End, Address + Query.Size);
++      if (ForWriteLocked) {
++        void* TmpAddress = reinterpret_cast<void*>(Address);
++        SIZE_T TmpSize = static_cast<SIZE_T>(RangeEnd - Address);
++        ULONG TmpProt;
++        if (!NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, GetUntrapProt(Address), &TmpProt)) {
++          ForgetTrapped(reinterpret_cast<uint64_t>(TmpAddress), TmpSize);
++        }
++      } else {
++        // Trap page by page: the old protection NtProtectVirtualMemory reports is that of the first page only, and a
++        // page is only recorded as trapped if the guest really had it writable (it may have set it read-only since).
++        for (uint64_t Page = Address & FEXCore::Utils::FEX_PAGE_MASK; Page < RangeEnd; Page += FEXCore::Utils::FEX_PAGE_SIZE) {
++          void* TmpAddress = reinterpret_cast<void*>(Page);
++          SIZE_T TmpSize = FEXCore::Utils::FEX_PAGE_SIZE;
++          ULONG TmpProt = 0;
++          const ULONG TrapProt = GetTrapProt(Page);
++          if (!NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, TrapProt, &TmpProt) && (TmpProt & 0xff) != TrapProt &&
++              (TmpProt & 0xff) == GetUntrapProt(Page)) {
++            RecordTrapped(Page, FEXCore::Utils::FEX_PAGE_SIZE);
++          }
++        }
++      }
+     } else if (!Query.Size) {
+       // No more regions past `Address` in the interval list
+       break;
+@@ -375,4 +403,31 @@ bool InvalidationTracker::ProtectRWXIntervalsInternal(uint64_t Address, uint64_t
+   return HitRWXInterval;
+ }
+ 
++void InvalidationTracker::RecordTrapped(uint64_t Address, uint64_t Size) {
++  std::scoped_lock TLock(TrappedLock);
++  TrappedIntervals.Insert({Address, Address + Size});
++}
++
++void InvalidationTracker::ForgetTrapped(uint64_t Address, uint64_t Size) {
++  std::scoped_lock TLock(TrappedLock);
++  TrappedIntervals.Remove({Address, Address + Size});
++}
++
++bool InvalidationTracker::IsTrapped(uint64_t Address) {
++  std::unique_lock TLock(TrappedLock, std::try_to_lock);
++  return TLock.owns_lock() && TrappedIntervals.Query(Address).Enclosed;
++}
++
++ULONG InvalidationTracker::GuestVisibleProtection(uint64_t Address, ULONG Prot) {
++  if (!IsTrapped(Address)) {
++    return Prot;
++  }
++
++  std::shared_lock Lock(IntervalsLock, std::try_to_lock);
++  if (!Lock.owns_lock() || (Prot & 0xff) != GetTrapProt(Address)) {
++    return Prot;
++  }
++  return (Prot & ~0xffUL) | GetUntrapProt(Address);
++}
++
+ } // namespace FEX::Windows
+diff --git a/Source/Windows/Common/InvalidationTracker.h b/Source/Windows/Common/InvalidationTracker.h
+index d2a80bcaa..76bed513a 100644
+--- a/Source/Windows/Common/InvalidationTracker.h
++++ b/Source/Windows/Common/InvalidationTracker.h
+@@ -41,6 +41,12 @@ public:
+ 
+   FEXCore::HLE::ExecutableRangeInfo QueryExecutableRange(uint64_t Address);
+ 
++  // The SMC write trap changes the protection of guest pages behind the guest's back. These two report what the
++  // guest itself set, so the trap cannot be observed through NtQueryVirtualMemory or through the old protection
++  // returned by NtProtectVirtualMemory. Neither ever blocks: if a lock is busy, the input is returned unchanged.
++  ULONG GuestVisibleProtection(uint64_t Address, ULONG Prot);
++  bool IsTrapped(uint64_t Address);
++
+ private:
+   void DetectMonoBackpatcherBlock(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPC);
+   void DisableSMCDetection();
+@@ -67,6 +73,13 @@ private:
+   bool DEPDisabled {false};                             // Protected by IntervalsLock
+   FEXCore::IntervalList<uint64_t> DEPPromotedIntervals; // Protected by IntervalsLock
+ 
++  // Pages whose write permission FEX itself removed (and has not restored), recorded only when the page really was
++  // writable before the trap. Any guest protection change, untrap or free removes the record.
++  FEXCore::IntervalList<uint64_t> TrappedIntervals; // Protected by TrappedLock
++  std::mutex TrappedLock;
++  void RecordTrapped(uint64_t Address, uint64_t Size);
++  void ForgetTrapped(uint64_t Address, uint64_t Size);
++
+   bool MonoBackpatcherDetectionPending {false};
+   uint64_t MonoBase {0};
+   uint64_t MonoEnd {0};
