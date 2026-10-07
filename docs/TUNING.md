@@ -29,6 +29,41 @@ its refresh-rate limit if set, else the screen's current rate (`VulkanRenderer.a
 game already running at 60 Hz, the main screen stayed at 60 Hz after the settings change (SurfaceFlinger
 `refresh-rate: 60.00 Hz`, only the second screen switched); after the next start it ran at 120 Hz.
 
+## Graphics drivers (19:02 to 19:57)
+
+Same test at 120 Hz, the drivers installed with `tools/gn_driver.py` (GameNative Driver Manager, then the container's
+Graphics Driver Version). Temperatures from `tools/thermals.py` (hottest CPU sensor and the mean of all CPU sensors,
+hottest GPU sensor), sampled every 3 s in each window. These runs came after hours of back-to-back tests, so the
+Thor was hot; earlier the same R4 setup gave 43.8 to 45.6 FPS.
+
+| Driver | FPS minute 1 / 5 / 7 | frames > 50 ms | frames > 100 ms | CPU hottest / mean | GPU hottest |
+|---|---|---|---|---|---|
+| **Turnip v26.2.0 R4** (in use) | 42.1 / 42.1 / 42.2 | 2 / 2 / 2 | 2 / 0 / 0 | 95.1 to 95.5 / 81.9 to 83.6 °C | 75.2 to 77.2 °C |
+| Turnip v26.3.0-R6 (StevenMXZ, 2026-09-30) | 42.4 / 42.6 / 41.9 | 4 / 0 / 2 | 1 / 0 / 1 | 94.3 / 81.7 °C (minute 7) | 75.2 °C |
+| Turnip T30 (MrPurple666 purple-turnip, Mesa 26.3.0, 2026-08-17) | 39.7 / 39.8 / - | 6 / 2 | 2 / 0 | not recorded | GPU 69 to 73 % busy |
+| Balemuni Apex v2 ULTIMATE SD 8 Gen 2 (Mesa 26.3.0-devel `b9a2bf3`, 2026-08-26) | - | - | - | - | - |
+
+**Balemuni Apex v2 stops the game** about two minutes after the start, twice in two runs (19:04:32 and 19:09:19):
+`Failed to wait for DX12 fence (error 102). Initial value: 3688, Expected value: 3689, Actual value: 3688` then
+`-- FATAL EXIT --` in the game's log (error 102 is a wait timeout: the GPU did not finish the submitted work). Its
+`meta.json` name contains `/`, and GameNative installed it under the folder name `tmp`.
+
+R4 and R6 are the same within the test's spread; R4 stays. Checksums: the Balemuni and T30 files on the Thor matched
+the SHA-256 digests of their GitHub release assets.
+
+## Power profile: let the CPU scale (20:00)
+
+Until then the container's GameNative power profile held every CPU core at its maximum clock (`minCpuFreq` =
+`maxCpuFreq` = 3187200). With the minimum released (`"minCpuFreq":307200`, `"maxCpuFreq":3187200`, governor
+`SCHEDUTIL`, GPU levels 7 and 8 as before), same test, R4 driver, right after the R4 run above:
+
+| CPU minimum | FPS minute 1 / 5 / 7 | frames > 50 ms | frames > 100 ms | CPU hottest / mean | GPU hottest | prime core |
+|---|---|---|---|---|---|---|
+| held at 3187 MHz | 42.1 / 42.1 / 42.2 | 2 / 2 / 2 | 2 / 0 / 0 | 95.1 to 95.5 / 81.9 to 83.6 °C | 75.2 to 77.2 °C | 3187 MHz |
+| 307 MHz (scaling) | 43.9 / 44.1 / 44.0 | 1 / 2 / 2 | 0 / 1 / 0 | 94.7 to 95.9 / 83.3 to 84.1 °C | 76.4 to 77.2 °C | 729 to 3187 MHz |
+
+Holding the clock brought no FPS and no lower temperature, so the scaling profile is the one in use.
+
 ## Where the frame time goes (60 Hz, 16:50, `tools/threadcpu.py`)
 
 Main thread 52.6 % of one core, render thread 34.6 %, the protection's loop 21.9 %, `vkd3d_queue` 9.6 %, eight

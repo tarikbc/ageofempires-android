@@ -32,6 +32,8 @@ The parts, which also work alone:
 | Frames | `tools/bench.py record SECONDS`, `tools/frametimes.py` | Frame times from Android's compositor, as a summary line. |
 | Live graph | `tools/fpsgraph.py` | A frame-time graph in the Mac's browser, see below. |
 | Threads | `tools/threadcpu.py [SECONDS]` | CPU use of each game thread (from `/proc` over adb, by the game's thread names) and GPU load and clock. |
+| Heat | `tools/thermals.py [SECONDS]` | Hottest CPU sensor and mean of all CPU sensors (`cpu-*`, `cpuss-*` thermal zones), hottest GPU sensor (`gpuss-*`), GPU load and clock, mid and prime core clocks. `bench.py` samples it every 3 s in each window and adds it to the result line. |
+| Drivers | `tools/gn_driver.py import FILE.zip WORD`, `gn_driver.py select TEXT` | Imports an adrenotools driver zip through GameNative's Driver Manager, and selects an installed driver (drawn white in the list; online ones are grey) in the container's Graphics tab. |
 | Compare | `tools/framecmp.py CSV` | Splits a recording at the longest gap (a Quick Menu visit pauses the game) and compares before and after. |
 
 The player does nothing in these matches. The A.I. kills the idle villagers by about match minute 20 (seen at
