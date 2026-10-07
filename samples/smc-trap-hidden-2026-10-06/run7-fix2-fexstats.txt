@@ -1,0 +1,11 @@
+t=4s pid=304 libarm64ecfex.dll base=6ff81a0000 read=1 marker=SMCHIDE1 | queries_filtered=12254 queries_corrected=0 protects_filtered=25710 protects_corrected=9845 | 10:21 PM
+t=34s pid=304 libarm64ecfex.dll base=6ff81a0000 read=1 marker=SMCHIDE1 | queries_filtered=128961 queries_corrected=0 protects_filtered=244720 protects_corrected=112836 | 10:21 PM
+t=64s pid=304 libarm64ecfex.dll base=6ff81a0000 read=1 marker=SMCHIDE1 | queries_filtered=256179 queries_corrected=0 protects_filtered=474847 protects_corrected=218956 | 10:22 PM
+t=94s pid=304 libarm64ecfex.dll base=6ff81a0000 read=1 marker=SMCHIDE1 | queries_filtered=380889 queries_corrected=0 protects_filtered=688753 protects_corrected=319613 | 10:22 PM
+t=124s pid=304 libarm64ecfex.dll base=6ff81a0000 read=1 marker=SMCHIDE1 | queries_filtered=492193 queries_corrected=0 protects_filtered=879518 protects_corrected=410081 | 10:23 PM
+t=154s pid=304 libarm64ecfex.dll base=6ff81a0000 read=1 marker=SMCHIDE1 | queries_filtered=636548 queries_corrected=0 protects_filtered=1122022 protects_corrected=524301 | 10:23 PM
+t=184s pid=304 libarm64ecfex.dll base=6ff81a0000 read=1 marker=SMCHIDE1 | queries_filtered=732206 queries_corrected=0 protects_filtered=1286488 protects_corrected=600318 | 10:24 PM
+t=214s pid=304 libarm64ecfex.dll base=6ff81a0000 read=1 marker=SMCHIDE1 | queries_filtered=732206 queries_corrected=0 protects_filtered=1286488 protects_corrected=600318 | 10:24 PM
+t=244s pid=304 libarm64ecfex.dll base=6ff81a0000 read=1 marker=SMCHIDE1 | queries_filtered=732206 queries_corrected=0 protects_filtered=1286488 protects_corrected=600318 | 10:25 PM
+t=274s pid=304 libarm64ecfex.dll base=6ff81a0000 read=1 marker=SMCHIDE1 | queries_filtered=732206 queries_corrected=0 protects_filtered=1286488 protects_corrected=600318 | 10:25 PM
+t=304s pid=304 libarm64ecfex.dll base=6ff81a0000 read=1 marker=SMCHIDE1 | queries_filtered=732206 queries_corrected=0 protects_filtered=1286488 protects_corrected=600318 | 10:26 PM

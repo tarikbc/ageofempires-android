@@ -1,0 +1,32 @@
+=== smctest2: SMC trap hidden and still working? ===
+
+3 RWX pages at 0000000000BC0000, code in the middle page 0000000000BC1000
+
+[1] run code once
+  returned 42 (expect 42)
+  middle page after running                Protect=RWX  (0x40) RegionSize=0x2000
+  first page (region should cover 3 pages) Protect=RWX  (0x40) RegionSize=0x3000
+  working set, middle page                 Valid=1 Win32Protection=RWX  (0x40)
+
+[2] rewrite the code and run it again
+  middle page after the rewrite            Protect=RWX  (0x40) RegionSize=0x2000
+  returned 43 (expect 43; 42 means the rewrite was missed)
+  middle page after running again          Protect=RWX  (0x40) RegionSize=0x2000
+
+[3] VirtualProtect RWX -> old protection
+  previous=RWX (0x40) (expect RWX)
+
+[4] guest sets the page RX itself
+  VirtualProtect(RX) previous=RWX (0x40) (expect RWX)
+  middle page after guest set RX           Protect=RX   (0x20) RegionSize=0x1000
+  after running it (expect RX, not RWX)    Protect=RX   (0x20) RegionSize=0x1000
+  VirtualProtect(RWX) previous=RX (0x20) (expect RX)
+
+[5] rewrite after the guest's own RX/RWX round trip
+  returned 44 (expect 44)
+  middle page after running                Protect=RWX  (0x40) RegionSize=0x2000
+
+[6] same page through a real handle to this process (OpenProcess + VirtualQueryEx)
+  VirtualQueryEx                           Protect=RWX  (0x40) (expect RWX)
+
+END

@@ -1,0 +1,12 @@
+t_s	threads	cpu_pct	log_bytes	growing	susp	killer	step	last
+4	22		4302				Loading step: [ModManager]	(I) [22:21:03.897] [000000308]: ARC -- a:\cardinal\archives\art.sga 59485649 B [ID:d99ddc3bf2a59ab33b5a50ec14f1256c] [Ver:fd833e7a8887fced3f
+48	67	170	14779	yes	s0:17	killer tid=0168 susp=0 user=0ms	Loading step: [Property Bag Manager]	(I) [22:21:14.407] [000000308]: UTIL -- Failed to Load BinaryConfig file: 'data:art\fx\fx_objects\fx_campfire\fx_campfire.simbox', error: 'U
+62	79	185	64616	yes			Loading step: [IEngineInitializable]	(E) [22:21:58.586] [000000548]: XAL_TELEMETRY: HTTP request 000000005BC5AAE0 failed with 0x80004005, system error code 2147954552, message:
+106	75	178	70201	yes	s0:68	killer tid=0168 susp=0 user=0ms	Loading step: [IEngineInitializable]	(E) [22:22:15.607] [000000592]: HTTPCLIENT: HCHttpCallPerform [ID 6] [TID 592l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=1 dwError=121
+120	74	169	80059	yes			Loading step: [IEngineInitializable]	(E) [22:22:56.475] [000000548]: XAL_TELEMETRY: HTTP request 00000003B9BBEAB0 failed with 0x80004005, system error code 2147954557, message:
+164	76	152	80486	yes	s0:66	killer tid=0168 susp=0 user=0ms	Loading step: [IEngineInitializable]	(I) [22:23:10.156] [000000308]: Logout attempt: C00T04R-1X-03 52656C69028D
+208	72	62	88545	yes			Loading step: [Tuning Variant]	(E) [22:23:52.311] [000000548]: XAL_TELEMETRY: HTTP request 00000003B9BBEAB0 failed with 0x80004005, system error code 2147954557, message:
+223	72	0	88545	NO	s0:1,s1:61	killer tid=0168 susp=0 user=60ms	Loading step: [Tuning Variant]	(E) [22:23:52.311] [000000548]: XAL_TELEMETRY: HTTP request 00000003B9BBEAB0 failed with 0x80004005, system error code 2147954557, message:
+267	72	0	88545	NO			Loading step: [Tuning Variant]	(E) [22:23:52.311] [000000548]: XAL_TELEMETRY: HTTP request 00000003B9BBEAB0 failed with 0x80004005, system error code 2147954557, message:
+281	72	0	88545	NO	s0:1,s1:61	killer tid=0168 susp=0 user=60ms	Loading step: [Tuning Variant]	(E) [22:23:52.311] [000000548]: XAL_TELEMETRY: HTTP request 00000003B9BBEAB0 failed with 0x80004005, system error code 2147954557, message:
+325	72	0	88545	NO			Loading step: [Tuning Variant]	(E) [22:23:52.311] [000000548]: XAL_TELEMETRY: HTTP request 00000003B9BBEAB0 failed with 0x80004005, system error code 2147954557, message:

@@ -126,15 +126,27 @@ def main():
         sys.exit("device is locked; unlock it first")
     if not a.t0:
         sh(f"rm -f {DL}/aoe/watch.txt {DL}/aoe/susp_now.txt {DL}/aoe/susp_hist.txt")
-    if a.launch:
-        launch()
-    t_launch = time.time()
     pid = ""
-    while time.time() - t_launch < 300 and not pid:
-        pid = game_pid()
-        time.sleep(3)
+    if a.launch:
+        # GameNative sometimes hangs on "Syncing cloud saves" after Play, with no way past it in the UI.
+        # A normal launch shows the game process within ~30 s, so restart the app and try again after 90 s.
+        for attempt in range(1, 4):
+            launch()
+            t_launch = time.time()
+            while time.time() - t_launch < 90 and not pid:
+                pid = game_pid()
+                time.sleep(3)
+            if pid:
+                break
+            print(f"[{time.strftime('%H:%M:%S')}] no game process 90 s after Play (attempt {attempt}); restarting GameNative",
+                  flush=True)
+    else:
+        t_launch = time.time()
+        while time.time() - t_launch < 300 and not pid:
+            pid = game_pid()
+            time.sleep(3)
     if not pid:
-        sys.exit("no RelicCardinal.exe process within 5 minutes")
+        sys.exit("no RelicCardinal.exe process after the launch attempts")
     t0 = a.t0 or time.time()
     run_start = time.strftime("%Y-%m-%d %H:%M")
     print(f"[{time.strftime('%H:%M:%S')}] pid={pid}; run started ~{run_start}", flush=True)

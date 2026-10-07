@@ -1,0 +1,20 @@
+[21:40:10] run 1: fix (2f578905) -> /Users/tarikbc/.claude/jobs/43c637c4/tmp/ab1/01-fix
+    fix: {'start': '2026-10-06 21:41', 'drop': 'none', 'last_line': '21:43:12.035', 'last_step': 'IEngineInitializable', 'max_suspended': 60, 'kill_thread_ms': [0, 30, 30], 'end': 'still alive'}
+[21:45:33] run 2: ctl (4bc9d3a9) -> /Users/tarikbc/.claude/jobs/43c637c4/tmp/ab1/02-ctl
+    ctl: {'start': '2026-10-06 21:46', 'drop': '21:48:57.752', 'last_line': '21:49:44.756', 'last_step': 'Tuning Variant', 'max_suspended': 59, 'kill_thread_ms': [0, 50, 50], 'end': 'still alive'}
+[21:52:27] run 3: fix (2f578905) -> /Users/tarikbc/.claude/jobs/43c637c4/tmp/ab1/03-fix
+    fix: {'start': '2026-10-06 21:53', 'drop': '21:54:57.772', 'last_line': '21:55:45.493', 'last_step': 'IEngineInitializable', 'max_suspended': 59, 'kill_thread_ms': [0, 0, 0], 'end': 'still alive'}
+[21:58:12] run 4: ctl (4bc9d3a9) -> /Users/tarikbc/.claude/jobs/43c637c4/tmp/ab1/04-ctl
+    ctl: {'start': '', 'drop': 'none', 'last_line': '', 'last_step': '', 'max_suspended': 0, 'kill_thread_ms': [], 'end': 'still alive'}
+[22:03:38] run 5: fix (2f578905) -> /Users/tarikbc/.claude/jobs/43c637c4/tmp/ab1/05-fix
+    fix: {'start': '2026-10-06 22:04', 'drop': '22:06:03.767', 'last_line': '22:07:05.514', 'last_step': 'GEWorld', 'max_suspended': 60, 'kill_thread_ms': [0, 40, 40], 'end': 'still alive'}
+[22:09:34] run 6: ctl (4bc9d3a9) -> /Users/tarikbc/.claude/jobs/43c637c4/tmp/ab1/06-ctl
+    ctl: {'start': '2026-10-06 22:14', 'drop': '22:16:02.060', 'last_line': '22:17:32.013', 'last_step': 'Tuning Variant', 'max_suspended': 60, 'kill_thread_ms': [0, 70, 70], 'end': 'still alive'}
+
+summary
+ 1 fix  start=2026-10-06 21:41 drop=none last=21:43:12.035 step=IEngineInitializable suspended=60 killms=[0, 30, 30] still alive
+ 2 ctl  start=2026-10-06 21:46 drop=21:48:57.752 last=21:49:44.756 step=Tuning Variant suspended=59 killms=[0, 50, 50] still alive
+ 3 fix  start=2026-10-06 21:53 drop=21:54:57.772 last=21:55:45.493 step=IEngineInitializable suspended=59 killms=[0, 0, 0] still alive
+ 4 ctl  start= drop=none last= step= suspended=0 killms=[] still alive
+ 5 fix  start=2026-10-06 22:04 drop=22:06:03.767 last=22:07:05.514 step=GEWorld suspended=60 killms=[0, 40, 40] still alive
+ 6 ctl  start=2026-10-06 22:14 drop=22:16:02.060 last=22:17:32.013 step=Tuning Variant suspended=60 killms=[0, 70, 70] still alive

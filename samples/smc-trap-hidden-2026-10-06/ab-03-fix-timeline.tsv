@@ -1,0 +1,11 @@
+t_s	threads	cpu_pct	log_bytes	growing	susp	killer	step	last
+4	22		14226				Loading step: [Property Bag Manager]	(I) [21:53:23.452] [000000312]: Loading step: [Property Bag Manager]
+48	66	160	14779	yes	s0:17	killer tid=0174 susp=0 user=0ms	Loading step: [Property Bag Manager]	(I) [21:53:32.385] [000000312]: UTIL -- Failed to Load BinaryConfig file: 'data:art\fx\fx_objects\fx_campfire\fx_campfire.simbox', error: 'U
+62	78	236	66516	yes			Loading step: [IEngineInitializable]	(I) [21:54:21.397] [000000312]: UI Async loading data:ui\intro\pages\IntroVideoPage.xaml
+106	75	181	69625	yes	s0:68	killer tid=0174 susp=0 user=0ms	Loading step: [IEngineInitializable]	(E) [21:54:36.066] [000000552]: HTTPCLIENT: HCHttpCallPerform [ID 5] [TID 552l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=1 dwError=121
+120	75	175	78572	yes			Loading step: [IEngineInitializable]	(E) [21:55:20.432] [000000896]: HTTPCLIENT: HCHttpCallPerform [ID 7] [TID 896l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=5 dwError=121
+164	68	85	79002	yes	s0:66	killer tid=0174 susp=0 user=0ms	Loading step: [IEngineInitializable]	(E) [21:55:35.210] [000000932]: HTTPCLIENT: HCHttpCallPerform [ID 8] [TID 932l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=5 dwError=121
+179	68	0	79571	yes			Loading step: [IEngineInitializable]	(E) [21:55:45.493] [000000520]: XAL_TELEMETRY: HTTP request 000000005CF5A3D0 failed with 0x80004005, system error code 2147954557, message:
+223	68	0	79571	NO	s1:59		Loading step: [IEngineInitializable]	(E) [21:55:45.493] [000000520]: XAL_TELEMETRY: HTTP request 000000005CF5A3D0 failed with 0x80004005, system error code 2147954557, message:
+237	68	0	79571	NO			Loading step: [IEngineInitializable]	(E) [21:55:45.493] [000000520]: XAL_TELEMETRY: HTTP request 000000005CF5A3D0 failed with 0x80004005, system error code 2147954557, message:
+281	68	0	79571	NO	s1:59		Loading step: [IEngineInitializable]	(E) [21:55:45.493] [000000520]: XAL_TELEMETRY: HTTP request 000000005CF5A3D0 failed with 0x80004005, system error code 2147954557, message:

@@ -1,0 +1,13 @@
+t_s	threads	cpu_pct	log_bytes	growing	susp	killer	step	last
+4	24		10422				Loading step: [ModManager]	(I) [21:28:59.420] [000000316]: Archive [DevOnly] is [missing]! [Skipping.]
+18	21	202	14779	yes	s0:17	killer tid=0178 susp=0 user=0ms	Loading step: [Property Bag Manager]	(I) [21:29:09.262] [000000316]: UTIL -- Failed to Load BinaryConfig file: 'data:art\fx\fx_objects\fx_campfire\fx_campfire.simbox', error: 'U
+62	79	168	16109	yes			Loading step: [NetworkGlobal]	(I) [21:29:23.129] [000000316]: Loading step: [NetworkGlobal]
+76	77	210	70016	yes	s0:68	killer tid=0178 susp=0 user=0ms	Loading step: [IEngineInitializable]	(I) [21:30:11.032] [000000316]: 	[VPXDecoder::UpdateDisplayFrame] Video has fallen behind by 5.32 s. Seeking to catch up
+120	73	171	75496	yes			Loading step: [IEngineInitializable]	(I) [21:30:24.078] [000000316]: UI Async loading data:ui\intro\pages\connectingandgenericloadingpage.xaml
+134	72	3	79470	yes	s0:1,s1:61	killer tid=0178 susp=0 user=50ms	Loading step: [IEngineInitializable]	(E) [21:30:58.510] [000000748]: HTTPCLIENT: HCHttpCallPerform [ID 8] [TID 748l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=1 dwError=121
+178	72	0	79470	NO			Loading step: [IEngineInitializable]	(E) [21:30:58.510] [000000748]: HTTPCLIENT: HCHttpCallPerform [ID 8] [TID 748l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=1 dwError=121
+193	72	0	79470	NO	s0:1,s1:61	killer tid=0178 susp=0 user=50ms	Loading step: [IEngineInitializable]	(E) [21:30:58.510] [000000748]: HTTPCLIENT: HCHttpCallPerform [ID 8] [TID 748l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=1 dwError=121
+237	72	0	79470	NO			Loading step: [IEngineInitializable]	(E) [21:30:58.510] [000000748]: HTTPCLIENT: HCHttpCallPerform [ID 8] [TID 748l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=1 dwError=121
+251	72	0	79470	NO	s0:1,s1:61	killer tid=0178 susp=0 user=50ms	Loading step: [IEngineInitializable]	(E) [21:30:58.510] [000000748]: HTTPCLIENT: HCHttpCallPerform [ID 8] [TID 748l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=1 dwError=121
+295	72	0	79470	NO			Loading step: [IEngineInitializable]	(E) [21:30:58.510] [000000748]: HTTPCLIENT: HCHttpCallPerform [ID 8] [TID 748l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=1 dwError=121
+309	72	0	79470	NO	s0:1,s1:61	killer tid=0178 susp=0 user=50ms	Loading step: [IEngineInitializable]	(E) [21:30:58.510] [000000748]: HTTPCLIENT: HCHttpCallPerform [ID 8] [TID 748l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=1 dwError=121

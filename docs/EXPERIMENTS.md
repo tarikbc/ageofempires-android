@@ -20,6 +20,8 @@ the kill *suspends* the threads and leaves the process hung, so `ps` still shows
 | Memory integrity: Aegis image byte-identical at t=128 s through the kill | Not tampering |
 | Debugger signals (`KdDebuggerEnabled`, `OutputDebugString`, `NtQueryObject`) | All correct under Wine |
 | Healthy backend session for the whole run | **Still died** — so session loss is not causal |
+| Hide FEX's SMC trap from the guest (patch 0004: `NtQueryVirtualMemory` and `NtProtectVirtualMemory` report the guest's own protection; trap still armed, verified with `smctest2`) | **Killed 5 of 5.** In-game counters: 732,206 queries filtered, 0 touched a trapped page. [SMC-TRAP-HIDDEN.md](SMC-TRAP-HIDDEN.md) |
+| No session drop (`errno=10038` absent in runs 4 and A1, 2026-10-06) | Killed on time anyway |
 | `SMCChecks`: `none` | Exits ~2 min |
 | `SMCChecks`: `full` | Hangs at launch from Play (config dated 00:12 on 2026-10-06, before the round-17 debug channels; reproduced on the clean baseline at 21:13). Note: full mode keeps the trap armed in this FEX revision. |
 | `SMCChecks`: `mtrack` (default) | The freeze described here |
@@ -72,6 +74,9 @@ pointing at a tree that was never installed.
 | 21:13 | `460568b8` with `SMCChecks=2` (full; trap still armed) | Same as 20:58: one Windows thread, 0 % CPU, no log. Removing the trap is not needed for this stop; full-SMC validation is the shared factor. |
 
 Details in [KILL-REMEASURED.md](KILL-REMEASURED.md).
+
+A failed launch is not a result: GameNative sometimes hangs on "Syncing cloud saves" after Play (run A4).
+Force-stop the app and start again; `run_watch.py --launch` now does this after 90 s.
 
 ## Fixed along the way
 
