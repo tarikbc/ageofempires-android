@@ -77,8 +77,8 @@
    if (QueryIdVerified && WineSyscallDispatcherPtr && WineNtProtectVirtualMemorySyscallId) {
      HookQueryVirtualMemoryId = WineNtQueryVirtualMemorySyscallId;
      HookProtectVirtualMemoryId = WineNtProtectVirtualMemorySyscallId;
-+    // Patch 0010, off unless FEX_EXP_FASTCONTINUE=1
-+    if (const char* Fast = getenv("FEX_EXP_FASTCONTINUE"); Fast && Fast[0] == '1') {
++    // Patch 0010, on unless FEX_EXP_FASTCONTINUE=0
++    if (const char* Fast = getenv("FEX_EXP_FASTCONTINUE"); !Fast || Fast[0] != '0') {
 +      const uintptr_t EmuFFS = reinterpret_cast<uintptr_t>(GetProcAddress(NtDll, "KiUserEmulationDispatcher"));
 +      if (EmuFFS > NtDllBase && EmuFFS - NtDllBase < NtDllRedirectionLUTSize && NtDllRedirectionLUT[EmuFFS - NtDllBase]) {
 +        KiUserEmulationDispatcherNative = NtDllRedirectionLUT[EmuFFS - NtDllBase] + NtDllBase;
