@@ -17,18 +17,21 @@ clean18  minute 1  2026-10-07 14:59  4136 frames in 94.6 s: 43.7 FPS; frame ms m
 ```
 
 Select the FEX build to test first (`tools/gn_import_wcp.py`, then `tools/gn_select_fex.py`), because the run starts
-the game with whatever the container has.
+the game with whatever the container has. `--attach` starts from a game that already shows its main PLAY page.
+The helper programs the launcher starts in the session (`waitexit`, `dlgclick`) and the agent are copied to
+`Download/aoe/` only, and all three are built as GUI programs, so they open no console window.
 
 The parts, which also work alone:
 
 | Step | Tool | What it does |
 |---|---|---|
 | Launch | `tools/run_watch.py --launch --quiet` | Restarts GameNative, opens the AoE IV page (waits for the suggested-game card, checks the title), taps Play, answers GameNative's **Save Conflict** dialog with **Keep local**, then only watches the process over adb. |
-| Intros | `tools/bench.py boot` | Presses B until the main PLAY page shows (the purple "The Crucible" tile). B skips each intro film and the title screen. |
+| Intros | `tools/bench.py boot` | Presses physical A (the game's B) until the main PLAY page shows (the purple "The Crucible" tile). It skips each intro film and the title screen, and closes notices shown over the menu, such as the "Server Maintenance" notice of 2026-10-07, whose game-A button would open a browser. The screen is checked before every press. |
 | Skirmish | `tools/bench.py skirmish [--from-menu]` | Single Player, Skirmish, "Solo Battle vs A.I." (1v1, Standard, Danube River), Start, waits for the load screen's Play button, starts the match, holds the right stick. |
 | Camera | `tools/bench.py spin on/off` | Holds the right stick fully right (camera keeps turning) or centres it. |
 | Frames | `tools/bench.py record SECONDS`, `tools/frametimes.py` | Frame times from Android's compositor, as a summary line. |
 | Live graph | `tools/fpsgraph.py` | A frame-time graph in the Mac's browser, see below. |
+| Threads | `tools/threadcpu.py [SECONDS]` | CPU use of each game thread (from `/proc` over adb, by the game's thread names) and GPU load and clock. |
 | Compare | `tools/framecmp.py CSV` | Splits a recording at the longest gap (a Quick Menu visit pauses the game) and compares before and after. |
 
 The player does nothing in these matches. The A.I. kills the idle villagers by about match minute 20 (seen at
@@ -60,9 +63,9 @@ runs inside Wine or the game, and the Thor's only extra work is one `dumpsys` pe
 - Frames are 16.7 ms or 33.4 ms or longer: presentation follows the 60 Hz display.
 
 `tools/fpsgraph.py` keeps one `adb shell` loop running that prints the window once a second, merges the windows on the
-Mac and serves a live graph (one bar per frame, like Minecraft's frame graph) at `http://127.0.0.1:8765`, with FPS,
+Mac and serves a live graph (one bar per frame, like Minecraft's frame graph) at `http://127.0.0.1:8790`, with FPS,
 1 % low, median, and the count of frames over 50 and 100 ms. Other scripts can put a labelled marker on it:
-`curl -s 'http://127.0.0.1:8765/mark?label=loop%20paused'`.
+`curl -s 'http://127.0.0.1:8790/mark?label=loop%20paused'`.
 
 ## GameNative's Performance HUD
 
@@ -90,13 +93,15 @@ python3 tools/agent.py peek libarm64ecfex.dll 3ee000 40
 python3 tools/agent.py peekfile 0 149c40000 1000 D:\\aoe\\agent\\slots.bin   # raw bytes into a file (0 = absolute)
 ```
 
-Tested through the agent: `ping`, `threads`, `mod`, `peek`, `peekfile`. A screenshot after starting it and running
-commands showed no window. It also has `pause`, `duty`, `affin` and `blkdump`, ported from the tested probes
-`tpause`, `tduty`, `affin` and `blkread`; those four were not run through the agent yet.
+Tested through the agent: `ping`, `threads`, `mod`, `peek`, `peekfile`, `affin`. A screenshot after starting it and running
+commands showed no window. It also has `pause`, `duty` and `blkdump`, ported from the tested probes
+`tpause`, `tduty` and `blkread`; those three were not run through the agent yet.
 
 ## Things that cost time
 
 - A `cmd` window from the start-up helpers (`dlgclick`) can stay on the Wine desktop for a while; it closes by itself.
-- B on an intro film can skip both the film and the title screen, which is why `bench.py run` uses `boot` and then
-  `skirmish --from-menu`.
+- A button press on an intro film can skip both the film and the title screen, which is why `bench.py run` uses
+  `boot` and then `skirmish --from-menu`.
+- A game process from an earlier run stays alive until the launcher force-stops GameNative; `bench.py run` waits for
+  the launcher's own `pid=` line before it presses anything.
 - The first launch attempt of a run failed while the Save Conflict dialog was open; `run_watch.py` now answers it.

@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Live frame-time graph of the game on the Thor, in the Mac's browser (like Minecraft's F3 frame graph).
 
-    fpsgraph.py [--port 8765] [--csv OUT]      then open http://127.0.0.1:8765
+    fpsgraph.py [--port 8790] [--csv OUT]      then open http://127.0.0.1:8790
 
 Nothing runs inside Wine or the game. One `adb shell` loop on the Thor prints `dumpsys SurfaceFlinger --latency` for
 GameNative's SurfaceView once a second: the compositor already keeps the present time of the last 128 frames of every
 surface, so the cost on the Thor is one small dumpsys per second. The Mac merges the windows and draws the graph.
 
 Other scripts can put a labelled marker on the graph (for example "loop paused") with
-    curl -s 'http://127.0.0.1:8765/mark?label=loop%20paused'
+    curl -s 'http://127.0.0.1:8790/mark?label=loop%20paused'
 """
 import http.server
 import json
@@ -195,7 +195,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 def main():
     global csv_file
     args = sys.argv[1:]
-    port = int(args[args.index("--port") + 1]) if "--port" in args else 8765
+    port = int(args[args.index("--port") + 1]) if "--port" in args else 8790
     if "--csv" in args:
         csv_file = open(args[args.index("--csv") + 1], "w")
         csv_file.write("present_ns,frame_ms\n")
