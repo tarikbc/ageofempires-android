@@ -5,7 +5,7 @@
 | `0001` + `0003` | Hide the trap by replacing it with `ForceFullSMCDetection`. `smctest` shows `RWX`, but the game stops at start-up; `SMCChecks=full` stops the same way, so the validation path is the problem ([KILL-REMEASURED.md](../../docs/KILL-REMEASURED.md)). |
 | `0002` | Hides the CPUID `0x40000000` vendor. Verified live. Does not stop the kill. |
 | `0004` | Keeps the trap and reports the guest's own protection from `NtQueryVirtualMemory` / `NtProtectVirtualMemory`. Verified with `smctest2`; the game runs normally with it. **Does not stop the kill** (5 of 5 runs, [SMC-TRAP-HIDDEN.md](../../docs/SMC-TRAP-HIDDEN.md)). |
-| `0006` | On top of 0004: a raw x64 `syscall` returns `rcx` = return address and keeps `rdx`/`r10`, like hardware. Verified with `syscallregs`. Effect on the kill: being measured ([SYSCALL-RETURN.md](../../docs/SYSCALL-RETURN.md)). |
+| `0006` | On top of 0004: a raw x64 `syscall` returns `rcx` = return address and keeps `rdx`/`r10`, like hardware. Verified with `syscallregs`. **Does not stop the kill** (3 of 3 runs stopped: 2 suspended, 1 exited; [SYSCALL-RETURN.md](../../docs/SYSCALL-RETURN.md)). |
 
 Build: fresh clone of FEX `7d3090f`, apply 0002 and 0004 (and 0006 if wanted), the three macOS fixes from
 [BUILDING-FEX.md](../../docs/BUILDING-FEX.md), then `ninja arm64ecfex`.

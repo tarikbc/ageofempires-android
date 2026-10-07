@@ -7,7 +7,7 @@ Device: AYN Thor (Snapdragon 8 Gen 2, Adreno 740, 16 GB, Android 13). Game build
 game 2–4.5 minutes in. The user owns the game, so the aim is to make the protection *accept* this
 environment — not to strip it out.
 
-**Where we are (2026-10-06, 22:30):**
+**Where we are (2026-10-07, 00:35):**
 
 - **The kill is measured on a clean baseline.** With `WINEDEBUG=-all` the game loads its menu world in under
   three minutes. Then, 2 min 3 s to 3 min 2 s after start, every thread but one goes to Windows suspend
@@ -23,6 +23,9 @@ environment — not to strip it out.
   `smctest2`) was still killed in 5 of 5 runs. Inside the game, 732,206 memory queries passed the filter
   and none touched a trapped page. See [SMC-TRAP-HIDDEN.md](docs/SMC-TRAP-HIDDEN.md).
 - **The session drop is not the trigger either.** Two runs had no `errno=10038` and were killed on time.
+- **Fixing the raw-syscall return registers does not stop the kill (2026-10-07).** On the Thor a raw x64 `syscall` returns
+  `rcx` = status instead of the return address. FEX patch 0006 fixes that (verified with `syscallregs`), and
+  the game still stopped in 3 of 3 runs. See [SYSCALL-RETURN.md](docs/SYSCALL-RETURN.md).
 
 Read [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) first: it is the ledger of what was tried and what
 happened, including the traps that produced wrong conclusions.
@@ -168,7 +171,7 @@ note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch
 
 | Path | What it is |
 |---|---|
-| [`patches/fex/`](patches/fex) | 0002 hides the CPUID vendor; 0004 hides the SMC trap from guest queries (works; does not stop the kill); 0006 makes a raw x64 `syscall` return registers like hardware (works; effect on the kill being measured). 0001/0003 stop the game at start-up. |
+| [`patches/fex/`](patches/fex) | 0002 hides the CPUID vendor; 0004 hides the SMC trap from guest queries (works; does not stop the kill); 0006 makes a raw x64 `syscall` return registers like hardware (works; does not stop the kill). 0001/0003 stop the game at start-up. |
 | [`patches/box64/`](patches/box64) | Decode SSE/AVX stores so write faults reach Wine as writes. Worth upstreaming. |
 | [`patches/proton-arm64ec-ntdll/`](patches/proton-arm64ec-ntdll) | Two binary patches for the ARM64EC `ntdll.dll` (`invoke_arm64ec_syscall` register fix; `--waitq` spinlock fix). |
 | [`patches/gamenative/`](patches/gamenative) | Fresh Steam ticket per launch. Not built or tested. |
