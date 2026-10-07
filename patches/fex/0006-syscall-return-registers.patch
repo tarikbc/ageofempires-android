@@ -1,0 +1,102 @@
+--- a/Source/Windows/ARM64EC/Module.cpp
++++ b/Source/Windows/ARM64EC/Module.cpp
+@@ -711,7 +711,90 @@
+   return Info->Protect != OriginalProt || Info->RegionSize != OriginalSize;
+ }
+ } // namespace
++
++namespace {
++// Patch 0006: an x64 `syscall` instruction is run by Wine's x64 helper invoke_arm64ec_syscall, which calls the
++// syscall like a function, so the guest gets back rcx = whatever the callee left (measured: the status value),
++// r10 = the return address and a clobbered rdx. Hardware SYSCALL/SYSRET always returns rcx = return address and
++// r11 = rflags. The replacement below (source: patches/fex/syscall_return_fix.s) returns like hardware and keeps
++// rdx, r8, r9, r10, xmm0-xmm5 and rflags. It is installed by redirecting the helper to it.
++constexpr uint8_t SyscallReturnFixCode[] = {
++  0x55, 0x48, 0x89, 0xe5, 0x9c, 0x41, 0x52, 0x51, 0x52, 0x41, 0x50, 0x41, 0x51, 0x48, 0x83, 0xec,
++  0x60, 0xf3, 0x0f, 0x7f, 0x04, 0x24, 0xf3, 0x0f, 0x7f, 0x4c, 0x24, 0x10, 0xf3, 0x0f, 0x7f, 0x54,
++  0x24, 0x20, 0xf3, 0x0f, 0x7f, 0x5c, 0x24, 0x30, 0xf3, 0x0f, 0x7f, 0x64, 0x24, 0x40, 0xf3, 0x0f,
++  0x7f, 0x6c, 0x24, 0x50, 0x48, 0x83, 0xe4, 0xf0, 0x48, 0x81, 0xec, 0x90, 0x00, 0x00, 0x00, 0x4c,
++  0x8b, 0x5d, 0x30, 0x4c, 0x89, 0x5c, 0x24, 0x20, 0x4c, 0x8b, 0x5d, 0x38, 0x4c, 0x89, 0x5c, 0x24,
++  0x28, 0x4c, 0x8b, 0x5d, 0x40, 0x4c, 0x89, 0x5c, 0x24, 0x30, 0x4c, 0x8b, 0x5d, 0x48, 0x4c, 0x89,
++  0x5c, 0x24, 0x38, 0x4c, 0x8b, 0x5d, 0x50, 0x4c, 0x89, 0x5c, 0x24, 0x40, 0x4c, 0x8b, 0x5d, 0x58,
++  0x4c, 0x89, 0x5c, 0x24, 0x48, 0x4c, 0x8b, 0x5d, 0x60, 0x4c, 0x89, 0x5c, 0x24, 0x50, 0x4c, 0x8b,
++  0x5d, 0x68, 0x4c, 0x89, 0x5c, 0x24, 0x58, 0x4c, 0x8b, 0x5d, 0x70, 0x4c, 0x89, 0x5c, 0x24, 0x60,
++  0x4c, 0x8b, 0x5d, 0x78, 0x4c, 0x89, 0x5c, 0x24, 0x68, 0x4c, 0x8b, 0x9d, 0x80, 0x00, 0x00, 0x00,
++  0x4c, 0x89, 0x5c, 0x24, 0x70, 0x4c, 0x8b, 0x9d, 0x88, 0x00, 0x00, 0x00, 0x4c, 0x89, 0x5c, 0x24,
++  0x78, 0x4c, 0x8b, 0x9d, 0x90, 0x00, 0x00, 0x00, 0x4c, 0x89, 0x9c, 0x24, 0x80, 0x00, 0x00, 0x00,
++  0x4c, 0x8b, 0x9d, 0x98, 0x00, 0x00, 0x00, 0x4c, 0x89, 0x9c, 0x24, 0x88, 0x00, 0x00, 0x00, 0x49,
++  0xbb, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x41, 0xff, 0x14, 0xc3, 0xf3, 0x0f, 0x6f,
++  0x85, 0x70, 0xff, 0xff, 0xff, 0xf3, 0x0f, 0x6f, 0x4d, 0x80, 0xf3, 0x0f, 0x6f, 0x55, 0x90, 0xf3,
++  0x0f, 0x6f, 0x5d, 0xa0, 0xf3, 0x0f, 0x6f, 0x65, 0xb0, 0xf3, 0x0f, 0x6f, 0x6d, 0xc0, 0x4c, 0x8b,
++  0x4d, 0xd0, 0x4c, 0x8b, 0x45, 0xd8, 0x48, 0x8b, 0x55, 0xe0, 0x4c, 0x8b, 0x55, 0xe8, 0x48, 0x8b,
++  0x4d, 0xf0, 0x4c, 0x8b, 0x5d, 0xf8, 0x48, 0x8d, 0x65, 0xf8, 0x9d, 0x5d, 0xff, 0xe1};
++constexpr size_t SyscallReturnFixTableOffset = 0xd1;
++uint64_t SyscallReturnFixAddress; // where the replacement lives, 0 if not installed
+ 
++void InstallSyscallReturnFix() {
++  // mov [rsp+8], r10; pop r10; mov [rsp+8], r10; lea r10, [rip+disp32] -- the start of invoke_arm64ec_syscall
++  static constexpr uint8_t Sig[] = {0x4c, 0x89, 0x54, 0x24, 0x08, 0x41, 0x5a, 0x4c, 0x89, 0x54, 0x24, 0x08, 0x4c, 0x8d, 0x15};
++  const auto* Nt = RtlImageNtHeader(reinterpret_cast<HMODULE>(NtDllBase));
++  const auto* Section = IMAGE_FIRST_SECTION(Nt);
++  uint8_t* Match = nullptr;
++  int Count = 0;
++  for (int i = 0; i < Nt->FileHeader.NumberOfSections; i++, Section++) {
++    if (!(Section->Characteristics & IMAGE_SCN_MEM_EXECUTE)) {
++      continue;
++    }
++    auto* Begin = reinterpret_cast<uint8_t*>(NtDllBase + Section->VirtualAddress);
++    const size_t Size = Section->Misc.VirtualSize;
++    for (size_t j = 0; j + sizeof(Sig) + 4 <= Size; j++) {
++      if (Begin[j] == Sig[0] && memcmp(Begin + j, Sig, sizeof(Sig)) == 0) {
++        Match = Begin + j;
++        Count++;
++      }
++    }
++  }
++  if (Count != 1) {
++    LogMan::Msg::IFmt("Syscall return fix not installed: invoke_arm64ec_syscall signature found {} times", Count);
++    return;
++  }
++  int32_t Disp;
++  memcpy(&Disp, Match + sizeof(Sig), sizeof(Disp));
++  const uint64_t Table = reinterpret_cast<uint64_t>(Match) + 12 + 7 + Disp;
++
++  void* Code = nullptr;
++  SIZE_T CodeSize = FEXCore::Utils::FEX_PAGE_SIZE;
++  if (NtAllocateVirtualMemoryNative(NtCurrentProcess(), &Code, 0, &CodeSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE)) {
++    return;
++  }
++  memcpy(Code, SyscallReturnFixCode, sizeof(SyscallReturnFixCode));
++  memcpy(static_cast<uint8_t*>(Code) + SyscallReturnFixTableOffset, &Table, sizeof(Table));
++  ULONG OldProt;
++  void* ProtAddress = Code;
++  SIZE_T ProtSize = CodeSize;
++  NtProtectVirtualMemoryNative(NtCurrentProcess(), &ProtAddress, &ProtSize, PAGE_EXECUTE_READ, &OldProt);
++  InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Code), CodeSize, PAGE_EXECUTE_READ);
++
++  uint8_t Jump[14] = {0xff, 0x25, 0, 0, 0, 0}; // jmp [rip+0]; .quad Code
++  memcpy(Jump + 6, &Code, sizeof(Code));
++  ProtAddress = Match;
++  ProtSize = sizeof(Jump);
++  NtProtectVirtualMemoryNative(NtCurrentProcess(), &ProtAddress, &ProtSize, PAGE_EXECUTE_READWRITE, &OldProt);
++  memcpy(Match, Jump, sizeof(Jump));
++  NtProtectVirtualMemoryNative(NtCurrentProcess(), &ProtAddress, &ProtSize, OldProt, &OldProt);
++  InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Match), sizeof(Jump), false);
++  SyscallReturnFixAddress = reinterpret_cast<uint64_t>(Code);
++  LogMan::Msg::IFmt("Syscall return fix installed: helper {:X} -> {:X}, table {:X}", reinterpret_cast<uint64_t>(Match),
++                    SyscallReturnFixAddress, Table);
++}
++} // namespace
++
+ extern "C" NTSTATUS NtQueryVirtualMemoryHooked(HANDLE Process, LPCVOID Address, MEMORY_INFORMATION_CLASS Class, PVOID Buffer,
+                                                SIZE_T Length, SIZE_T* ResultLength) {
+   const NTSTATUS Status = NtQueryVirtualMemoryNative(Process, Address, Class, Buffer, Length, ResultLength);
+@@ -826,6 +909,8 @@
+   InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(X64ReturnInstr), FEXCore::Utils::FEX_PAGE_SIZE,
+                                                           PAGE_EXECUTE_READ);
+   *reinterpret_cast<uint8_t*>(X64ReturnInstr) = 0xc3;
++
++  InstallSyscallReturnFix();
+ 
+   // Install the syscall filter last, once InvalidationTracker exists. FEX's own *Native wrappers keep using the saved
+   // WineSyscallDispatcher, so they bypass it.

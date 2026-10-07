@@ -1,0 +1,407 @@
+tid 0134 suspend=0 user=11490ms start=RelicCardinal.exe+4fb0884 name=[Game/Main Thread]
+tid 0140 suspend=0 user=320ms start=RelicCardinal.exe+3e8a68c name=[]
+tid 0144 suspend=0 user=100ms start=RelicCardinal.exe+3e8660c name=[]
+tid 0148 suspend=0 user=0ms start=RelicCardinal.exe+3f8eb04 name=[]
+tid 014c suspend=0 user=0ms start=RelicCardinal.exe+3f2d594 name=[]
+tid 0150 suspend=0 user=30ms start=RelicCardinal.exe+3f25768 name=[]
+tid 0160 suspend=0 user=0ms start=RelicCardinal.exe+3e69304 name=[]
+tid 0164 suspend=0 user=0ms start=RelicCardinal.exe+3e8051c name=[]
+tid 0168 suspend=0 user=0ms start=RelicCardinal.exe+3e69304 name=[]
+tid 016c suspend=0 user=6560ms start=RelicCardinal.exe+3e1b04c name=[]
+tid 0180 suspend=0 user=10ms start=RelicCardinal.exe+3b1e250 name=[Utility/I/O Task Thread]
+tid 0184 suspend=0 user=10ms start=RelicCardinal.exe+3b1e250 name=[Utility/LoggerThread]
+tid 0188 suspend=0 user=0ms start=RelicCardinal.exe+3b1e250 name=[Utility/Hang Detection]
+tid 01d8 suspend=0 user=1070ms start=RelicCardinal.exe+3b7e010 name=[]
+tid 01dc suspend=0 user=4150ms start=RelicCardinal.exe+3b7e2e0 name=[]
+tid 01e0 suspend=0 user=110ms start=RelicCardinal.exe+3b7e500 name=[]
+tid 01e4 suspend=0 user=1050ms start=RelicCardinal.exe+3f3e2ec name=[]
+END
+---- 10:21 PM 
+tid 0134 suspend=0 user=41920ms start=RelicCardinal.exe+4fb0884 name=[Game/Main Thread]
+tid 0140 suspend=0 user=1220ms start=RelicCardinal.exe+3e8a68c name=[]
+tid 0144 suspend=0 user=320ms start=RelicCardinal.exe+3e8660c name=[]
+tid 0148 suspend=0 user=20ms start=RelicCardinal.exe+3f8eb04 name=[]
+tid 014c suspend=0 user=0ms start=RelicCardinal.exe+3f2d594 name=[]
+tid 0150 suspend=0 user=100ms start=RelicCardinal.exe+3f25768 name=[]
+tid 0160 suspend=0 user=0ms start=RelicCardinal.exe+3e69304 name=[]
+tid 0164 suspend=0 user=0ms start=RelicCardinal.exe+3e8051c name=[]
+tid 0168 suspend=0 user=0ms start=RelicCardinal.exe+3e69304 name=[]
+tid 016c suspend=0 user=25730ms start=RelicCardinal.exe+3e1b04c name=[]
+tid 0180 suspend=0 user=40ms start=RelicCardinal.exe+3b1e250 name=[Utility/I/O Task Thread]
+tid 0184 suspend=0 user=30ms start=RelicCardinal.exe+3b1e250 name=[Utility/LoggerThread]
+tid 0188 suspend=0 user=0ms start=RelicCardinal.exe+3b1e250 name=[Utility/Hang Detection]
+tid 01d8 suspend=0 user=1070ms start=RelicCardinal.exe+3b7e010 name=[]
+tid 01dc suspend=0 user=4150ms start=RelicCardinal.exe+3b7e2e0 name=[]
+tid 01e0 suspend=0 user=110ms start=RelicCardinal.exe+3b7e500 name=[]
+tid 01e4 suspend=0 user=9410ms start=RelicCardinal.exe+3f3e2ec name=[]
+tid 0210 suspend=0 user=370ms start=ucrtbase.dll+3780 name=[]
+tid 0214 suspend=0 user=120ms start=ucrtbase.dll+3780 name=[]
+tid 0218 suspend=0 user=50ms start=ucrtbase.dll+3780 name=[]
+tid 0220 suspend=0 user=0ms start=ntdll.dll+d54b0 name=[wine_threadpool_timerqueue]
+tid 0224 suspend=0 user=130ms start=ucrtbase.dll+3780 name=[]
+tid 0228 suspend=0 user=0ms start=ucrtbase.dll+3780 name=[]
+tid 022c suspend=0 user=0ms start=ucrtbase.dll+3780 name=[]
+tid 0230 suspend=0 user=0ms start=ucrtbase.dll+3780 name=[]
+tid 0234 suspend=0 user=30ms start=RelicCardinal.exe+3b1e250 name=[Utility/TimerThread]
+tid 0238 suspend=0 user=10ms start=RelicCardinal.exe+3b1e250 name=[Endpoint thread: HttpEndpoint]
+tid 0250 suspend=0 user=70ms start=ntdll.dll+d6444 name=[wine_threadpool_worker]
+tid 0270 suspend=0 user=60ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 00]
+tid 0274 suspend=0 user=20ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 01]
+tid 0278 suspend=0 user=20ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 02]
+tid 027c suspend=0 user=150ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 03]
+tid 0280 suspend=0 user=110ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 04]
+tid 0284 suspend=0 user=640ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 05]
+tid 0288 suspend=0 user=180ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 06]
+tid 028c suspend=0 user=110ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 07]
+tid 0290 suspend=0 user=1290ms start=RelicCardinal.exe+3b1e250 name=[Utility/Background Loading]
+tid 02a4 suspend=0 user=0ms start=RelicCardinal.exe+3b1e250 name=[Simulation Thread]
+tid 02b4 suspend=0 user=0ms start=d3d12core.dll+14980 name=[]
+tid 02b8 suspend=0 user=0ms start=d3d12core.dll+606c0 name=[vkd3d-disk$]
+tid 02bc suspend=0 user=70ms start=d3d12core.dll+6bec0 name=[vkd3d_fence]
+tid 02c0 suspend=0 user=280ms start=d3d12core.dll+6bec0 name=[vkd3d_queue]
+tid 02c4 suspend=0 user=0ms start=d3d12core.dll+6bec0 name=[vkd3d_fence]
+tid 02c8 suspend=0 user=50ms start=d3d12core.dll+6bec0 name=[vkd3d_queue]
+tid 02cc suspend=0 user=0ms start=d3d12core.dll+6bec0 name=[vkd3d_fence]
+tid 02d0 suspend=0 user=0ms start=d3d12core.dll+6bec0 name=[vkd3d_queue]
+tid 02d4 suspend=0 user=1600ms start=RelicCardinal.exe+3b1e250 name=[Game/Render thread]
+tid 02d8 suspend=0 user=120ms start=RelicCardinal.exe+4301f90 name=[AK::BankManager]
+tid 02dc suspend=0 user=10ms start=RelicCardinal.exe+42bc730 name=[AK Suspended]
+tid 02e0 suspend=0 user=720ms start=RelicCardinal.exe+42bf570 name=[AK::EventManager]
+tid 02e4 suspend=0 user=190ms start=RelicCardinal.exe+43a5ab0 name=[AK::IOThread]
+tid 02e8 suspend=0 user=0ms start=mmdevapi.dll+2e9f8 name=[wine_mmdevapi_notification]
+tid 02ec suspend=0 user=0ms start=RelicCardinal.exe+3b1e250 name=[TextToSpeech]
+tid 02f0 suspend=0 user=1820ms start=RelicCardinal.exe+3b1e250 name=[Utility/VPX Decoder]
+tid 02f4 suspend=0 user=10ms start=d3d12core.dll+52e10 name=[vkd3d-swapchain-sync]
+tid 02f8 suspend=0 user=60ms start=ntdll.dll+d6444 name=[wine_threadpool_worker]
+tid 02fc suspend=0 user=10ms start=xinput1_4.dll+16228 name=[wine_xinput_hid_update]
+tid 0300 suspend=0 user=0ms start=sechost.dll+25ec0 name=[wine_sechost_device_notify]
+tid 0324 suspend=0 user=130ms start=mmdevapi.dll+25554 name=[audio_client_main]
+tid 0344 suspend=0 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+tid 0348 suspend=0 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+tid 034c suspend=0 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+tid 0350 suspend=0 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+tid 0354 suspend=0 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+tid 0358 suspend=0 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+tid 035c suspend=0 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+tid 0360 suspend=0 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+tid 0364 suspend=0 user=1900ms start=ucrtbase.dll+3780 name=[]
+END
+---- 10:22 PM 
+tid 0134 suspend=0 user=57260ms start=RelicCardinal.exe+4fb0884 name=[Game/Main Thread]
+tid 0140 suspend=0 user=2050ms start=RelicCardinal.exe+3e8a68c name=[]
+tid 0144 suspend=0 user=520ms start=RelicCardinal.exe+3e8660c name=[]
+tid 0148 suspend=0 user=40ms start=RelicCardinal.exe+3f8eb04 name=[]
+tid 014c suspend=0 user=0ms start=RelicCardinal.exe+3f2d594 name=[]
+tid 0150 suspend=0 user=170ms start=RelicCardinal.exe+3f25768 name=[]
+tid 0164 suspend=0 user=0ms start=RelicCardinal.exe+3e8051c name=[]
+tid 0168 suspend=0 user=0ms start=RelicCardinal.exe+3e69304 name=[]
+tid 016c suspend=0 user=43670ms start=RelicCardinal.exe+3e1b04c name=[]
+tid 0180 suspend=0 user=50ms start=RelicCardinal.exe+3b1e250 name=[Utility/I/O Task Thread]
+tid 0184 suspend=0 user=40ms start=RelicCardinal.exe+3b1e250 name=[Utility/LoggerThread]
+tid 0188 suspend=0 user=0ms start=RelicCardinal.exe+3b1e250 name=[Utility/Hang Detection]
+tid 01d8 suspend=0 user=1070ms start=RelicCardinal.exe+3b7e010 name=[]
+tid 01dc suspend=0 user=4150ms start=RelicCardinal.exe+3b7e2e0 name=[]
+tid 01e0 suspend=0 user=110ms start=RelicCardinal.exe+3b7e500 name=[]
+tid 01e4 suspend=0 user=17770ms start=RelicCardinal.exe+3f3e2ec name=[]
+tid 0210 suspend=0 user=790ms start=ucrtbase.dll+3780 name=[]
+tid 0214 suspend=0 user=160ms start=ucrtbase.dll+3780 name=[]
+tid 0218 suspend=0 user=150ms start=ucrtbase.dll+3780 name=[]
+tid 0220 suspend=0 user=0ms start=ntdll.dll+d54b0 name=[wine_threadpool_timerqueue]
+tid 0224 suspend=0 user=210ms start=ucrtbase.dll+3780 name=[]
+tid 0228 suspend=0 user=0ms start=ucrtbase.dll+3780 name=[]
+tid 022c suspend=0 user=0ms start=ucrtbase.dll+3780 name=[]
+tid 0230 suspend=0 user=0ms start=ucrtbase.dll+3780 name=[]
+tid 0234 suspend=0 user=100ms start=RelicCardinal.exe+3b1e250 name=[Utility/TimerThread]
+tid 0238 suspend=0 user=30ms start=RelicCardinal.exe+3b1e250 name=[Endpoint thread: HttpEndpoint]
+tid 0250 suspend=0 user=130ms start=ntdll.dll+d6444 name=[wine_threadpool_worker]
+tid 0270 suspend=0 user=60ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 00]
+tid 0274 suspend=0 user=20ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 01]
+tid 0278 suspend=0 user=20ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 02]
+tid 027c suspend=0 user=190ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 03]
+tid 0280 suspend=0 user=320ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 04]
+tid 0284 suspend=0 user=900ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 05]
+tid 0288 suspend=0 user=360ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 06]
+tid 028c suspend=0 user=180ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 07]
+tid 0290 suspend=0 user=1710ms start=RelicCardinal.exe+3b1e250 name=[Utility/Background Loading]
+tid 02a4 suspend=0 user=0ms start=RelicCardinal.exe+3b1e250 name=[Simulation Thread]
+tid 02b4 suspend=0 user=0ms start=d3d12core.dll+14980 name=[]
+tid 02b8 suspend=0 user=0ms start=d3d12core.dll+606c0 name=[vkd3d-disk$]
+tid 02bc suspend=0 user=560ms start=d3d12core.dll+6bec0 name=[vkd3d_fence]
+tid 02c0 suspend=0 user=2340ms start=d3d12core.dll+6bec0 name=[vkd3d_queue]
+tid 02c4 suspend=0 user=150ms start=d3d12core.dll+6bec0 name=[vkd3d_fence]
+tid 02c8 suspend=0 user=270ms start=d3d12core.dll+6bec0 name=[vkd3d_queue]
+tid 02cc suspend=0 user=0ms start=d3d12core.dll+6bec0 name=[vkd3d_fence]
+tid 02d0 suspend=0 user=0ms start=d3d12core.dll+6bec0 name=[vkd3d_queue]
+tid 02d4 suspend=0 user=8850ms start=RelicCardinal.exe+3b1e250 name=[Game/Render thread]
+tid 02d8 suspend=0 user=120ms start=RelicCardinal.exe+4301f90 name=[AK::BankManager]
+tid 02dc suspend=0 user=10ms start=RelicCardinal.exe+42bc730 name=[AK Suspended]
+tid 02e0 suspend=0 user=1080ms start=RelicCardinal.exe+42bf570 name=[AK::EventManager]
+tid 02e4 suspend=0 user=190ms start=RelicCardinal.exe+43a5ab0 name=[AK::IOThread]
+tid 02e8 suspend=0 user=0ms start=mmdevapi.dll+2e9f8 name=[wine_mmdevapi_notification]
+tid 02ec suspend=0 user=0ms start=RelicCardinal.exe+3b1e250 name=[TextToSpeech]
+tid 02f0 suspend=0 user=2670ms start=RelicCardinal.exe+3b1e250 name=[Utility/VPX Decoder]
+tid 02f4 suspend=0 user=100ms start=d3d12core.dll+52e10 name=[vkd3d-swapchain-sync]
+tid 02fc suspend=0 user=40ms start=xinput1_4.dll+16228 name=[wine_xinput_hid_update]
+tid 0300 suspend=0 user=0ms start=sechost.dll+25ec0 name=[wine_sechost_device_notify]
+tid 0324 suspend=0 user=270ms start=mmdevapi.dll+25554 name=[audio_client_main]
+tid 0344 suspend=0 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+tid 0348 suspend=0 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+tid 034c suspend=0 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+tid 0350 suspend=0 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+tid 0354 suspend=0 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+tid 0358 suspend=0 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+tid 035c suspend=0 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+tid 0360 suspend=0 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+tid 0458 suspend=0 user=0ms start=ntdll.dll+d6444 name=[wine_threadpool_worker]
+END
+---- 10:23 PM 
+tid 0134 suspend=1 user=70460ms start=RelicCardinal.exe+4fb0884 name=[Game/Main Thread]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=41f0a0 rax=7fadf87b00 rcx=65d35f7bc8d25 rdx=1000ffac8
+tid 0148 suspend=1 user=40ms start=RelicCardinal.exe+3f8eb04 name=[]
+   rip=6fffa66448 (ntdll.dll+c6448) rsp=2c6fe60 rax=a8e4bfa31ab3b855 rcx=7f8bf91f44b60000 rdx=2c6fd7c
+tid 0150 suspend=1 user=220ms start=RelicCardinal.exe+3f25768 name=[]
+   rip=6fffa66480 (ntdll.dll+c6480) rsp=347e860 rax=99846a50a22bb968 rcx=b651ac99d3a64ca8 rdx=146c3c0a0d8b1af9
+tid 0164 suspend=1 user=0ms start=RelicCardinal.exe+3e8051c name=[]
+   rip=6fffa66480 (ntdll.dll+c6480) rsp=488fe60 rax=6fff720000 rcx=493e0 rdx=143e8051c
+tid 0168 suspend=0 user=60ms start=RelicCardinal.exe+3e69304 name=[]
+tid 0180 suspend=1 user=50ms start=RelicCardinal.exe+3b1e250 name=[Utility/I/O Task Thread]
+   rip=6fffa66448 (ntdll.dll+c6448) rsp=8b6fb40 rax=7714239200 rcx=7840052a20 rdx=1
+tid 0184 suspend=1 user=60ms start=RelicCardinal.exe+3b1e250 name=[Utility/LoggerThread]
+   rip=6fffa66480 (ntdll.dll+c6480) rsp=775fdb0 rax=77eaf71b00 rcx=77f0051fe0 rdx=1
+tid 0188 suspend=1 user=0ms start=RelicCardinal.exe+3b1e250 name=[Utility/Hang Detection]
+   rip=6fffa65178 (ntdll.dll+c5178) rsp=91cf880 rax=91cfe60 rcx=91cfcc0 rdx=91cfe30
+tid 01d8 suspend=1 user=1070ms start=RelicCardinal.exe+3b7e010 name=[]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=5c45fb40 rax=7a78fb7e00 rcx=65d35edfb1685 rdx=100cff668
+tid 01dc suspend=1 user=4150ms start=RelicCardinal.exe+3b7e2e0 name=[]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=5c85fd80 rax=0 rcx=143b7e2e0 rdx=1484d9300
+tid 01e0 suspend=1 user=110ms start=RelicCardinal.exe+3b7e500 name=[]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=5cc5fd50 rax=0 rcx=143b7e500 rdx=1484d9300
+tid 0210 suspend=1 user=940ms start=ucrtbase.dll+3780 name=[]
+   rip=6fffa65178 (ntdll.dll+c5178) rsp=ef6ffca0 rax=0 rcx=450000 rdx=0
+tid 0214 suspend=1 user=160ms start=ucrtbase.dll+3780 name=[]
+   rip=6fffa65178 (ntdll.dll+c5178) rsp=f506fe30 rax=1598fa23cbd3 rcx=57ca1830 rdx=0
+tid 0218 suspend=1 user=240ms start=ucrtbase.dll+3780 name=[]
+   rip=6fffa65178 (ntdll.dll+c5178) rsp=f7b3fe30 rax=75ce63c100 rcx=75d00509a0 rdx=1
+tid 0220 suspend=1 user=0ms start=ntdll.dll+d54b0 name=[wine_threadpool_timerqueue]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=fc6afed0 rax=0 rcx=6fffa754b0 rdx=0
+tid 0224 suspend=1 user=220ms start=ucrtbase.dll+3780 name=[]
+   rip=6fffa66448 (ntdll.dll+c6448) rsp=fea7f710 rax=0 rcx=3be2b7108 rdx=0
+tid 0228 suspend=1 user=0ms start=ucrtbase.dll+3780 name=[]
+   rip=6fffa66448 (ntdll.dll+c6448) rsp=10db7f710 rax=622037ae rcx=61657261 rdx=764f57f0
+tid 022c suspend=1 user=0ms start=ucrtbase.dll+3780 name=[]
+   rip=6fffa66448 (ntdll.dll+c6448) rsp=10e17f710 rax=0 rcx=6ff79c3780 rdx=623bcd50
+tid 0230 suspend=1 user=0ms start=ucrtbase.dll+3780 name=[]
+   rip=6fffa66448 (ntdll.dll+c6448) rsp=10e77f710 rax=0 rcx=6ff79c3780 rdx=623bcc30
+tid 0234 suspend=1 user=140ms start=RelicCardinal.exe+3b1e250 name=[Utility/TimerThread]
+   rip=6fffa65178 (ntdll.dll+c5178) rsp=10ed7fd60 rax=10ed7fe60 rcx=10ed7fcc0 rdx=10ed7fe30
+tid 0238 suspend=1 user=40ms start=RelicCardinal.exe+3b1e250 name=[Endpoint thread: HttpEndpoint]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=10f37f750 rax=ef702675 rcx=2c rdx=ef702a9f
+tid 0270 suspend=1 user=60ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 00]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=111e7fcd0 rax=725362e000 rcx=7260050250 rdx=1
+tid 0274 suspend=1 user=30ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 01]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=11247fcd0 rax=720162e000 rcx=7210050d30 rdx=1
+tid 0278 suspend=1 user=30ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 02]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=112a7fcd0 rax=71b021e000 rcx=71c0060e10 rdx=1
+tid 027c suspend=1 user=230ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 03]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=11307fcd0 rax=715ee0c800 rcx=7160050cf0 rdx=1
+tid 0280 suspend=1 user=370ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 04]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=11367fcd0 rax=710c1fe000 rcx=7110050f50 rdx=1
+tid 0284 suspend=1 user=960ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 05]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=113c7fcd0 rax=70badee000 rcx=70c005bec0 rdx=1
+tid 0288 suspend=1 user=380ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 06]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=11427fcd0 rax=70699de000 rcx=7070053320 rdx=1
+tid 028c suspend=1 user=190ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 07]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=11487fcd0 rax=70165de000 rcx=7020050410 rdx=1
+tid 0290 suspend=1 user=1710ms start=RelicCardinal.exe+3b1e250 name=[Utility/Background Loading]
+   rip=6fffa66448 (ntdll.dll+c6448) rsp=114e7fb40 rax=6fad16b000 rcx=65d35f17efc10 rdx=11497f668
+tid 02a4 suspend=1 user=0ms start=RelicCardinal.exe+3b1e250 name=[Simulation Thread]
+   rip=6fffa66480 (ntdll.dll+c6480) rsp=115a4fd80 rax=115a4fe60 rcx=115a4fcc0 rdx=115a4fe30
+tid 02b4 suspend=1 user=0ms start=d3d12core.dll+14980 name=[]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=9dcfd40 rax=0 rcx=77352d4980 rdx=76006dc0
+tid 02b8 suspend=1 user=0ms start=d3d12core.dll+606c0 name=[vkd3d-disk$]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=116effd20 rax=0 rcx=77353206c0 rdx=76006e00
+tid 02bc suspend=1 user=700ms start=d3d12core.dll+6bec0 name=[vkd3d_fence]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=139cbfcc0 rax=0 rcx=773532bec0 rdx=76006e40
+tid 02c0 suspend=1 user=3040ms start=d3d12core.dll+6bec0 name=[vkd3d_queue]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=13a0bf940 rax=6dcecd9820 rcx=6dd0050250 rdx=1
+tid 02c4 suspend=1 user=210ms start=d3d12core.dll+6bec0 name=[vkd3d_fence]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=13a5bfcc0 rax=0 rcx=773532bec0 rdx=76006ec0
+tid 02c8 suspend=1 user=390ms start=d3d12core.dll+6bec0 name=[vkd3d_queue]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=13abbf940 rax=6d2ccd9820 rcx=6d30051380 rdx=1
+tid 02cc suspend=1 user=0ms start=d3d12core.dll+6bec0 name=[vkd3d_fence]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=13b1bfcc0 rax=0 rcx=773532bec0 rdx=76006f40
+tid 02d0 suspend=1 user=0ms start=d3d12core.dll+6bec0 name=[vkd3d_queue]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=13b7bf940 rax=0 rcx=773532bec0 rdx=76006f80
+tid 02d4 suspend=1 user=11750ms start=RelicCardinal.exe+3b1e250 name=[Game/Render thread]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=364b0fd80 rax=3871ea20 rcx=364b0eca8 rdx=0
+tid 02d8 suspend=1 user=120ms start=RelicCardinal.exe+4301f90 name=[AK::BankManager]
+   rip=6fffa66480 (ntdll.dll+c6480) rsp=36591feb0 rax=367839c10 rcx=0 rdx=3c20060
+tid 02dc suspend=1 user=10ms start=RelicCardinal.exe+42bc730 name=[AK Suspended]
+   rip=6fffa66480 (ntdll.dll+c6480) rsp=365f1feb0 rax=0 rcx=1442bc730 rdx=0
+tid 02e0 suspend=1 user=1510ms start=RelicCardinal.exe+42bf570 name=[AK::EventManager]
+   rip=6fffa66480 (ntdll.dll+c6480) rsp=36651feb0 rax=2 rcx=3666cb600 rdx=6ff82b2978
+tid 02e4 suspend=1 user=190ms start=RelicCardinal.exe+43a5ab0 name=[AK::IOThread]
+   rip=6fffa66448 (ntdll.dll+c6448) rsp=366d1fc30 rax=1457922e0 rcx=3665c0900 rdx=367839d90
+tid 02e8 suspend=1 user=0ms start=mmdevapi.dll+2e9f8 name=[wine_mmdevapi_notification]
+   rip=6fffa655d8 (ntdll.dll+c55d8) rsp=36751fb10 rax=0 rcx=7fd045e9f8 rdx=0
+tid 02ec suspend=1 user=0ms start=RelicCardinal.exe+3b1e250 name=[TextToSpeech]
+   rip=6fffa66448 (ntdll.dll+c6448) rsp=36831fb40 rax=36831fe60 rcx=36831fcc0 rdx=36831fe30
+tid 02f0 suspend=1 user=2670ms start=RelicCardinal.exe+3b1e250 name=[Utility/VPX Decoder]
+   rip=6fffa66448 (ntdll.dll+c6448) rsp=36891fb40 rax=10 rcx=3b83485d0 rdx=36891f3bf
+tid 02f4 suspend=1 user=130ms start=d3d12core.dll+52e10 name=[vkd3d-swapchain-sync]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=368f1fcc0 rax=698f0e8c00 rcx=69a0050bd0 rdx=1
+tid 02fc suspend=1 user=60ms start=xinput1_4.dll+16228 name=[wine_xinput_hid_update]
+   rip=6ffc1d3890 (win32u.dll+33890) rsp=399c3fe20 rax=0 rcx=6ffe026228 rdx=0
+tid 0300 suspend=1 user=0ms start=sechost.dll+25ec0 name=[wine_sechost_device_notify]
+   rip=6fffa66480 (ntdll.dll+c6480) rsp=39a23eb10 rax=7067756c705f656e rcx=33 rdx=aad828
+tid 0324 suspend=1 user=450ms start=mmdevapi.dll+25554 name=[audio_client_main]
+   rip=7fd0455594 (mmdevapi.dll+25594) rsp=3b32fffc0 rax=0 rcx=7fd0455554 rdx=7bc
+tid 0344 suspend=1 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=3b510fd10 rax=3b510fe80 rcx=3b510fce0 rdx=3b510fe50
+tid 0348 suspend=1 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=3b590fd10 rax=3b590fe80 rcx=3b590fce0 rdx=3b590fe50
+tid 034c suspend=1 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=3b5f0fd10 rax=3b5f0fe80 rcx=3b5f0fce0 rdx=3b5f0fe50
+tid 0350 suspend=1 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=3b650fd10 rax=3b650fe80 rcx=3b650fce0 rdx=3b650fe50
+tid 0354 suspend=1 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=3b6b0fd10 rax=3b6b0fe80 rcx=3b6b0fce0 rdx=3b6b0fe50
+tid 0358 suspend=1 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=3b710fd10 rax=3b710fe80 rcx=3b710fce0 rdx=3b710fe50
+tid 035c suspend=1 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=3b770fd10 rax=3b770fe80 rcx=3b770fce0 rdx=3b770fe50
+tid 0360 suspend=1 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=3b7d0fd10 rax=3b7d0fe80 rcx=3b7d0fce0 rdx=3b7d0fe50
+tid 0458 suspend=1 user=30ms start=ntdll.dll+d6444 name=[wine_threadpool_worker]
+   rip=6fffa66480 (ntdll.dll+c6480) rsp=3b4d0f510 rax=6ff72adb74 rcx=6ff72adb74 rdx=3b4d0b5a0
+tid 04ac suspend=1 user=7020ms start=RelicCardinal.exe+3b1e250 name=[Scenario Loading Thread]
+   rip=1403ebc50 (RelicCardinal.exe+3ebc50) rsp=3b8e9db68 rax=3c06be8d8 rcx=3b8e9dd60 rdx=1464b9968
+tid 04dc suspend=1 user=0ms start=ntdll.dll+d6444 name=[]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=f770eb60 rax=1c10 rcx=7a30010620 rdx=7a50001000
+END
+---- 10:24 PM 
+tid 0134 suspend=1 user=70460ms start=RelicCardinal.exe+4fb0884 name=[Game/Main Thread]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=41f0a0 rax=7fadf87b00 rcx=65d35f7bc8d25 rdx=1000ffac8
+tid 0148 suspend=1 user=40ms start=RelicCardinal.exe+3f8eb04 name=[]
+   rip=6fffa66448 (ntdll.dll+c6448) rsp=2c6fe60 rax=a8e4bfa31ab3b855 rcx=7f8bf91f44b60000 rdx=2c6fd7c
+tid 0150 suspend=1 user=220ms start=RelicCardinal.exe+3f25768 name=[]
+   rip=6fffa66480 (ntdll.dll+c6480) rsp=347e860 rax=99846a50a22bb968 rcx=b651ac99d3a64ca8 rdx=146c3c0a0d8b1af9
+tid 0164 suspend=1 user=0ms start=RelicCardinal.exe+3e8051c name=[]
+   rip=6fffa66480 (ntdll.dll+c6480) rsp=488fe60 rax=6fff720000 rcx=493e0 rdx=143e8051c
+tid 0168 suspend=0 user=60ms start=RelicCardinal.exe+3e69304 name=[]
+tid 0180 suspend=1 user=50ms start=RelicCardinal.exe+3b1e250 name=[Utility/I/O Task Thread]
+   rip=6fffa66448 (ntdll.dll+c6448) rsp=8b6fb40 rax=7714239200 rcx=7840052a20 rdx=1
+tid 0184 suspend=1 user=60ms start=RelicCardinal.exe+3b1e250 name=[Utility/LoggerThread]
+   rip=6fffa66480 (ntdll.dll+c6480) rsp=775fdb0 rax=77eaf71b00 rcx=77f0051fe0 rdx=1
+tid 0188 suspend=1 user=0ms start=RelicCardinal.exe+3b1e250 name=[Utility/Hang Detection]
+   rip=6fffa65178 (ntdll.dll+c5178) rsp=91cf880 rax=91cfe60 rcx=91cfcc0 rdx=91cfe30
+tid 01d8 suspend=1 user=1070ms start=RelicCardinal.exe+3b7e010 name=[]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=5c45fb40 rax=7a78fb7e00 rcx=65d35edfb1685 rdx=100cff668
+tid 01dc suspend=1 user=4150ms start=RelicCardinal.exe+3b7e2e0 name=[]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=5c85fd80 rax=0 rcx=143b7e2e0 rdx=1484d9300
+tid 01e0 suspend=1 user=110ms start=RelicCardinal.exe+3b7e500 name=[]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=5cc5fd50 rax=0 rcx=143b7e500 rdx=1484d9300
+tid 0210 suspend=1 user=940ms start=ucrtbase.dll+3780 name=[]
+   rip=6fffa65178 (ntdll.dll+c5178) rsp=ef6ffca0 rax=0 rcx=450000 rdx=0
+tid 0214 suspend=1 user=160ms start=ucrtbase.dll+3780 name=[]
+   rip=6fffa65178 (ntdll.dll+c5178) rsp=f506fe30 rax=1598fa23cbd3 rcx=57ca1830 rdx=0
+tid 0218 suspend=1 user=240ms start=ucrtbase.dll+3780 name=[]
+   rip=6fffa65178 (ntdll.dll+c5178) rsp=f7b3fe30 rax=75ce63c100 rcx=75d00509a0 rdx=1
+tid 0220 suspend=1 user=0ms start=ntdll.dll+d54b0 name=[wine_threadpool_timerqueue]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=fc6afed0 rax=0 rcx=6fffa754b0 rdx=0
+tid 0224 suspend=1 user=220ms start=ucrtbase.dll+3780 name=[]
+   rip=6fffa66448 (ntdll.dll+c6448) rsp=fea7f710 rax=0 rcx=3be2b7108 rdx=0
+tid 0228 suspend=1 user=0ms start=ucrtbase.dll+3780 name=[]
+   rip=6fffa66448 (ntdll.dll+c6448) rsp=10db7f710 rax=622037ae rcx=61657261 rdx=764f57f0
+tid 022c suspend=1 user=0ms start=ucrtbase.dll+3780 name=[]
+   rip=6fffa66448 (ntdll.dll+c6448) rsp=10e17f710 rax=0 rcx=6ff79c3780 rdx=623bcd50
+tid 0230 suspend=1 user=0ms start=ucrtbase.dll+3780 name=[]
+   rip=6fffa66448 (ntdll.dll+c6448) rsp=10e77f710 rax=0 rcx=6ff79c3780 rdx=623bcc30
+tid 0234 suspend=1 user=140ms start=RelicCardinal.exe+3b1e250 name=[Utility/TimerThread]
+   rip=6fffa65178 (ntdll.dll+c5178) rsp=10ed7fd60 rax=10ed7fe60 rcx=10ed7fcc0 rdx=10ed7fe30
+tid 0238 suspend=1 user=40ms start=RelicCardinal.exe+3b1e250 name=[Endpoint thread: HttpEndpoint]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=10f37f750 rax=ef702675 rcx=2c rdx=ef702a9f
+tid 0270 suspend=1 user=60ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 00]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=111e7fcd0 rax=725362e000 rcx=7260050250 rdx=1
+tid 0274 suspend=1 user=30ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 01]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=11247fcd0 rax=720162e000 rcx=7210050d30 rdx=1
+tid 0278 suspend=1 user=30ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 02]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=112a7fcd0 rax=71b021e000 rcx=71c0060e10 rdx=1
+tid 027c suspend=1 user=230ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 03]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=11307fcd0 rax=715ee0c800 rcx=7160050cf0 rdx=1
+tid 0280 suspend=1 user=370ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 04]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=11367fcd0 rax=710c1fe000 rcx=7110050f50 rdx=1
+tid 0284 suspend=1 user=960ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 05]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=113c7fcd0 rax=70badee000 rcx=70c005bec0 rdx=1
+tid 0288 suspend=1 user=380ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 06]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=11427fcd0 rax=70699de000 rcx=7070053320 rdx=1
+tid 028c suspend=1 user=190ms start=RelicCardinal.exe+3b1e250 name=[rcss worker 07]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=11487fcd0 rax=70165de000 rcx=7020050410 rdx=1
+tid 0290 suspend=1 user=1710ms start=RelicCardinal.exe+3b1e250 name=[Utility/Background Loading]
+   rip=6fffa66448 (ntdll.dll+c6448) rsp=114e7fb40 rax=6fad16b000 rcx=65d35f17efc10 rdx=11497f668
+tid 02a4 suspend=1 user=0ms start=RelicCardinal.exe+3b1e250 name=[Simulation Thread]
+   rip=6fffa66480 (ntdll.dll+c6480) rsp=115a4fd80 rax=115a4fe60 rcx=115a4fcc0 rdx=115a4fe30
+tid 02b4 suspend=1 user=0ms start=d3d12core.dll+14980 name=[]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=9dcfd40 rax=0 rcx=77352d4980 rdx=76006dc0
+tid 02b8 suspend=1 user=0ms start=d3d12core.dll+606c0 name=[vkd3d-disk$]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=116effd20 rax=0 rcx=77353206c0 rdx=76006e00
+tid 02bc suspend=1 user=700ms start=d3d12core.dll+6bec0 name=[vkd3d_fence]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=139cbfcc0 rax=0 rcx=773532bec0 rdx=76006e40
+tid 02c0 suspend=1 user=3040ms start=d3d12core.dll+6bec0 name=[vkd3d_queue]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=13a0bf940 rax=6dcecd9820 rcx=6dd0050250 rdx=1
+tid 02c4 suspend=1 user=210ms start=d3d12core.dll+6bec0 name=[vkd3d_fence]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=13a5bfcc0 rax=0 rcx=773532bec0 rdx=76006ec0
+tid 02c8 suspend=1 user=390ms start=d3d12core.dll+6bec0 name=[vkd3d_queue]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=13abbf940 rax=6d2ccd9820 rcx=6d30051380 rdx=1
+tid 02cc suspend=1 user=0ms start=d3d12core.dll+6bec0 name=[vkd3d_fence]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=13b1bfcc0 rax=0 rcx=773532bec0 rdx=76006f40
+tid 02d0 suspend=1 user=0ms start=d3d12core.dll+6bec0 name=[vkd3d_queue]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=13b7bf940 rax=0 rcx=773532bec0 rdx=76006f80
+tid 02d4 suspend=1 user=11750ms start=RelicCardinal.exe+3b1e250 name=[Game/Render thread]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=364b0fd80 rax=3871ea20 rcx=364b0eca8 rdx=0
+tid 02d8 suspend=1 user=120ms start=RelicCardinal.exe+4301f90 name=[AK::BankManager]
+   rip=6fffa66480 (ntdll.dll+c6480) rsp=36591feb0 rax=367839c10 rcx=0 rdx=3c20060
+tid 02dc suspend=1 user=10ms start=RelicCardinal.exe+42bc730 name=[AK Suspended]
+   rip=6fffa66480 (ntdll.dll+c6480) rsp=365f1feb0 rax=0 rcx=1442bc730 rdx=0
+tid 02e0 suspend=1 user=1510ms start=RelicCardinal.exe+42bf570 name=[AK::EventManager]
+   rip=6fffa66480 (ntdll.dll+c6480) rsp=36651feb0 rax=2 rcx=3666cb600 rdx=6ff82b2978
+tid 02e4 suspend=1 user=190ms start=RelicCardinal.exe+43a5ab0 name=[AK::IOThread]
+   rip=6fffa66448 (ntdll.dll+c6448) rsp=366d1fc30 rax=1457922e0 rcx=3665c0900 rdx=367839d90
+tid 02e8 suspend=1 user=0ms start=mmdevapi.dll+2e9f8 name=[wine_mmdevapi_notification]
+   rip=6fffa655d8 (ntdll.dll+c55d8) rsp=36751fb10 rax=0 rcx=7fd045e9f8 rdx=0
+tid 02ec suspend=1 user=0ms start=RelicCardinal.exe+3b1e250 name=[TextToSpeech]
+   rip=6fffa66448 (ntdll.dll+c6448) rsp=36831fb40 rax=36831fe60 rcx=36831fcc0 rdx=36831fe30
+tid 02f0 suspend=1 user=2670ms start=RelicCardinal.exe+3b1e250 name=[Utility/VPX Decoder]
+   rip=6fffa66448 (ntdll.dll+c6448) rsp=36891fb40 rax=10 rcx=3b83485d0 rdx=36891f3bf
+tid 02f4 suspend=1 user=130ms start=d3d12core.dll+52e10 name=[vkd3d-swapchain-sync]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=368f1fcc0 rax=698f0e8c00 rcx=69a0050bd0 rdx=1
+tid 02fc suspend=1 user=60ms start=xinput1_4.dll+16228 name=[wine_xinput_hid_update]
+   rip=6ffc1d3890 (win32u.dll+33890) rsp=399c3fe20 rax=0 rcx=6ffe026228 rdx=0
+tid 0300 suspend=1 user=0ms start=sechost.dll+25ec0 name=[wine_sechost_device_notify]
+   rip=6fffa66480 (ntdll.dll+c6480) rsp=39a23eb10 rax=7067756c705f656e rcx=33 rdx=aad828
+tid 0324 suspend=1 user=450ms start=mmdevapi.dll+25554 name=[audio_client_main]
+   rip=7fd0455594 (mmdevapi.dll+25594) rsp=3b32fffc0 rax=0 rcx=7fd0455554 rdx=7bc
+tid 0344 suspend=1 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=3b510fd10 rax=3b510fe80 rcx=3b510fce0 rdx=3b510fe50
+tid 0348 suspend=1 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=3b590fd10 rax=3b590fe80 rcx=3b590fce0 rdx=3b590fe50
+tid 034c suspend=1 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=3b5f0fd10 rax=3b5f0fe80 rcx=3b5f0fce0 rdx=3b5f0fe50
+tid 0350 suspend=1 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=3b650fd10 rax=3b650fe80 rcx=3b650fce0 rdx=3b650fe50
+tid 0354 suspend=1 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=3b6b0fd10 rax=3b6b0fe80 rcx=3b6b0fce0 rdx=3b6b0fe50
+tid 0358 suspend=1 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=3b710fd10 rax=3b710fe80 rcx=3b710fce0 rdx=3b710fe50
+tid 035c suspend=1 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=3b770fd10 rax=3b770fe80 rcx=3b770fce0 rdx=3b770fe50
+tid 0360 suspend=1 user=0ms start=RelicCardinal.exe+3492080 name=[Utility/UI loading]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=3b7d0fd10 rax=3b7d0fe80 rcx=3b7d0fce0 rdx=3b7d0fe50
+tid 0458 suspend=1 user=30ms start=ntdll.dll+d6444 name=[wine_threadpool_worker]
+   rip=6fffa66480 (ntdll.dll+c6480) rsp=3b4d0f510 rax=6ff72adb74 rcx=6ff72adb74 rdx=3b4d0b5a0
+tid 04ac suspend=1 user=7020ms start=RelicCardinal.exe+3b1e250 name=[Scenario Loading Thread]
+   rip=1403ebc50 (RelicCardinal.exe+3ebc50) rsp=3b8e9db68 rax=3c06be8d8 rcx=3b8e9dd60 rdx=1464b9968
+tid 04dc suspend=1 user=0ms start=ntdll.dll+d6444 name=[]
+   rip=6fffa663f4 (ntdll.dll+c63f4) rsp=f770eb60 rax=1c10 rcx=7a30010620 rdx=7a50001000
+END
+---- 10:25 PM 

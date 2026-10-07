@@ -1,0 +1,47 @@
+Box64: send raw Windows syscalls to Wine's dispatcher when Wine installed no SIGSYS handler
+
+Proton's x86_64 Wine catches a raw `syscall` from Windows code with a seccomp filter and a SIGSYS
+handler, and Box64 forwards such syscalls as SIGSYS. Wine installs both only when native code sits
+above 0x700000000000; with a 39-bit address space (the AYN Thor) it logs "install_bpf Native libs are
+being loaded in low addresses ... not installing seccomp", so the syscalls ran as Linux syscalls.
+AoE IV's protection issues raw syscalls from its own gateway, and its API pointers stayed 0.
+
+Wine's own x86_64 stubs (checked in proton-11.0-1-x86_64's ntdll.dll) do `call [0x7ffe1000]` when
+KUSER_SHARED_DATA+0x308 has bit 0 set. Do the same, pushing a return address 0xb further on: in the
+stub the call returns at +0x1f, the syscall at +0x14, and the dispatcher resumes at [rsp]-0xb
+(measured: pushing the plain return address resumed 0xb bytes too early).
+Made against github.com/Pipetto-crypto/box64 at eb6fb21f (GameNative's Box64), after 0001 and 0002.
+
+diff --git a/src/emu/x64syscall.c b/src/emu/x64syscall.c
+index 857da51ba..281102939 100644
+--- a/src/emu/x64syscall.c
++++ b/src/emu/x64syscall.c
+@@ -43,6 +43,7 @@
+ #include "x64int_private.h"
+ #include "syscall_user_dispatch.h"
+ #include "cpumask.h"
++#include "custommem.h"
+ 
+ typedef struct x64_sigaction_s x64_sigaction_t;
+ typedef struct x64_stack_s x64_stack_t;
+@@ -534,6 +535,20 @@ void EXPORT x64Syscall(x64emu_t *emu)
+             EmitSignal(emu, X64_SIGSYS, (void*)ret_addr, R_EAX&0xffff);  // what are the parameters?
+             return;
+         }
++        // Wine installs its SIGSYS handler only together with its seccomp filter, and refuses both when native
++        // code sits below 0x700000000000 (always the case with a 39-bit address space, e.g. Android). A raw
++        // syscall from Windows code would then run as a Linux syscall. Do what Wine's own x86_64 syscall stubs
++        // do when KUSER_SHARED_DATA.SystemCall is set: call [0x7ffe1000] (__wine_syscall_dispatcher), returning
++        // to the instruction after the syscall.
++        if((my_context->signals[X64_SIGSYS]<=2) && (getProtection(0x7ffe0000)&PROT_READ) && (getProtection(0x7ffe1000)&PROT_READ)
++           && (*(volatile uint8_t*)0x7ffe0308 & 1) && *(volatile uintptr_t*)0x7ffe1000 && !FindElfAddress(my_context, ret_addr)) {
++            R_RSP -= 8;
++            // In a Wine stub the call returns 0xb bytes after the syscall would have (0x1f vs 0x14), and the dispatcher
++            // resumes at [rsp]-0xb (measured: pushing plain RIP came back 0xb too early).
++            *(uint64_t*)R_RSP = R_RIP + 0xb;
++            R_RIP = *(volatile uintptr_t*)0x7ffe1000;
++            return;
++        }
+     }
+     return x64Syscall_linux(emu);
+ }

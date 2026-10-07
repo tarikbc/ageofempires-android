@@ -1,0 +1,11 @@
+t_s	threads	cpu_pct	log_bytes	growing	susp	killer	step	last
+4	21		14074				Loading step: [Property Bag Registration]	(I) [22:04:16.993] [000000308]: Loading step: [Property Bag Registration]
+48	65	163	14779	yes	s0:17	killer tid=0170 susp=0 user=0ms	Loading step: [Property Bag Manager]	(I) [22:04:26.035] [000000308]: UTIL -- Failed to Load BinaryConfig file: 'data:art\fx\fx_objects\fx_campfire\fx_campfire.simbox', error: 'U
+62	78	217	66230	yes			Loading step: [IEngineInitializable]	(I) [22:05:14.953] [000000308]: UI Async loading data:ui\intro\pages\IntroVideoPage.xaml
+106	77	170	72995	yes	s0:68	killer tid=0170 susp=0 user=0ms	Loading step: [IEngineInitializable]	(E) [22:05:26.017] [000000308]: Enum changed on the server CommunityEventContent::EventContentType
+120	75	167	78408	yes			Loading step: [IEngineInitializable]	(I) [22:06:12.991] [000000308]: Match key creation failed with result code: C06T13R-1X-13 4D6174630629
+164	76	209	81347	yes	s0:66	killer tid=0170 susp=0 user=0ms	Loading step: [Tuning Variant]	(I) [22:06:25.897] [000000920]: Setting scenario tuning variant [campaign]
+178	71	50	87929	yes			Loading step: [GEWorld]	(I) [22:07:05.514] [000000920]: Opening file for async read: a:\cardinal\archives\soundspeechfrench.sga
+222	71	0	87929	NO	s0:1,s1:60	killer tid=0170 susp=0 user=40ms	Loading step: [GEWorld]	(I) [22:07:05.514] [000000920]: Opening file for async read: a:\cardinal\archives\soundspeechfrench.sga
+237	71	0	87929	NO			Loading step: [GEWorld]	(I) [22:07:05.514] [000000920]: Opening file for async read: a:\cardinal\archives\soundspeechfrench.sga
+281	71	0	87929	NO	s0:1,s1:60	killer tid=0170 susp=0 user=40ms	Loading step: [GEWorld]	(I) [22:07:05.514] [000000920]: Opening file for async read: a:\cardinal\archives\soundspeechfrench.sga

@@ -1,5 +1,10 @@
 # Draft: FEX issue — the SMC write trap is observable by the guest
 
+> **Note (2026-10-06).** The leak is real and reproducible with `tools/smctest2.c`, but it is not what breaks
+> AoE IV ([SMC-TRAP-HIDDEN.md](SMC-TRAP-HIDDEN.md)). A fix that keeps the trap and corrects the query results
+> is `patches/fex/0004`. Separately, `SMCChecks=full` stops AoE IV at start-up
+> ([KILL-REMEASURED.md](KILL-REMEASURED.md)), which may deserve its own issue.
+
 Ready to file against [FEX-Emu/FEX](https://github.com/FEX-Emu/FEX). Written to stand on its own:
 it is a correctness bug independent of any game.
 

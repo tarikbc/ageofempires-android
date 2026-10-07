@@ -148,11 +148,42 @@ class GN:
             time.sleep(interval)
         return False
 
+    def is_game_page(self, title, root=None):
+        """True when the detail page of the game called `title` shows (its title, Play and the Options cog)."""
+        root = root if root is not None else self.dump()
+        return bool(find_nodes(root, text=title) and find_nodes(root, text="Play") and find_nodes(root, desc="Options"))
+
+    def open_game_page(self, title, settle_timeout=30, tries=4):
+        """Library -> the detail page of `title`. GameNative asks its API for a suggested game after start; when the
+        answer arrives, the suggestion takes the first card ("Recommended") and every other card moves one place.
+        A tap that races that move opens the suggested game, so wait for the "Recommended" card first, tap from a
+        single screen read, and check the page that opens."""
+        for _ in range(tries):
+            self.wait_text("Recommended", timeout=settle_timeout)
+            time.sleep(1)
+            root = self.dump()
+            hits = find_nodes(root, text=title)
+            if not hits:
+                time.sleep(2)
+                continue
+            b = hits[0].get("bounds")
+            card = next((c for c in _nodes(root) if c.get("clickable") == "true" and _contains(c.get("bounds"), b)), hits[0])
+            self.tap(*bounds_center(card))
+            for _ in range(5):
+                time.sleep(1.5)
+                root = self.dump()
+                if self.is_game_page(title, root):
+                    return True
+            if find_nodes(root, text="Play"):  # another game's page opened
+                self.back()
+                time.sleep(2)
+            settle_timeout = 5
+        return False
+
     def launch_game(self, name):
         """Library -> game detail -> Play, waiting for each stage."""
-        self.tap_text(name)
-        if not self.wait_text("Play", timeout=20):
-            raise RuntimeError("Play not visible after opening game")
+        if not self.open_game_page(name):
+            raise RuntimeError(f"detail page of {name!r} did not open")
         self.tap_text("Play")
         return True
 

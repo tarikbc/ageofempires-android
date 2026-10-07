@@ -1,0 +1,12 @@
+t_s	threads	cpu_pct	log_bytes	growing	susp	killer	step	last
+4	22		14074				Loading step: [Property Bag Registration]	(I) [21:46:55.069] [000000312]: Loading step: [Property Bag Registration]
+18	21	192	14779	yes	s0:17	killer tid=0174 susp=0 user=0ms	Loading step: [Property Bag Manager]	(I) [21:47:04.269] [000000312]: UTIL -- Failed to Load BinaryConfig file: 'data:art\fx\fx_objects\fx_campfire\fx_campfire.simbox', error: 'U
+62	78	174	48642	yes			Loading step: [Lua Libraries]	(I) [21:47:22.635] [000000312]: Loading step: [Lua Libraries]
+76	77	217	69339	yes	s0:68	killer tid=0174 susp=0 user=0ms	Loading step: [IEngineInitializable]	(I) [21:48:07.130] [000000312]: [PlayfabManager] : Playfab Login Succeeded
+120	75	171	73246	yes			Loading step: [IEngineInitializable]	(I) [21:48:17.551] [000000312]: UI Async loading data:ui\intro\pages\connectingandgenericloadingpage.xaml
+134	75	153	81577	yes	s0:65	killer tid=0174 susp=0 user=0ms	Loading step: [IEngineInitializable]	(E) [21:49:04.995] [000000312]: CommunityEventChallengeProgressCache - response was failure: -48
+179	70	178	83052	yes			Loading step: [IEngineInitializable]	(E) [21:49:19.065] [000000312]: ProfilePropertyCache - response was failure: -48
+193	70	0	86596	yes	s0:1,s1:59	killer tid=0174 susp=0 user=50ms	Loading step: [Tuning Variant]	(I) [21:49:44.756] [000000504]: WebSocketConnection timed out
+237	70	0	86596	NO			Loading step: [Tuning Variant]	(I) [21:49:44.756] [000000504]: WebSocketConnection timed out
+251	70	0	86596	NO	s0:1,s1:59	killer tid=0174 susp=0 user=50ms	Loading step: [Tuning Variant]	(I) [21:49:44.756] [000000504]: WebSocketConnection timed out
+295	70	0	86596	NO			Loading step: [Tuning Variant]	(I) [21:49:44.756] [000000504]: WebSocketConnection timed out
