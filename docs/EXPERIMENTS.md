@@ -4,6 +4,13 @@ Everything tried, and what actually happened. **The binary outcome is always the
 game's own log (`warnings.log`) keep growing past ~5 minutes? "Process still alive" is not success —
 the kill *suspends* the threads and leaves the process hung, so `ps` still shows it.
 
+## Solved (2026-10-07)
+
+| Tried | Result |
+|---|---|
+| FEX patch 0007: rewrite Wine's exported `FF 25` thunks to `48 FF 25` in the game process | The game's API hook check flags nothing; the start-up kill is gone ([HOOK-CHECK.md](HOOK-CHECK.md)) |
+| FEX patch 0010 (`FEX_EXP_FASTCONTINUE=1`): resume x64 code after an exception without Wine's wineserver round trip | Protection loop about 1.1 s per cycle, watchdog bucket 0; the game played past 15 minutes in two runs, the second with the exact repo patch set ([FAST-CONTINUE.md](FAST-CONTINUE.md)) |
+
 ## Ruled out — tested, game still died
 
 | Tried | Result |

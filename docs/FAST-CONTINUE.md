@@ -67,6 +67,17 @@ In the game: 6,614 continues/s took the fast path and 0 the slow one (10 s windo
 tree with 0002, 0004, 0006, 0007, 0009, the block dump and stats experiments, and this change (`08172f64`), with
 `FEX_EXP_SKIP_CALLRET_RESET=1` (0009) also set.
 
+## The two validation runs
+
+| run | build | result |
+|---|---|---|
+| 09:27 | job tree with 0010 and analysis code (`08172f64`) | watched 1,514 s; 10-cycle means of the loop 0.6 to 2.0 s (about 1.1 s typical), bucket 0 at every check up to 1,469 s; log last grew at 1,456 s; a Skirmish played 15 minutes in |
+| 10:00 | exact repo set 0002+0004+0006+0007+0009+0010 (`86d6da39`) | fast path 8,200/s, slow path 0/s (14.6 s window at about 100 s); log still growing at 989 s; a match played with the game's controller UI 15 minutes in |
+
+The 10:00 build has no block dump, so its loop cycles were not measured; the evidence is that it ran and grew its
+log past every earlier stopping point (about 8.5 to 13.7 minutes). Both runs had `FEX_EXP_SKIP_CALLRET_RESET=1`
+(0009) set as well.
+
 ## Also measured on the way (no effect)
 
 - **Pinning the loop thread to the fast core.** GameNative caps the CPU clocks during a game (logcat
