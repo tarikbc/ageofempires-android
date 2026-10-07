@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import run_watch as rw  # noqa: E402
 
 EXE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "probes", "aoeagent.exe")
-REMOTE_EXE = "/sdcard/Download/aoeagent.exe"
+REMOTE_EXE = "/sdcard/Download/aoe/aoeagent.exe"
 DIR = "/sdcard/Download/aoe/agent"
 _seq = [int(time.time() * 1000) % 100000000]
 
@@ -51,11 +51,11 @@ def start():
         sys.exit(f"{EXE} is missing: run tools/probes/build.sh")
     local = os.path.getsize(EXE)
     remote = rw.sh(f"stat -c %s {REMOTE_EXE} 2>/dev/null").strip()
+    rw.sh(f"mkdir -p {DIR}")
     if remote != str(local):
         rw.adb("push", EXE, REMOTE_EXE)
-    rw.sh(f"mkdir -p {DIR}")
     if not running():
-        rw.winexec("D:\\aoeagent.exe", "")
+        rw.winexec("D:\\aoe\\aoeagent.exe", "")
     for _ in range(40):
         time.sleep(0.5)
         try:

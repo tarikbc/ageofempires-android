@@ -3,9 +3,9 @@
 set -e
 cd "$(dirname "$0")"
 for src in *.c; do
-    # aoeagent runs for the whole session: build it as a GUI program so it opens no console window
+    # aoeagent, waitexit and dlgclick run during the game: build them as GUI programs so they open no console window
     extra=""
-    [ "$src" = "aoeagent.c" ] && extra="-mwindows"
+    case "$src" in aoeagent.c|waitexit.c|dlgclick.c) extra="-mwindows" ;; esac
     x86_64-w64-mingw32-gcc -O1 -static $extra -o "${src%.c}.exe" "$src" -lpsapi -lws2_32 -liphlpapi -lbcrypt -lwinhttp -lsynchronization -lxinput1_4
     echo "built ${src%.c}.exe"
 done

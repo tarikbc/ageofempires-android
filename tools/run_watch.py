@@ -105,11 +105,12 @@ def start_exit_watch():
     container at once, so only this probe can record the exit code and copy the end of the log."""
     local = os.path.join(os.path.dirname(os.path.abspath(__file__)), "probes", "waitexit.exe")
     if os.path.exists(local):
-        adb("push", local, f"{DL}/waitexit.exe")
-    if not sh(f"ls {DL}/waitexit.exe 2>/dev/null").strip():
+        sh(f"mkdir -p {DL}/aoe")
+        adb("push", local, f"{DL}/aoe/waitexit.exe")
+    if not sh(f"ls {DL}/aoe/waitexit.exe 2>/dev/null").strip():
         print("waitexit.exe missing (run tools/probes/build.sh); an exit will not be recorded", flush=True)
         return
-    winexec("D:\\waitexit.exe", "")
+    winexec("D:\\aoe\\waitexit.exe", "")
 
 
 def start_dialog_click():
@@ -119,15 +120,16 @@ def start_dialog_click():
     if not os.path.exists(local):
         print("dlgclick.exe missing (run tools/probes/build.sh); the driver dialog will not be dismissed", flush=True)
         return
-    adb("push", local, f"{DL}/dlgclick.exe")
+    sh(f"mkdir -p {DL}/aoe")
+    adb("push", local, f"{DL}/aoe/dlgclick.exe")
     with tempfile.NamedTemporaryFile("w", suffix=".bat", delete=False, newline="") as f:
-        f.write('@echo off\r\nstart "" D:\\dlgclick.exe "Age of Empires IV" "show this message" 600\r\n')
+        f.write('@echo off\r\nstart "" D:\\aoe\\dlgclick.exe "Age of Empires IV" "show this message" 600\r\n')
         tmp = f.name
     try:
-        adb("push", tmp, f"{DL}/dlgclick.bat")
+        adb("push", tmp, f"{DL}/aoe/dlgclick.bat")
     finally:
         os.unlink(tmp)
-    winexec("cmd", "/c D:\\dlgclick.bat")
+    winexec("cmd", "/c D:\\aoe\\dlgclick.bat")
 
 
 def keep_local_on_save_conflict():
