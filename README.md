@@ -19,8 +19,9 @@ environment — not to strip it out.
   message appears in every run that gets further. See [WINEDEBUG-LEFTOVER.md](docs/WINEDEBUG-LEFTOVER.md).
 - **FEX leaks its SMC write trap to the guest** (confirmed on hardware,
   [SMC-CONFIRMED.md](docs/SMC-CONFIRMED.md)). Whether Aegis acts on it is **not shown**: the one build that
-  hides the trap (patches 0001 + 0003) hangs at the exe entry point inside FEX's invalidation tracker,
-  re-tested on the clean baseline, so the game never runs with the trap hidden.
+  hides the trap (patches 0001 + 0003) stops at start-up on the clean baseline, and so does
+  `SMCChecks=full` with the trap still armed. The factor they share is full-SMC validation, so the game
+  has never run with the trap hidden.
 
 Read [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) first: it is the ledger of what was tried and what
 happened, including the traps that produced wrong conclusions.
@@ -69,7 +70,8 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
    `NtQueryVirtualMemory` — so the guest is told its own code page is read-only when it set it
    read-write. Aegis calls `NtQueryVirtualMemory` **35,248 times per run**. This explains the kill's
    indifference to everything environmental, the exact `SMCChecks` sensitivity (`none` → no trap but no
-   invalidation → exits at 2 min; `full` → hangs at launch, cause not measured), why the Mac passes, and why
+   invalidation → exits at 2 min; `full` → stops at start-up with the trap still armed, re-measured in
+   [KILL-REMEASURED.md](docs/KILL-REMEASURED.md)), why the Mac passes, and why
    byte-comparing probes saw a stable image (it is a *protection* change). **Fix:** intercept
    `NtQueryVirtualMemory` and report the untrapped protection. See
    [SMC-HYPOTHESIS.md](docs/SMC-HYPOTHESIS.md).
@@ -85,10 +87,8 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
    `NtProtectVirtualMemory`) for pages FEX trapped. FEX already maps x64 ntdll entry points to their
    ARM64EC code (`NtDllRedirectionLUT` in `Source/Windows/ARM64EC/Module.cpp`), which is where a wrapper
    would go. Needs a FEX rebuild ([BUILDING-FEX.md](docs/BUILDING-FEX.md)).
-2. **Re-test `SMCChecks=full` on the clean baseline**, and if it hangs, capture `tstack` to see whether it
-   stops in the same FEX code as the no-trap build.
-3. **Ghidra the xxHash64 callers**: recover the hashed range and expected hash.
-4. **Deploy the waitq ntdll properly** (needs a `Proton`-type `.wcp`), and **fix `ThreadHideFromDebugger`**
+2. **Ghidra the xxHash64 callers**: recover the hashed range and expected hash.
+3. **Deploy the waitq ntdll properly** (needs a `Proton`-type `.wcp`), and **fix `ThreadHideFromDebugger`**
    in Wine's unix side.
 
 ## Traps (each cost real time)
@@ -166,7 +166,7 @@ and what did not. Then:
 | [`SMC-CONFIRMED.md`](docs/SMC-CONFIRMED.md) | **CONFIRMED on hardware:** FEX removes write permission from a guest page the moment it translates code in it — `RWX` becomes `RX` with no request from the guest. |
 | [`CONTAINER-WONT-START.md`](docs/CONTAINER-WONT-START.md) | **How the container was fixed**, and the two things that were NOT the cause (a locked device, and the MapGen message). Also the rename-a-mapped-DLL trick. |
 | [`KILL-STILL-OPEN.md`](docs/KILL-STILL-OPEN.md) | Historical: the pre-SMC state of the kill question. **Superseded** by SMC-CONFIRMED / FIX-VERIFIED. |
-| [`KILL-REMEASURED.md`](docs/KILL-REMEASURED.md) | **The kill on the clean baseline**, measured with `suspinfo`: timeline, suspend counts, timing after `errno=10038`. Also the no-trap FEX build hanging inside FEX's invalidation tracker. |
+| [`KILL-REMEASURED.md`](docs/KILL-REMEASURED.md) | **The kill on the clean baseline**, measured with `suspinfo`: timeline, suspend counts, timing after `errno=10038`. Also why the no-trap build and `SMCChecks=full` both stop at start-up (shared factor: full-SMC validation). |
 | [`WINEDEBUG-LEFTOVER.md`](docs/WINEDEBUG-LEFTOVER.md) | **Why the evening runs stalled**: leftover debug channels. The A/B, the corrected claims (MapGen, "stock" FEX), and the FEX setup as measured. |
 | [`FIX-VERIFIED.md`](docs/FIX-VERIFIED.md) | Historical. The `smctest` result for the no-trap build stands; its run results were measured with the debug channels on. Read WINEDEBUG-LEFTOVER.md first. |
 | [`DEATH-IS-NOT-THE-KILL.md`](docs/DEATH-IS-NOT-THE-KILL.md) | **Retracted** — the thread-state method it is based on cannot detect Wine's `SuspendThread` at all, so it proves nothing either way. Kept for the correction and for the correct instrument (`tools/probes/suspinfo.c`). |
