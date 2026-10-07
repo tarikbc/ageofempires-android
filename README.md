@@ -31,6 +31,13 @@ environment — not to strip it out.
 - **Fixing the raw-syscall return registers does not stop the kill (2026-10-07).** On the Thor a raw x64 `syscall` returns
   `rcx` = status instead of the return address. FEX patch 0006 fixes that (verified with `syscallregs`), and
   the game still stopped in 3 of 3 runs. See [SYSCALL-RETURN.md](docs/SYSCALL-RETURN.md).
+- **The start-up kill decision is an API hook check that fails only under ARM64EC Wine (2026-10-07).** The game
+  checks 63 API functions for inline hooks; Wine's ARM64EC kernel32 exports 27 of them as bare `jmp [rip+x]`
+  (`FF 25`) thunks, which the detector flags (x86-64 Wine adds a hot-patch prolog). FEX patch 0007 rewrites such
+  thunks to `48 FF 25`. With it no record is flagged, start-up takes the Box64 branch, and two judged runs got past
+  the old kill window with the log growing (to 479 s and 537 s). Both were still stopped later, 8 to 10 minutes in,
+  by a decision on a protection worker thread. Found by dumping the decrypted code FEX compiles (patch 0008). See
+  [HOOK-CHECK.md](docs/HOOK-CHECK.md).
 
 Read [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) first: it is the ledger of what was tried and what
 happened, including the traps that produced wrong conclusions.
@@ -94,6 +101,10 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
 
 ## Next actions
 
+0. **Find the check behind the later stop (with patch 0007).** About 510 s in, thread `016c` (start `+0x3e1b04c`)
+   enters the reaction function `0x143dd2550` and creates the kill jobs. Which of its ~130 call sites fired, and
+   what it checks, is open ([HOOK-CHECK.md](docs/HOOK-CHECK.md)). Next: record the guest registers and stack when
+   FEX first compiles that function.
 1. **x86-64 Wine under Box64** (the setup Rosetta and the Steam Deck use: an x86-64 ntdll). Blocked on
    2026-10-06; on 2026-10-07 two Box64 patches got `proton-11.0-1-x86_64` through the game's start-up to
    `Config File`, where it now dies after the protection's illegal-instruction phase. Its hook check (thread
@@ -174,7 +185,11 @@ note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch
   (registers after a raw `syscall`), `aegistrace` (copies the trace build's buffer out of the game),
   `waitexit` (exit code and final log when the game exits; `run_watch.py` starts it), `dlgclick` (clicks a
   dialog button by text; `run_watch.py` starts it for the driver-version dialog), `memwatch` (logs every
-  change in a memory range of the game, with times).
+  change in a memory range of the game, with times), `peek` (hex dump of a range of the game's memory),
+  `blkread` (copies patch 0008's block dump out of the game; `tools/blkparse.py` and `tools/blkmem.py` read it),
+  `stkdump` (one thread's whole stack, for stale return addresses), `thunkprobe` (run as `RelicCardinal.exe`:
+  counts the thunks patch 0007 rewrote), `cleancopy` (compares loaded system DLL exports with a fresh image
+  mapping). `tools/dettable.py` decodes a `peek` dump of the hook-check table.
 - **When the game exits instead of freezing, GameNative closes the container at once** (logcat: `Exit called:
   processes_exited` 34 ms after the game's window went away), so the 10 s log copies miss the end. `waitexit`
   copies the log at that moment. The game also keeps one `LogFiles\unhandled.<start time>.txt` per run
@@ -186,7 +201,7 @@ note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch
 
 | Path | What it is |
 |---|---|
-| [`patches/fex/`](patches/fex) | 0002 hides the CPUID vendor; 0004 hides the SMC trap from guest queries (works; does not stop the kill); 0006 makes a raw x64 `syscall` return registers like hardware (works; does not stop the kill). 0001/0003 stop the game at start-up. |
+| [`patches/fex/`](patches/fex) | 0002 hides the CPUID vendor; 0004 hides the SMC trap from guest queries (works; does not stop the kill); 0006 makes a raw x64 `syscall` return registers like hardware (works; does not stop the kill); 0007 rewrites exported `FF 25` thunks so the game's hook check passes (moves the stop from ~3 to ~9 minutes); 0008 dumps the decoded code of the protection's range (analysis tool). 0001/0003 stop the game at start-up. |
 | [`patches/box64/`](patches/box64) | Against GameNative's Box64 (`Pipetto-crypto` `eb6fb21f`), in order: 0001 decode SSE/AVX stores so write faults reach Wine as writes; 0002 keep the guest's execute permission on `noexec` storage; 0003 send raw Windows syscalls to Wine's dispatcher when Wine installed no seccomp handler (39-bit address space). With all three, `proton-11.0-1-x86_64` runs the game to `Config File` ([BOX64-ROUTE.md](docs/BOX64-ROUTE.md)). |
 | [`patches/proton-arm64ec-ntdll/`](patches/proton-arm64ec-ntdll) | Two binary patches for the ARM64EC `ntdll.dll` (`invoke_arm64ec_syscall` register fix; `--waitq` spinlock fix). |
 | [`patches/gamenative/`](patches/gamenative) | Fresh Steam ticket per launch. Not built or tested. |
@@ -199,6 +214,7 @@ and what did not. Then:
 | Doc | Covers |
 |---|---|
 | [`AEGIS.md`](docs/AEGIS.md) | The protection: identity, build log, blocklist, timing constants |
+| [`HOOK-CHECK.md`](docs/HOOK-CHECK.md) | **The start-up decision is an API hook check**: the decrypted code (via a FEX block dump), the 63-record table, why Wine's ARM64EC `FF 25` export thunks fail it, patch 0007 and its runs, and the later stop at ~9 minutes. |
 | [`KILL-TIMER.md`](docs/KILL-TIMER.md) | **The kill thread is a timed job** (wakes by timeout after ~200 s, then calls the suspend-all function with `0x0e00000000000000`), and the protection's hook-check loop, both read from `WINEDEBUG=+seh` exception traces. |
 | [`SYSCALL-RETURN.md`](docs/SYSCALL-RETURN.md) | **A raw x64 `syscall` returns `rcx` = status on the Thor, not the return address as on hardware.** Measured with `syscallregs`; patch 0006 fixes it; its runs. |
 | [`AEGIS-TRACE.md`](docs/AEGIS-TRACE.md) | Tracing the game's syscalls inside FEX: how, what broke, and the first findings: most raw syscalls pass one gateway in private memory, a second gateway in the exe allocates and protects memory from 0.3 s, and one thread walks the module list through `NtReadVirtualMemory`. |
