@@ -1,0 +1,18 @@
+--- a/FEXCore/Source/Interface/Core/Core.cpp
++++ b/FEXCore/Source/Interface/Core/Core.cpp
+@@ -1068,7 +1068,14 @@
+   // Accessing FrontendDecoder is safe as the thread's code invalidation mutex must be locked here.
+   Thread->FrontendDecoder->ResetExecutableRangeCache();
+ 
+-  if (Thread->LookupCache->InvalidateCacheRange(Start, Length)) {
++  // Patch 0009 (experiment): FEX_EXP_SKIP_CALLRET_RESET=1 skips discarding the thread's call-ret stack on every
++  // invalidation. The discard is a syscall per thread that had code cached in the range, on every SMC fault; a skipped
++  // discard can leave a return prediction into the old translation of code that changed while its caller was suspended.
++  static const bool SkipCallRetReset = [] {
++    const char* Value = getenv("FEX_EXP_SKIP_CALLRET_RESET");
++    return Value && Value[0] == '1';
++  }();
++  if (Thread->LookupCache->InvalidateCacheRange(Start, Length) && !SkipCallRetReset) {
+     FEXCORE_PROFILE_SCOPED("InvalidateCallRet");
+ 
+     // This may cause access violations in the thread on Windows as zeroing is not atomic, this is handled by the frontend
