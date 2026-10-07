@@ -64,8 +64,45 @@ kill thread again spun from about 555 s), and limiting the game to cores 3 to 7 
 The protection code has no x87 instructions (none in 1.2 million decoded), so `FEX_X87REDUCEDPRECISION` is not
 involved.
 
+## Making the loop cheaper: what was measured
+
+Cycle time from the watched compare at `0x143e3f3f2`, cycles between 25 s and 115 s after the first dumped block,
+`WINEDEBUG=-all`, patch 0007 in every case:
+
+| setting | cycles | mean cycle | bucket growth |
+|---|---|---|---|
+| defaults | 26 | 3,186 ms | 20.6 s per minute |
+| `FEX_MULTIBLOCK=0` | 31 | 2,623 ms | 12.9 s per minute |
+| `FEX_DISKCACHE=1` | 27 | 3,093 ms | 19.7 s per minute |
+| `FEX_EXP_SKIP_CALLRET_RESET=1` (patch [0009](../patches/fex/0009-skip-callret-reset-experiment.patch)) | 31 | 2,573 ms | 12.0 s per minute |
+
+- **`FEX_MULTIBLOCK=0`**: a full run still overflowed (at 547 s), the game's own loading got slower, and in 2 of 3
+  runs the game died at `Loading step: [Config File]` about 1 s after start, the step where the Box64 route dies.
+- **`FEX_DISKCACHE=1`**: the loop thread's compiles fell from about 2,267/s to 16/s (1,359 cache hits/s), but its
+  JIT time stayed at about 0.22 s/s, so a cache hit cost about as much as a compile.
+- **Where an SMC fault's time goes** (thread `015c`, 1,442 faults/s, defaults): 0.266 s/s in FEX's handler, of which
+  0.179 s/s in the invalidation loop (code buffers, then every one of about 90 threads; about 124 us per fault),
+  0.051 s/s waiting for `ThreadCreationMutex` and `CodeInvalidationMutex`, and 0.017 s/s in the re-protect call. In
+  that loop, each thread that had code cached in the page gets its call-ret stack discarded, which is a syscall.
+  With 0009 the loop took 0.072 s/s (about 49 us per fault).
+
+## Patch 0009 reached the game's first menu
+
+Full run at 07:24 with 0007 and 0009 (tested build: the working tree with the stats and watch experiments; it read
+the environment variable on every invalidation, the patch reads it once): `Cheat Menu` at about 407 s,
+`WPFGFrontEnd loading` at 465 s, `OnEndLoad` at 509 s, and the game drew its first-run **Accessibility Settings**
+screen ([screenshot](img/first-run-menu-2026-10-07.jpg), about 12.5 minutes in). Taps and Enter sent through `adb`
+did not reach it.
+
+The watchdog still fired. Replaying the measured cycles, the bucket held 120 s at 360 s, 206 s at 600 s, and reached
+256 s at 793 s; in the menu the cycles still averaged 2,800 ms (89 cycles after 520 s). Right after, two threads with
+the kill entry `+0x3e69304` existed, and the main thread's CPU time stopped increasing (212,010 ms in two samples 40 s
+apart).
+
+0009 is not safe in general: a return can land in the old translation of code that changed while its caller was
+suspended. The protection's decrypt-on-demand pattern did not visibly break in this run.
+
 ## What follows
 
-The watchdog accepts cycles up to 2 s on average. Anything that makes the protection's loop cheaper under
-emulation (fewer recompiles of re-decrypted code, cheaper SMC handling, cheaper exceptions) moves the stop later or
-removes it.
+In the menu the loop needs to get from about 2.8 s to under 2 s per cycle. The remaining cost is recompiling whole
+pages after each decrypt or re-encrypt, the per-fault invalidation work, and the exceptions themselves.

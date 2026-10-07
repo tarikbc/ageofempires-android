@@ -44,6 +44,10 @@ environment — not to strip it out.
   limit in the cycle where the failing check ran. About 40 % of that thread's time is FEX recompiling the
   protection's decrypt-on-demand code (2,267 compiles/s, 2,085 SMC events/s) and handling exceptions. See
   [WATCHDOG.md](docs/WATCHDOG.md).
+- **First menu reached (2026-10-07, 07:37).** With FEX patches 0007 and 0009 (skip the per-thread call-ret discard on
+  each SMC fault, an unsafe experiment), the game finished loading (`OnEndLoad` at 509 s) and drew its first-run
+  Accessibility Settings screen on the Thor. The watchdog bucket still overflowed at about 793 s and the game froze
+  about 13 minutes in. See [WATCHDOG.md](docs/WATCHDOG.md).
 
 Read [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) first: it is the ledger of what was tried and what
 happened, including the traps that produced wrong conclusions.
@@ -109,8 +113,9 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
 
 0. **Make the protection's loop fast enough for its watchdog (with patch 0007).** It allows 2 s per cycle on
    average and fails after 256 s of total lateness ([WATCHDOG.md](docs/WATCHDOG.md)). Under FEX the cycle costs
-   about 40 % in recompiles of re-decrypted code and in exception handling. Next: cut that cost in FEX (reuse
-   compiled code when re-decrypted bytes are unchanged, cheaper SMC handling).
+   about 40 % in recompiles of re-decrypted code and in exception handling. With 0009 the menu is reached but cycles
+   there still average 2.8 s. Next: in FEX, stop re-trapping pages that are rewritten all the time and validate their
+   blocks instead, so re-decrypted code reuses its translation; make the per-fault invalidation cheaper.
 1. **x86-64 Wine under Box64** (the setup Rosetta and the Steam Deck use: an x86-64 ntdll). Blocked on
    2026-10-06; on 2026-10-07 two Box64 patches got `proton-11.0-1-x86_64` through the game's start-up to
    `Config File`, where it now dies after the protection's illegal-instruction phase. Its hook check (thread
@@ -207,7 +212,7 @@ note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch
 
 | Path | What it is |
 |---|---|
-| [`patches/fex/`](patches/fex) | 0002 hides the CPUID vendor; 0004 hides the SMC trap from guest queries (works; does not stop the kill); 0006 makes a raw x64 `syscall` return registers like hardware (works; does not stop the kill); 0007 rewrites exported `FF 25` thunks so the game's hook check passes (moves the stop from ~3 to ~9 minutes); 0008 dumps the decoded code of the protection's range (analysis tool). 0001/0003 stop the game at start-up. |
+| [`patches/fex/`](patches/fex) | 0002 hides the CPUID vendor; 0004 hides the SMC trap from guest queries (works; does not stop the kill); 0006 makes a raw x64 `syscall` return registers like hardware (works; does not stop the kill); 0007 rewrites exported `FF 25` thunks so the game's hook check passes (moves the stop from ~3 to ~9 minutes); 0008 dumps the decoded code of the protection's range (analysis tool); 0009 skips the per-thread call-ret discard on each SMC fault (unsafe experiment; with 0007 it reached the first menu). 0001/0003 stop the game at start-up. |
 | [`patches/box64/`](patches/box64) | Against GameNative's Box64 (`Pipetto-crypto` `eb6fb21f`), in order: 0001 decode SSE/AVX stores so write faults reach Wine as writes; 0002 keep the guest's execute permission on `noexec` storage; 0003 send raw Windows syscalls to Wine's dispatcher when Wine installed no seccomp handler (39-bit address space). With all three, `proton-11.0-1-x86_64` runs the game to `Config File` ([BOX64-ROUTE.md](docs/BOX64-ROUTE.md)). |
 | [`patches/proton-arm64ec-ntdll/`](patches/proton-arm64ec-ntdll) | Two binary patches for the ARM64EC `ntdll.dll` (`invoke_arm64ec_syscall` register fix; `--waitq` spinlock fix). |
 | [`patches/gamenative/`](patches/gamenative) | Fresh Steam ticket per launch. Not built or tested. |
