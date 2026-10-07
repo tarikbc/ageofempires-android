@@ -44,9 +44,12 @@ stop it.
    Emulation tab, FEXCore Version (tested 2026-10-07 10:34: `aoe-fastcontinue-10`; at the next start logcat shows
    GameNative applying `fexcore-aoe-fastcontinue-10`, and the installed DLL hashed `86d6da39`). The earlier runs
    installed the same DLL by hand instead ([GAMENATIVE-UI.md](docs/GAMENATIVE-UI.md)).
-4. Container `envVars`: `WINEDEBUG=-all`. 0010 is on by default since build `eca1e25b` (`FEX_EXP_FASTCONTINUE=0`
-   turns it off); 0009 stays off without `FEX_EXP_SKIP_CALLRET_RESET=1`, and the 11:24 run (with
-   `FEX_TSOENABLED=0`) did not need it. Earlier builds needed `FEX_EXP_FASTCONTINUE=1`.
+4. Container `envVars`: `WINEDEBUG=-all FEX_EXP_SKIP_CALLRET_RESET=1`. 0010 is on by default since build
+   `eca1e25b` (`FEX_EXP_FASTCONTINUE=0` turns it off; earlier builds needed `FEX_EXP_FASTCONTINUE=1`). 0009
+   (`FEX_EXP_SKIP_CALLRET_RESET=1`) is not needed against the watchdog (11:24 run), but it roughly doubles the
+   match FPS (see Speed below).
+6. GameNative's power profile for the container (`.config/.power-profile`, see Speed below) with the CPU held at
+   full clock and the GPU at its top levels, and the game's display mode left at (or set back to) borderless.
 5. For the controls: the Thor's controller set to Xbox style (Thor settings), and in the game Settings, Controls,
    input set to Gamepad. To swap A/B and X/Y for this game only, GameNative's in-game Quick Menu, Controller tab,
    Edit Physical Controller, binding A to gamepad B, B to A, X to Y and Y to X (confirmed by the user on the Thor). In the tested run the game then quit by itself (log: `Requesting game quit with reason:
@@ -54,7 +57,27 @@ stop it.
 
 **Known limits:**
 
-- Speed: **GameNative's Power Control profile for the container decides the CPU caps.** It is the file
+- **Speed (2026-10-07, match FPS on GameNative's HUD, Skirmish on Danube River, clocks held as below):**
+
+  | TSO | 0009 | FPS |
+  |---|---|---|
+  | on | on | about 25 (user's reading, 10:5x run) |
+  | off | off | 8.0 on the HUD at game time 00:42 (12:08); the user read 10 to 15 |
+  | off | on | 22.8, 29.5 and 29.1 on the HUD (12:21 to 12:22) |
+
+  So 0009 is what keeps the FPS up, and `FEX_TSOENABLED=0` brings nothing measurable; TSO stays at its default.
+  The CPU side limits the FPS: in these matches the GPU was 22 to 38 % busy.
+- **Power profile that worked:** `.config/.power-profile` with `"enablePowerControl":true`, `"minCpuFreq":3187200`,
+  `"maxCpuFreq":3187200` (GameNative caps each core group at its own maximum, so all groups are held at full clock:
+  2.02, 2.71 and 3.19 GHz here) and `"minGpuPowerLevel":7`, `"maxGpuPowerLevel":8` (GameNative writes
+  sysfs level = 8 - value, so the GPU stays at levels 0 and 1, 615 to 680 MHz). These match what the Thor's "high
+  performance" mode sets. A profile with `"minCpuFreq":307200` and GPU levels 0 to 8 let the GPU drop to 220 MHz
+  (match about 10 FPS by the user's reading).
+- **Display mode:** setting the game's display mode to the option stored as `windowmode` 1 in
+  `My Games\Age of Empires IV\configuration_system.lua` gave a black screen (the game kept running). Writing
+  `variantUInt = 2` back while GameNative was then force-stopped (so the game could not save over it) brought the
+  picture back; the user then chose borderless full screen in the game.
+- How the caps were found: **GameNative's Power Control profile for the container decides them.** It is the file
   `.config/.power-profile` in the container (`Z:\home\xuser-STEAM_1466860\.config\.power-profile`), read at
   every game start. Here it had `"enablePowerControl":true` with `"maxCpuFreq":2016000`, which GameNative applies
   to every core group as min(value, group maximum). Turning Power Control off in the Quick Menu did not last to the
