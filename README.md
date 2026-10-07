@@ -172,9 +172,10 @@ below was needed to run the game; they stay as notes and were not tested further
    main thread's 3,600 blocks per second wait for (FEX locks or the game's own job system).
 2. **Install without hand work.** Ship the patched `libarm64ecfex.dll` as a FEXCore `.wcp` so GameNative installs
    it itself, and turn 0010 on without an environment variable. Not built or tested yet.
-3. **Report upstream.** The wineserver round trip in GameNative/proton-wine's ARM64EC `NtGetContextThread`
-   (self-detection through `NtQueryInformationThread`) affects every program that handles exceptions under
-   ARM64EC; FEX could also avoid it as 0010 does.
+3. **Try GameNative's Proton 11.0-2.** The wineserver round trip that 0010 avoids came from a work-in-progress
+   patch in GameNative/proton-wine that was reverted on 2026-07-17; Proton 11.0-2 (2026-09-28) no longer has it
+   ([FAST-CONTINUE.md](docs/FAST-CONTINUE.md)). With 11.0-2, 0010 may be unnecessary. Its profile asks for a fresh
+   ARM64EC container, so test it in a second container.
 
 Earlier open questions (x86-64 Wine under Box64, the kill job's 150 ms call, the xxHash callers,
 `ThreadHideFromDebugger`, the waitq ntdll) are no longer needed to run the game; see
