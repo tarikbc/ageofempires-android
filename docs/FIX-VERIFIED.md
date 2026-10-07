@@ -1,5 +1,18 @@
 # Status: the trap fix works but regresses the game; the wall is now a MapGen asset error
 
+> **Correction (2026-10-06, 21:10).** Every run in this document was launched with leftover debug channels
+> (`WINEDEBUG=+thread,+sync,+virtual,+timestamp,+tid`), which slowed the game badly
+> ([WINEDEBUG-LEFTOVER.md](WINEDEBUG-LEFTOVER.md)). What still stands and what does not:
+>
+> - **Stands:** section 1, the `smctest` result (`RWX` with the no-trap build). It does not depend on the
+>   game's speed.
+> - **Wrong:** section 3. MapGen is not a wall; the message appears in every run that gets further, and
+>   loading continues after it.
+> - **Wrong label:** "stock FEX" here is `libarm64ecfex.stock.dll`, SHA-1 `460568b8`, which is the
+>   CPUID-patched build, not stock.
+> - **Re-tested clean:** the no-trap build still does not start the game. It hangs at the exe entry point
+>   inside FEX's invalidation tracker ([KILL-REMEASURED.md](KILL-REMEASURED.md)).
+
 Corrected twice, both times after being wrong.
 
 ## 1. The SMC trap fix is real, and verified
