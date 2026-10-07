@@ -212,10 +212,9 @@ below was needed to run the game; they stay as notes and were not tested further
 1. **Speed.** The game's EXE has no volatile metadata (`VolatileMetadataPointer` 0 in its load config), so FEX
    emulates x86 memory ordering (TSO) on every memory access. Test `FEX_TSOENABLED=0` for speed and stability. Also
    find what the main thread's about 3,000 short waits per second are (FEX locks or the game's own job system).
-3. **Try GameNative's Proton 11.0-2.** The wineserver round trip that 0010 avoids came from a work-in-progress
-   patch in GameNative/proton-wine that was reverted on 2026-07-17; Proton 11.0-2 (2026-09-28) no longer has it
-   ([FAST-CONTINUE.md](docs/FAST-CONTINUE.md)). With 11.0-2, 0010 may be unnecessary. Its profile asks for a fresh
-   ARM64EC container, so test it in a second container.
+3. **Proton 11.0-2 was tried (2026-10-07):** no FPS gain, some stutters, and its exception resume path is still
+   about 60 times slower than 0010's, so 0010 stays needed ([FAST-CONTINUE.md](docs/FAST-CONTINUE.md)). The setup
+   stays on 11.0-1.
 
 Earlier open questions (x86-64 Wine under Box64, the kill job's 150 ms call, the xxHash callers,
 `ThreadHideFromDebugger`, the waitq ntdll) are no longer needed to run the game; see

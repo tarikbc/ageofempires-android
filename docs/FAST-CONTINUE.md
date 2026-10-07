@@ -38,8 +38,15 @@ cycle fell from about 2.6 to 3.2 s to about 1.15 s, the watchdog bucket stayed a
 thread. The query was added in GameNative/proton-wine by `189b5e87` "WIP: ntdll: ARM64EC suspend support"
 (2026-04-09) and reverted there by `a301e77d` (2026-07-17). The device's build `7c98acd6` (release of 2026-05-02)
 still has it; GameNative's Proton 11.0-2 (`555aa70f`, 2026-09-28) has the plain compare again. So with 11.0-2 the
-round trip should be gone without patch 0010. **Not tested:** 11.0-2 has not run on the Thor yet
-([WINE-SOURCE.md](WINE-SOURCE.md): its profile asks for a fresh ARM64EC container).
+round trip should be gone without patch 0010.
+
+**Tested 2026-10-07 12:27 to 12:40 (11.0-2 imported in the Wine/Proton Manager, selected in the existing AoE IV
+container, which GameNative then set up again as a first boot):** `exccost` (20,000 and 100,000 handled
+exceptions) measured 89.6 and 87.2 us each with `FEX_EXP_FASTCONTINUE=0`, and 1.5 us with 0010 on. So 11.0-2 is
+faster than 11.0-1 on this path (111 to 130 us), but its own resume path is still about 60 times slower than 0010's.
+The game ran on 11.0-2 with patch 0007 and 0010 (fast path 16,015 continues/s); the match HUD read 31.5, 18.8 and
+27.1 FPS (on 11.0-1 the same kind of match read 22.8, 29.5 and 29.1), and the user saw 25 to 30 FPS with some
+stutters. No gain over 11.0-1.
 
 **Side effect to know:** `WINEDEBUG=+server` in one process turned on the request trace for the whole
 wineserver. After the first `exccost` run with it, the trace kept logging the game's requests too, until the
