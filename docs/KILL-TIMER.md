@@ -50,8 +50,9 @@ function's effect must differ).
 ## A hook check that runs all the time: thread `0178`
 
 `0178` runs a loop of illegal instructions at `+0x3f551cd` … `+0x3f551e4` (324,038 exceptions in this run).
-From the contexts: `rsi` walks a table in `.data` from `0x147542618` in 0x28-byte entries (all zero in the
-file, so filled at run time); for each entry, `rcx` walks about 20 bytes from the start of a function in the
+From the contexts: `rsi` walks a table in `.data` in 0x28-byte entries (all zero in the file, so filled at run
+time; 45 entries from `0x1475420a0`, each holding a function address and that function's first 20 bytes XOR
+`0x45`, read live with `tools/probes/memwatch.c`, see [BOX64-ROUTE.md](BOX64-ROUTE.md)); for each entry, `rcx` walks about 20 bytes from the start of a function in the
 exe; `rax` = that code byte XOR `r13` (`0x45`, an 8-bit XOR: `0x83` gives `0xc6`); the step at `+0x3f551d2`
 compares, and `+0x3f551d6` either continues (`+0x3f551d8`) or leaves to `+0x3f551eb`. The order of functions
 differs between runs.

@@ -125,6 +125,10 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
   ([WINEDEBUG-LEFTOVER.md](docs/WINEDEBUG-LEFTOVER.md)).
 - **Find the game by process NAME.** `explorer.exe` and `winhandler.exe` carry the game's path in their
   arguments, and a match on arguments picks `explorer` first.
+- **A modal "unable to determine your video card's installed driver version" dialog** stops loading at
+  `Loading step: [Graphics driver check]` once its one-day "Don't show this message" choice has expired
+  (seen 2026-10-07 from 01:39). The kill still comes on time. GameNative's touch input cannot reach the button;
+  `tools/probes/dlgclick` clicks it, and `run_watch.py` starts it in every run.
 - **`tctx` suspends the thread it reads**, and it can hang there, leaving the thread at suspend count 1.
   Use `suspinfo` (no suspend) to judge a kill.
 
@@ -168,7 +172,9 @@ note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch
 - **Probes:** [`tools/probes`](tools/probes) (`build.sh` builds all), each writing to `D:\` — `tctx`,
   `tstack`, `suspinfo`, `waitq`, `stk`, `stkscan`, `vq`, `vmmap`, `netprobe`, `selfchk`, `syscallregs`
   (registers after a raw `syscall`), `aegistrace` (copies the trace build's buffer out of the game),
-  `waitexit` (exit code and final log when the game exits; `run_watch.py` starts it).
+  `waitexit` (exit code and final log when the game exits; `run_watch.py` starts it), `dlgclick` (clicks a
+  dialog button by text; `run_watch.py` starts it for the driver-version dialog), `memwatch` (logs every
+  change in a memory range of the game, with times).
 - **When the game exits instead of freezing, GameNative closes the container at once** (logcat: `Exit called:
   processes_exited` 34 ms after the game's window went away), so the 10 s log copies miss the end. `waitexit`
   copies the log at that moment. The game also keeps one `LogFiles\unhandled.<start time>.txt` per run

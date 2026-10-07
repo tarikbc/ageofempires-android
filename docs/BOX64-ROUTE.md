@@ -118,3 +118,21 @@ known. Under FEX the game passes this step in under a second.
 Two things that matter for tooling: under Box64 every Wine process is renamed `wine` (Box64 log: `Rename
 process to "wine"`), so `run_watch.py`'s match on the process name does not find the game; and when the game
 exits, GameNative closes the container, so read `warnings.log` from a new session.
+
+### Why the hook check fails under Box64: it reads a table entry that is still being written (02:11 run)
+
+The hook check (thread `0178` in [KILL-TIMER.md](KILL-TIMER.md)) compares the start of 45 functions with a
+table in `.data` (`0x1475420a0` to `0x1475427a8`, 0x28-byte entries: function address, its first 20 code bytes
+XOR `0x45`, and at +0x20 an index). The table is filled at run time. `tools/probes/memwatch.c` read it every 50 to 100 ms in two runs
+(started under Box64 through `HKLM\…\RunServices`, so before the game; entry removed afterwards):
+
+- **FEX** (run 01:52, `WINEDEBUG=-all`): all entries complete at the first read, 8.9 s after the game process
+  appeared. The last entry (index `0x2c`, function `0x143e76964`) decodes to that function's real first bytes,
+  `48 83 ec 28 b8 01 00 00 00 48 87 05 34 47 c8 03 48 85 c0 75`.
+- **Box64** (run 02:11, `WINEDEBUG=-all`, Box64 `aoefix4`): the same entry had its address and only its first
+  expected byte (`0x0d`, written at 02:11:27.636); the other 19 bytes were still zero when the process ended at
+  02:11:28.9. Every other entry matched FEX.
+
+That is the entry and the byte (offset 1) where the hook check reported its mismatch in the 01:18 run. So under
+Box64 the thread that fills the table is still on its last entry when the checking thread reaches it; under FEX
+the table is complete long before. Why the filling is slower under Box64 is **not established**.
