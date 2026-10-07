@@ -21,7 +21,14 @@ If a dump still looks wrong, ask the human what is on screen — it is faster th
 ## Navigation
 
 **Game list → game detail page**
-Tap the game's card. AoE IV sits at roughly `(723, 297)` in the grid.
+Tap the game's card. Its position is **not** fixed. After a start, GameNative asks its API for a suggested
+game. Until the answer arrives, AoE IV is the first card; when it arrives, the suggestion takes the first
+card (labelled `Recommended`) and AoE IV moves to the second (`(723, 297)` on 2026-10-07). A tap that
+races the move opens the suggested game: on 2026-10-07 three "Open container" attempts opened the
+container of another game (`STEAM_503820` in logcat) instead of AoE IV.
+`GN.open_game_page()` in `tools/gn_nav.py` waits for the `Recommended` card (30 s at most), taps the card
+from the same screen read, and checks that the page that opens shows the game's title, `Play` and the
+`Options` cog. `run_watch.py --launch` and `ab_fex.py` use it.
 
 **Game detail → container config**
 Tap the cog (top right of the detail page, ~`(1651, 536)`).
@@ -78,11 +85,32 @@ list.
 which makes this easy to miss. A `.wcp` can install to either name because the manifest chooses the
 target — `fexcore-2610-aoe-nofex2.wcp` installs the patched DLL under **both** names for that reason.
 
+## A FEX build that stops every container start
+
+On 2026-10-07 the job build `hot2` (`a29bf0a8`; hot-page SMC experiment plus a `thread_local` in
+`InvalidationTracker.cpp`) was installed by hand as `C:\windows\system32\libarm64ecfex.dll`. After
+that, every container start ended about 13 s after the Wine processes appeared, also with
+`FEX_EXP_HOT_SMC` removed from the environment. Which of the two changes causes it is not isolated.
+With no running container, the file cannot be replaced from Wine, and the app data is private
+(`run-as: package not debuggable`, no `su`). This restored it:
+
+1. Edit container → Emulation → FEXCore Version → `2610-aoe-nofex2-3` → Save. That content names
+   `libarm64ecfex.dll`, so the next start writes `460568b8`.
+2. Open container. It starts.
+3. Install the wanted build in that session (`ab_fex.install(name)`, rename-aside and copy).
+4. Edit container → Emulation → FEXCore Version → `ntdll-waitq-fix-1` → Save, so the next start does
+   not write `460568b8` again.
+
+In the FEXCore Version list, `ntdll-waitq-fix-1` is the last item and sits at the screen edge
+(`(1680, 1055)`).
+
 ## Gotchas
 
-- GameNative **re-installs the emulator DLLs on launch**. Patching `C:\windows\system32\*` by hand is
-  reverted (observed: patched `libarm64ecfex.dll`, mtime 10:13, reverted to stock at 10:27 when the
-  game next launched). The Contents Manager is the supported channel.
+- GameNative **re-installs the files of the selected FEXCore Version on every launch** (Emulation tab).
+  A hand-patched DLL that the selected content names is reverted (observed: patched `libarm64ecfex.dll`,
+  mtime 10:13, reverted to stock at 10:27 when the game next launched). A DLL that the content does
+  not name stays: `ntdll-waitq-fix-1` ships only `ntdll.dll`, and with it selected a hand-installed
+  `libarm64ecfex.dll` (`d20e07a7`) was still in place after a fresh container start (2026-10-07 08:53).
 - The `Wow64\amd64` registry value is forced back to `xtajit64.dll`; editing it (or the `wine.inf` that
   defines it — there is no copy inside the prefix) does not survive a launch.
 - Long waits are normal: launching to the AoE IV loading screen takes minutes, and "stuck" often means

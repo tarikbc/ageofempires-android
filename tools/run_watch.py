@@ -137,16 +137,15 @@ def launch():
     time.sleep(1)
     sh("am start -n app.gamenative/.MainActivityAliasDefault")
     time.sleep(12)
-    # Tap the card by its title: the library's first ("Recommended") card changes, so positions move.
-    try:
-        from gn_nav import GN
-        GN(SERIAL or None).tap_text("Age of Empires IV: Anniversary Edition")
-    except Exception as e:  # fall back to the usual position
-        print(f"card by title failed ({e}); tapping its usual position", flush=True)
-        sh("input -d 0 tap 723 297")
-    time.sleep(4)
+    # The library's first ("Recommended") card loads late and moves the others; open_game_page waits for it and
+    # checks that the AoE IV page opened, so Play never starts the suggested game.
+    from gn_nav import GN
+    if not GN(SERIAL or None).open_game_page("Age of Empires IV: Anniversary Edition"):
+        print(f"[{time.strftime('%H:%M:%S')}] AoE IV detail page did not open", flush=True)
+        return False
     sh("input -d 0 tap 206 536")  # Play
     print(f"[{time.strftime('%H:%M:%S')}] Play tapped", flush=True)
+    return True
 
 
 def main():
@@ -170,7 +169,8 @@ def main():
         # GameNative sometimes hangs on "Syncing cloud saves" after Play, with no way past it in the UI.
         # A normal launch shows the game process within ~30 s, so restart the app and try again after 90 s.
         for attempt in range(1, 4):
-            launch()
+            if not launch():
+                continue
             t_launch = time.time()
             while time.time() - t_launch < 90 and not pid:
                 pid = game_pid()

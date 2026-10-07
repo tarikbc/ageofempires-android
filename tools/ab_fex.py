@@ -42,14 +42,11 @@ def ensure_session():
         rw.sh("am start -n app.gamenative/.MainActivityAliasDefault")
         time.sleep(12)
         g = GN(rw.SERIAL or None)
-        try:
-            g.tap_text("Age of Empires IV: Anniversary Edition")
-            time.sleep(3)
-            g.tap(1651, 536)  # the cog next to Play
-            time.sleep(3)
-        except RuntimeError as e:
-            print(f"    {e}", flush=True)
+        if not g.open_game_page("Age of Empires IV: Anniversary Edition"):
+            print("    AoE IV detail page did not open", flush=True)
             continue
+        g.tap(1651, 536)  # the cog next to Play
+        time.sleep(3)
         # Tap the item itself: its first clickable parent is the full-screen panel (tap_text would hit the middle).
         hits = find_nodes(g.dump(), text="Open container")
         if not hits:
