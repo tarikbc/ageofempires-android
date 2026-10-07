@@ -26,22 +26,22 @@ stop it.
   0.6 to 2.0 s) and its watchdog bucket was 0 at every check up to 1,469 s ([FAST-CONTINUE.md](docs/FAST-CONTINUE.md)).
 - 10:00, the exact repo patch set, build `86d6da39`: 8,200 continues/s took the fast path and 0 the slow one; past
   15 minutes (917 s) the log was still growing and a match was being played with the controller UI.
-- 10:50, the same build installed from the `.wcp`, **without 0009** (`FEX_EXP_SKIP_CALLRET_RESET` removed): past
-  15 minutes (940 s) the log was still growing, and a Skirmish was being played at 25.3 FPS (HUD, game time 08:27).
-  So 0009 is not needed.
+- 10:50, the same build installed from the `.wcp`: past 15 minutes (940 s) the log was still growing, and a
+  Skirmish was being played at 25.3 FPS (HUD, game time 08:27). This run was meant to be without 0009, but the
+  container still had `FEX_EXP_SKIP_CALLRET_RESET=1` (see the trap below), so 0009 was on.
 
 **What it takes (as tested):**
 
 1. GameNative 1.2.1 container: Wine `proton-11.0-99-arm64ec-1`, variant `bionic`, 64-bit emulator FEXCore.
 2. FEX `7d3090f` with [patches](patches/fex) 0002, 0004, 0006, 0007, 0009 and 0010 ([BUILDING-FEX.md](docs/BUILDING-FEX.md));
-   0009 only acts with `FEX_EXP_SKIP_CALLRET_RESET=1`, which is not needed.
+   0009 only acts with `FEX_EXP_SKIP_CALLRET_RESET=1`.
 3. That `libarm64ecfex.dll` packaged as a FEXCore content with [`tools/make_fex_wcp.py`](tools/make_fex_wcp.py),
    imported in GameNative (Settings, Contents Manager, Import .wcp from device) and selected in the container's
    Emulation tab, FEXCore Version (tested 2026-10-07 10:34: `aoe-fastcontinue-10`; at the next start logcat shows
    GameNative applying `fexcore-aoe-fastcontinue-10`, and the installed DLL hashed `86d6da39`). The earlier runs
    installed the same DLL by hand instead ([GAMENATIVE-UI.md](docs/GAMENATIVE-UI.md)).
-4. Container `envVars`: `FEX_EXP_FASTCONTINUE=1` and `WINEDEBUG=-all` (the 09:27 and 10:00 runs also had
-   `FEX_EXP_SKIP_CALLRET_RESET=1`, which turns on 0009; the 10:50 run shows it is not needed).
+4. Container `envVars`: `FEX_EXP_FASTCONTINUE=1 FEX_EXP_SKIP_CALLRET_RESET=1` and `WINEDEBUG=-all`. Whether 0009
+   (`FEX_EXP_SKIP_CALLRET_RESET=1`) is needed is not tested yet.
 5. For the controls: the Thor's controller set to Xbox style (Thor settings), and in the game Settings, Controls,
    input set to Gamepad. To swap A/B and X/Y for this game only, GameNative's in-game Quick Menu, Controller tab,
    Edit Physical Controller, binding A to gamepad B, B to A, X to Y and Y to X (confirmed by the user on the Thor). In the tested run the game then quit by itself (log: `Requesting game quit with reason:
@@ -174,6 +174,8 @@ below was needed to run the game; they stay as notes and were not tested further
 
 ## Next actions
 
+0. **Run without patch 0009.** Remove `FEX_EXP_SKIP_CALLRET_RESET=1` in GameNative's Environment tab (not in the
+   file, see the trap below) and judge a run past 15 minutes.
 1. **Speed.** The game's EXE has no volatile metadata (`VolatileMetadataPointer` 0 in its load config), so FEX
    emulates x86 memory ordering (TSO) on every memory access. Test `FEX_TSOENABLED=0` for speed and stability. Also
    find what the main thread's about 3,000 short waits per second are (FEX locks or the game's own job system).
@@ -198,6 +200,10 @@ and [WINE-GAPS.md](docs/WINE-GAPS.md).
   container config is silently ignored; `envVars` *is* honoured.
 - **Anything relying on "the patched ntdll" is void** — it was never loaded.
 - **`C06T13R-1X-*` is server connectivity**, not file integrity, and does not prevent playing.
+- **A container saved from GameNative's UI gets GameNative's own copy of `envVars`.** On 2026-10-07 an
+  `envVars` edit made in `.container` from Wine (10:20) was undone when the FEXCore Version was changed and saved
+  in the container editor (10:31): the next two runs still had the removed variable. Change environment variables
+  in the editor's Environment tab when the editor is used, and read `.container` back before a judged run.
 - **Debug channels left in the container config slow every later run.** Check
   `findstr /c:"WINEDEBUG" "Z:\home\xuser\.container"` before any judged run
   ([WINEDEBUG-LEFTOVER.md](docs/WINEDEBUG-LEFTOVER.md)).
@@ -217,7 +223,7 @@ and [WINE-GAPS.md](docs/WINE-GAPS.md).
 | Wine | `proton-11.0-99-arm64ec` |
 | CPU emulator | FEXCore; container variant `bionic` |
 | FEX DLL in use | `C:\windows\system32\libarm64ecfex.dll` built from FEX `7d3090f` + patches 0002, 0004, 0006, 0007, 0009, 0010 (SHA-1 `86d6da39`), installed by GameNative from the FEXCore content `aoe-fastcontinue-10` |
-| FEX switches | `FEX_EXP_FASTCONTINUE=1` in the container `envVars` (since 10:50; before, also `FEX_EXP_SKIP_CALLRET_RESET=1`) |
+| FEX switches | `FEX_EXP_FASTCONTINUE=1 FEX_EXP_SKIP_CALLRET_RESET=1` in the container `envVars` |
 | DX wrapper | VKD3D (vkd3d-proton 2.14.1 + DXVK 2.4.1-gplasync) |
 | GPU driver | Turnip v26.2.0 R4 |
 | Executable | `RelicCardinal.exe` (set by hand after import) |
@@ -269,7 +275,7 @@ note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch
 
 | Path | What it is |
 |---|---|
-| [`patches/fex/`](patches/fex) | 0002 hides the CPUID vendor; 0004 hides the SMC trap from guest queries (works; does not stop the kill); 0006 makes a raw x64 `syscall` return registers like hardware (works; does not stop the kill); 0007 rewrites exported `FF 25` thunks so the game's hook check passes (moves the stop from ~3 to ~9 minutes); 0008 dumps the decoded code of the protection's range (analysis tool); 0009 skips the per-thread call-ret discard on each SMC fault (unsafe experiment; with 0007 it reached the first menu); 0010 resumes x64 code after an exception without Wine's wineserver round trip (with 0007 the game is playable past 15 minutes, with or without 0009). 0001/0003 stop the game at start-up. |
+| [`patches/fex/`](patches/fex) | 0002 hides the CPUID vendor; 0004 hides the SMC trap from guest queries (works; does not stop the kill); 0006 makes a raw x64 `syscall` return registers like hardware (works; does not stop the kill); 0007 rewrites exported `FF 25` thunks so the game's hook check passes (moves the stop from ~3 to ~9 minutes); 0008 dumps the decoded code of the protection's range (analysis tool); 0009 skips the per-thread call-ret discard on each SMC fault (unsafe experiment; with 0007 it reached the first menu); 0010 resumes x64 code after an exception without Wine's wineserver round trip (with 0007 and 0009 the game is playable past 15 minutes; a run without 0009 is still to be made). 0001/0003 stop the game at start-up. |
 | [`patches/box64/`](patches/box64) | Against GameNative's Box64 (`Pipetto-crypto` `eb6fb21f`), in order: 0001 decode SSE/AVX stores so write faults reach Wine as writes; 0002 keep the guest's execute permission on `noexec` storage; 0003 send raw Windows syscalls to Wine's dispatcher when Wine installed no seccomp handler (39-bit address space). With all three, `proton-11.0-1-x86_64` runs the game to `Config File` ([BOX64-ROUTE.md](docs/BOX64-ROUTE.md)). |
 | [`patches/proton-arm64ec-ntdll/`](patches/proton-arm64ec-ntdll) | Two binary patches for the ARM64EC `ntdll.dll` (`invoke_arm64ec_syscall` register fix; `--waitq` spinlock fix). |
 | [`patches/gamenative/`](patches/gamenative) | Fresh Steam ticket per launch. Not built or tested. |
