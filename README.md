@@ -86,9 +86,8 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
 
 ## Next actions
 
-1. **Try the game through x86-64 Wine under Box64** instead of ARM64EC Wine + FEX. It splits the problem: if
-   Aegis accepts it, the trigger is specific to ARM64EC. The repo records an earlier Box64 attempt only as
-   "6× slower than Rosetta" (EXPERIMENTS.md); whether the kill fired there is not recorded.
+1. ~~Try x86-64 Wine under Box64~~ **Tried 2026-10-06: blocked.** Both x86-64 Protons die within seconds
+   of start, long before the kill window ([BOX64-ROUTE.md](docs/BOX64-ROUTE.md)).
 2. **Trace what Aegis asks the OS.** Patch 0004 already filters every syscall in the process; extend it to log
    syscalls whose x64 caller lies in Aegis's region (`+0x3e40000..+0x3f90000`), then compare with the same
    trace where the game works (the Mac, or Proton on x86-64). The first difference points at the check.
@@ -183,6 +182,7 @@ and what did not. Then:
 | [`SMC-CONFIRMED.md`](docs/SMC-CONFIRMED.md) | **CONFIRMED on hardware:** FEX removes write permission from a guest page the moment it translates code in it — `RWX` becomes `RX` with no request from the guest. |
 | [`CONTAINER-WONT-START.md`](docs/CONTAINER-WONT-START.md) | **How the container was fixed**, and the two things that were NOT the cause (a locked device, and the MapGen message). Also the rename-a-mapped-DLL trick. |
 | [`KILL-STILL-OPEN.md`](docs/KILL-STILL-OPEN.md) | Historical: the pre-SMC state of the kill question. **Superseded** by SMC-CONFIRMED / FIX-VERIFIED. |
+| [`BOX64-ROUTE.md`](docs/BOX64-ROUTE.md) | x86-64 Wine under Box64: both Protons die within seconds (an execute fault at the game's `ucrtbase.dll` entry; a flood of illegal-instruction exceptions inside Aegis's region). Blocked before the kill window. |
 | [`SMC-TRAP-HIDDEN.md`](docs/SMC-TRAP-HIDDEN.md) | **The SMC trap is not the trigger.** Patch 0004 hides it (verified), and the kill still fires in 5 of 5 runs; in-game counters show no query ever touched a trapped page. Fix vs control table. |
 | [`KILL-REMEASURED.md`](docs/KILL-REMEASURED.md) | **The kill on the clean baseline**, measured with `suspinfo`: timeline, suspend counts, timing after `errno=10038`. Also why the no-trap build and `SMCChecks=full` both stop at start-up (shared factor: full-SMC validation). |
 | [`WINEDEBUG-LEFTOVER.md`](docs/WINEDEBUG-LEFTOVER.md) | **Why the evening runs stalled**: leftover debug channels. The A/B, the corrected claims (MapGen, "stock" FEX), and the FEX setup as measured. |

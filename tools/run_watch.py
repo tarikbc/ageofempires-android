@@ -107,7 +107,13 @@ def launch():
     time.sleep(1)
     sh("am start -n app.gamenative/.MainActivityAliasDefault")
     time.sleep(12)
-    sh("input -d 0 tap 723 297")  # AoE IV card
+    # Tap the card by its title: the library's first ("Recommended") card changes, so positions move.
+    try:
+        from gn_nav import GN
+        GN(SERIAL or None).tap_text("Age of Empires IV: Anniversary Edition")
+    except Exception as e:  # fall back to the usual position
+        print(f"card by title failed ({e}); tapping its usual position", flush=True)
+        sh("input -d 0 tap 723 297")
     time.sleep(4)
     sh("input -d 0 tap 206 536")  # Play
     print(f"[{time.strftime('%H:%M:%S')}] Play tapped", flush=True)

@@ -22,6 +22,7 @@ the kill *suspends* the threads and leaves the process hung, so `ps` still shows
 | Healthy backend session for the whole run | **Still died** — so session loss is not causal |
 | Hide FEX's SMC trap from the guest (patch 0004: `NtQueryVirtualMemory` and `NtProtectVirtualMemory` report the guest's own protection; trap still armed, verified with `smctest2`) | **Killed 5 of 5.** In-game counters: 732,206 queries filtered, 0 touched a trapped page. [SMC-TRAP-HIDDEN.md](SMC-TRAP-HIDDEN.md) |
 | No session drop (`errno=10038` absent in runs 4 and A1, 2026-10-06) | Killed on time anyway |
+| x86-64 Wine under Box64 (`proton-11.0-1-x86_64`, `proton-10.0-4-x86_64`) | **Blocked, not a result:** dies within seconds (execute fault at `ucrtbase.dll`'s entry; or in `Config File` after 16,394 illegal-instruction exceptions). [BOX64-ROUTE.md](BOX64-ROUTE.md) |
 | `SMCChecks`: `none` | Exits ~2 min |
 | `SMCChecks`: `full` | Hangs at launch from Play (config dated 00:12 on 2026-10-06, before the round-17 debug channels; reproduced on the clean baseline at 21:13). Note: full mode keeps the trap armed in this FEX revision. |
 | `SMCChecks`: `mtrack` (default) | The freeze described here |
