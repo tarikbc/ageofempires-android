@@ -7,21 +7,20 @@ Device: AYN Thor (Snapdragon 8 Gen 2, Adreno 740, 16 GB, Android 13). Game build
 game 2–4.5 minutes in. The user owns the game, so the aim is to make the protection *accept* this
 environment — not to strip it out.
 
-**Where we are (2026-10-06, latest):** the root cause of the kill is **found and fixed in FEX, and the
-fix is verified** — but it regresses the game, so it is not deployed. Details:
+**Where we are (2026-10-06, 21:10):**
 
-- **The kill mechanism is identified.** FEX removes write permission from the guest's own writable
-  executable pages to trap self-modifying code, and never hides it — so a page the guest set to
-  `PAGE_EXECUTE_READWRITE` reads back as `PAGE_EXECUTE_READ`. **Confirmed on hardware**
-  ([SMC-CONFIRMED.md](docs/SMC-CONFIRMED.md)). Aegis calls `NtQueryVirtualMemory` **35,248 times per
-  run**, which is what such a check looks for.
-- **A FEX patch hides the trap and is verified to work** — `smctest` reports `RWX` where stock reports
-  `RX`. **But the patched build regresses the game**: stock FEX reaches `MapGen` and writes a fresh log;
-  the patched build produces no log at all. `ForceFullSMCDetection` is not a sufficient replacement for
-  the trap. Stock FEX is restored. See [FIX-VERIFIED.md](docs/FIX-VERIFIED.md).
-- **The game currently reaches `MapGen`** and stops there with an info-level data-validation message
-  (no `(E)` lines anywhere). Whether the kill still ends the run is **not yet measured** — the thread
-  states at the moment of death have not been captured.
+- **The kill is measured on a clean baseline.** With `WINEDEBUG=-all` the game loads to `GEWorld` in under
+  three minutes. 41 to 47 s after the backend session drops (`errno=10038`), 60 of its 61 threads go to
+  Windows suspend count 1 and the kill thread (`RelicCardinal.exe+0x3e69304`) spins on one core. The log
+  never grows again. See [KILL-REMEASURED.md](docs/KILL-REMEASURED.md).
+- **The evening runs (19:52 to 20:29) were slowed by leftover debug channels.** The container still had
+  `WINEDEBUG=+thread,+sync,+virtual,+timestamp,+tid` from round 17. With it, a run stopped in
+  `Property Bag Manager`; without it, the same step took 22 s. The "MapGen wall" was a misreading: that
+  message appears in every run that gets further. See [WINEDEBUG-LEFTOVER.md](docs/WINEDEBUG-LEFTOVER.md).
+- **FEX leaks its SMC write trap to the guest** (confirmed on hardware,
+  [SMC-CONFIRMED.md](docs/SMC-CONFIRMED.md)). Whether Aegis acts on it is **not shown**: the one build that
+  hides the trap (patches 0001 + 0003) hangs at the exe entry point inside FEX's invalidation tracker,
+  re-tested on the clean baseline, so the game never runs with the trap hidden.
 
 Read [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) first: it is the ledger of what was tried and what
 happened, including the traps that produced wrong conclusions.
@@ -70,7 +69,7 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
    `NtQueryVirtualMemory` — so the guest is told its own code page is read-only when it set it
    read-write. Aegis calls `NtQueryVirtualMemory` **35,248 times per run**. This explains the kill's
    indifference to everything environmental, the exact `SMCChecks` sensitivity (`none` → no trap but no
-   invalidation → exits at 2 min; `full` → correct but too slow to launch), why the Mac passes, and why
+   invalidation → exits at 2 min; `full` → hangs at launch, cause not measured), why the Mac passes, and why
    byte-comparing probes saw a stable image (it is a *protection* change). **Fix:** intercept
    `NtQueryVirtualMemory` and report the untrapped protection. See
    [SMC-HYPOTHESIS.md](docs/SMC-HYPOTHESIS.md).
@@ -81,12 +80,16 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
 
 ## Next actions
 
-1. **Ghidra the xxHash64 callers** — recover the hashed range and expected hash. Then either patch the
-   stored hash or make the region match. *(This is the repo's long-standing stated next step; tooling is
-   on the Mac.)*
-2. **Deploy the waitq ntdll properly** — needs a `Proton`-type `.wcp`; config editing cannot do it.
-   Verify with `selfchk`/`ntdllcheck` that the **mapped** ntdll carries the patch, then run the test.
-3. **Fix `ThreadHideFromDebugger`** in Wine's unix side.
+1. **Hide the trap without `ForceFullSMCDetection`.** Keep FEX's trap and correct what the guest reads
+   back: report `PAGE_EXECUTE_READWRITE` from `NtQueryVirtualMemory` (and as the old protection from
+   `NtProtectVirtualMemory`) for pages FEX trapped. FEX already maps x64 ntdll entry points to their
+   ARM64EC code (`NtDllRedirectionLUT` in `Source/Windows/ARM64EC/Module.cpp`), which is where a wrapper
+   would go. Needs a FEX rebuild ([BUILDING-FEX.md](docs/BUILDING-FEX.md)).
+2. **Re-test `SMCChecks=full` on the clean baseline**, and if it hangs, capture `tstack` to see whether it
+   stops in the same FEX code as the no-trap build.
+3. **Ghidra the xxHash64 callers**: recover the hashed range and expected hash.
+4. **Deploy the waitq ntdll properly** (needs a `Proton`-type `.wcp`), and **fix `ThreadHideFromDebugger`**
+   in Wine's unix side.
 
 ## Traps (each cost real time)
 
@@ -98,6 +101,13 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
   container config is silently ignored; `envVars` *is* honoured.
 - **Anything relying on "the patched ntdll" is void** — it was never loaded.
 - **`C06T13R-1X-*` is server connectivity**, not file integrity, and does not prevent playing.
+- **Debug channels left in the container config slow every later run.** Check
+  `findstr /c:"WINEDEBUG" "Z:\home\xuser\.container"` before any judged run
+  ([WINEDEBUG-LEFTOVER.md](docs/WINEDEBUG-LEFTOVER.md)).
+- **Find the game by process NAME.** `explorer.exe` and `winhandler.exe` carry the game's path in their
+  arguments, and a match on arguments picks `explorer` first.
+- **`tctx` suspends the thread it reads**, and it can hang there, leaving the thread at suspend count 1.
+  Use `suspinfo` (no suspend) to judge a kill.
 
 ## Setup that works
 
@@ -105,10 +115,11 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
 |---|---|
 | Wine | `proton-11.0-99-arm64ec` |
 | CPU emulator | FEXCore; container variant `bionic` |
+| FEX DLL in use | `C:\windows\system32\libarm64ecfex.dll`, SHA-1 `460568b8` (CPUID-patched). The selected FEXCore Version, `ntdll-waitq-fix-1`, installs only an `ntdll.dll`, so this file is a leftover from earlier installs |
 | DX wrapper | VKD3D (vkd3d-proton 2.14.1 + DXVK 2.4.1-gplasync) |
 | GPU driver | Turnip v26.2.0 R4 |
 | Executable | `RelicCardinal.exe` (set by hand after import) |
-| Wine debug | Off — see below |
+| Wine debug | `WINEDEBUG=-all` in `envVars` (set 2026-10-06 20:49). The session started from it does not define `WINEDEBUG` at all (read with `set` at 21:10), so no trace channels are on |
 
 **Debug output slows the game.** Turn it off in Settings → Debug, in the container Environment tab, and
 note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch is off.
@@ -124,6 +135,9 @@ note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch
 - **Container config:** `Z:\home\xuser\.container` — editable from inside Wine; `envVars` is honoured.
 - **Per-game FEX settings:** `Z:\home\xuser\.fex-emu\AppConfig\RelicCardinal.exe.json`.
 - **Emulator DLL name:** set by `HKLM\Software\Microsoft\Wow64\amd64`.
+- **Judge a run:** [`tools/run_watch.py`](tools/run_watch.py) `--launch` restarts GameNative, taps Play,
+  copies `warnings.log` every 10 s and runs `suspinfo` every 20 s through
+  [`tools/thor/mon.bat`](tools/thor/mon.bat) (push it to `D:\mon.bat`), and writes a timeline.
 - **Probes:** [`tools/probes`](tools/probes) (`build.sh` builds all), each writing to `D:\` — `tctx`,
   `tstack`, `suspinfo`, `waitq`, `stk`, `stkscan`, `vq`, `vmmap`, `netprobe`, `selfchk`.
 
@@ -152,7 +166,9 @@ and what did not. Then:
 | [`SMC-CONFIRMED.md`](docs/SMC-CONFIRMED.md) | **CONFIRMED on hardware:** FEX removes write permission from a guest page the moment it translates code in it — `RWX` becomes `RX` with no request from the guest. |
 | [`CONTAINER-WONT-START.md`](docs/CONTAINER-WONT-START.md) | **How the container was fixed**, and the two things that were NOT the cause (a locked device, and the MapGen message). Also the rename-a-mapped-DLL trick. |
 | [`KILL-STILL-OPEN.md`](docs/KILL-STILL-OPEN.md) | Historical: the pre-SMC state of the kill question. **Superseded** by SMC-CONFIRMED / FIX-VERIFIED. |
-| [`FIX-VERIFIED.md`](docs/FIX-VERIFIED.md) | **The Aegis kill is gone.** With the patched FEX the game runs 10+ minutes instead of ~2, and reaches `MapGen` instead of `[Property Bag Manager]`. The game is not yet playable — it stops at MapGen with a texture validation error. |
+| [`KILL-REMEASURED.md`](docs/KILL-REMEASURED.md) | **The kill on the clean baseline**, measured with `suspinfo`: timeline, suspend counts, timing after `errno=10038`. Also the no-trap FEX build hanging inside FEX's invalidation tracker. |
+| [`WINEDEBUG-LEFTOVER.md`](docs/WINEDEBUG-LEFTOVER.md) | **Why the evening runs stalled**: leftover debug channels. The A/B, the corrected claims (MapGen, "stock" FEX), and the FEX setup as measured. |
+| [`FIX-VERIFIED.md`](docs/FIX-VERIFIED.md) | Historical. The `smctest` result for the no-trap build stands; its run results were measured with the debug channels on. Read WINEDEBUG-LEFTOVER.md first. |
 | [`DEATH-IS-NOT-THE-KILL.md`](docs/DEATH-IS-NOT-THE-KILL.md) | **Retracted** — the thread-state method it is based on cannot detect Wine's `SuspendThread` at all, so it proves nothing either way. Kept for the correction and for the correct instrument (`tools/probes/suspinfo.c`). |
 | [`BUILDING-FEX.md`](docs/BUILDING-FEX.md) | Building ARM64EC FEX on macOS: toolchain, the three macOS problems that abort configure, and the artifact. The patched `libarm64ecfex.dll` builds successfully. |
 | [`UPSTREAM-FEX-ISSUE.md`](docs/UPSTREAM-FEX-ISSUE.md) | Draft FEX issue: the SMC write trap is observable by the guest through `NtQueryVirtualMemory`, with a game-independent reproducer and a suggested fix. |

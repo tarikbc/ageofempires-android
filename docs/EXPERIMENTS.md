@@ -21,7 +21,7 @@ the kill *suspends* the threads and leaves the process hung, so `ps` still shows
 | Debugger signals (`KdDebuggerEnabled`, `OutputDebugString`, `NtQueryObject`) | All correct under Wine |
 | Healthy backend session for the whole run | **Still died** — so session loss is not causal |
 | `SMCChecks`: `none` | Exits ~2 min |
-| `SMCChecks`: `full` | Hangs at launch from Play |
+| `SMCChecks`: `full` | Hangs at launch from Play (config dated 00:12 on 2026-10-06, before the round-17 debug channels) |
 | `SMCChecks`: `mtrack` (default) | The freeze described here |
 
 ## Void — the test never ran
@@ -29,6 +29,7 @@ the kill *suspends* the threads and leaves the process hung, so `ps` still shows
 | Tried | Why it proves nothing |
 |---|---|
 | "Original vs patched Wine `ntdll`" | The **mapped** ntdll is pristine; Wine loads its own tree's ntdll, not `system32`'s. Both patches have never executed. Any conclusion from this is worthless. |
+| Evening runs, 19:52 to 20:29 on 2026-10-06 ("patched FEX regresses", "the wall is MapGen", the X-connection reading) | Launched with leftover `WINEDEBUG=+thread,+sync,+virtual,+timestamp,+tid` from round 17, which slowed the game until it stalled in `Property Bag Manager`. See [WINEDEBUG-LEFTOVER.md](WINEDEBUG-LEFTOVER.md). |
 
 ## Confirmed working (infrastructure)
 
@@ -62,6 +63,15 @@ the kill *suspends* the threads and leaves the process hung, so `ps` still shows
 **And the root cause was self-inflicted:** an earlier attempt to switch Proton versions left the container
 pointing at a tree that was never installed.
 
+## Measured on the clean baseline (2026-10-06, `WINEDEBUG=-all`)
+
+| Run | FEX DLL | Result |
+|---|---|---|
+| 20:51 | `460568b8` (CPUID-patched, SMC trap present) | Loads to `GEWorld`. Session drops at 20:53:47 (`errno=10038`, `1006`). Kill between 20:54:28 and 20:54:34: 60 threads at suspend 1, kill thread `+0x3e69304` spinning. Log frozen at 89,477 bytes. |
+| 20:58 | `b4dbf32d` (no-trap, patches 0001 + 0003) | Never starts: one Windows thread (main, at the exe entry point), 0 % CPU, no log, for 3+ minutes. Its stack is inside FEX's `InvalidationTracker`. |
+
+Details in [KILL-REMEASURED.md](KILL-REMEASURED.md).
+
 ## Fixed along the way
 
 | Problem | Fix |
@@ -70,6 +80,7 @@ pointing at a tree that was never installed.
 | D3D12: "No adapter found which supports Direct3D 12" | Use the VKD3D wrapper, not DXVK alone |
 | Stale Steam ticket (GameNative bug) | Delete `<game>/.steam_coldclient_used` per launch, or enable Bionic Steam |
 | `12152`/`12157` / `XAL_TELEMETRY` errors | **Noise.** They are Xbox Live calls, downstream of the asio failure. The endpoints answer fine from Wine. |
+| Runs stalling in `Property Bag Manager` (evening of 2026-10-06) | Leftover `WINEDEBUG` channels in `envVars`. Set both config copies to `WINEDEBUG=-all`; the next run took 22 s for that step and loaded to `GEWorld`. |
 
 
 ## Launch-path trap: a direct launch is not a real run

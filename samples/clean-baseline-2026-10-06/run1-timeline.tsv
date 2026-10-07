@@ -1,0 +1,11 @@
+t_s	threads	cpu_pct	log_bytes	growing	susp	killer	step	last
+4	17		2967				Loading step: [InitReflectSystem]	(I) [20:51:46.591] [000000312]: Loading step: [InitReflectSystem]
+18	17	0	14779	yes	s0:17	killer tid=0174 susp=0 user=0ms	Loading step: [Property Bag Manager]	(I) [20:51:57.745] [000000312]: UTIL -- Failed to Load BinaryConfig file: 'data:art\fx\fx_objects\fx_campfire\fx_campfire.simbox', error: 'U
+98	76		66946				Loading step: [IEngineInitializable]	(I) [20:52:47.541] [000000312]: SteamAuth received ticket at t=19905488
+112	77	162	77794	yes	s0:67	killer tid=0174 susp=0 user=0ms	Loading step: [IEngineInitializable]	(I) [20:53:32.006] [000000312]: GetPartyStatsByID found 1 teams for user ID 4851727
+156	77	207	80315	yes			Loading step: [IEngineInitializable]	(I) [20:53:47.340] [000000532]: WebSocketConnection::Process: Creating a websocket connection; host=dr-activerelease1-api.worldsedgelink.com
+170	71	-737	89477	yes	s0:1,s1:60	killer tid=0174 susp=0 user=4350ms	Loading step: [GEWorld]	(E) [20:54:27.992] [000000972]: HTTPCLIENT: HCHttpCallPerform [ID 11] [TID 972l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=5 dwError=12
+214	71	100	89477	NO			Loading step: [GEWorld]	(E) [20:54:27.992] [000000972]: HTTPCLIENT: HCHttpCallPerform [ID 11] [TID 972l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=5 dwError=12
+228	71	100	89477	NO	s0:1,s1:60	killer tid=0174 susp=0 user=62420ms	Loading step: [GEWorld]	(E) [20:54:27.992] [000000972]: HTTPCLIENT: HCHttpCallPerform [ID 11] [TID 972l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=5 dwError=12
+272	71	100	89477	NO			Loading step: [GEWorld]	(E) [20:54:27.992] [000000972]: HTTPCLIENT: HCHttpCallPerform [ID 11] [TID 972l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=5 dwError=12
+286	71	100	89477	NO	s0:1,s1:60	killer tid=0174 susp=0 user=120560ms	Loading step: [GEWorld]	(E) [20:54:27.992] [000000972]: HTTPCLIENT: HCHttpCallPerform [ID 11] [TID 972l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=5 dwError=12
