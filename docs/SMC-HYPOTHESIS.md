@@ -1,5 +1,9 @@
 # FEX leaks its self-modifying-code trap to the guest — and Aegis is watching for it
 
+> **Ruled out (2026-10-06, 22:30).** Tested directly: with the trap hidden from the guest the kill still
+> fires (5 of 5 runs). See [SMC-TRAP-HIDDEN.md](SMC-TRAP-HIDDEN.md). The mechanism below is real; the
+> link to the kill is not.
+
 Lead hypothesis, with the mechanism located in FEX source. It explains every observation that nothing
 else did.
 

@@ -1,0 +1,11 @@
+t_s	threads	cpu_pct	log_bytes	growing	susp	killer	step	last
+4	24		14226				Loading step: [Property Bag Manager]	(I) [22:14:35.781] [000000316]: Loading step: [Property Bag Manager]
+48	66	162	14779	yes	s0:17	killer tid=0178 susp=0 user=0ms	Loading step: [Property Bag Manager]	(I) [22:14:44.871] [000000316]: UTIL -- Failed to Load BinaryConfig file: 'data:art\fx\fx_objects\fx_campfire\fx_campfire.simbox', error: 'U
+62	77	224	66804	yes			Loading step: [IEngineInitializable]	(I) [22:15:34.150] [000000316]: UI Async loading data:ui\intro\pages\IntroVideoPage.xaml
+106	75	171	69769	yes	s0:67	killer tid=0178 susp=0 user=0ms	Loading step: [IEngineInitializable]	(I) [22:15:46.129] [000000316]: [PlayfabManager] : Playfab Login Succeeded
+120	75	170	77697	yes			Loading step: [IEngineInitializable]	(E) [22:16:26.745] [000000556]: HTTPCLIENT: HCHttpCallPerform [ID 6] [TID 556l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=5 dwError=121
+164	76	152	78266	yes	s0:66	killer tid=0178 susp=0 user=0ms	Loading step: [IEngineInitializable]	(E) [22:16:43.866] [000000556]: HTTPCLIENT: HCHttpCallPerform [ID 7] [TID 556l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=5 dwError=121
+178	73	214	86457	yes			Loading step: [Tuning Variant]	(E) [22:17:25.908] [000000524]: XAL_TELEMETRY: HTTP request 000000005E728570 failed with 0x80004005, system error code 2147954557, message:
+223	71	5	86602	yes	s0:1,s1:60	killer tid=0178 susp=0 user=70ms	Loading step: [Tuning Variant]	(E) [22:17:32.013] [000000996]: HTTPCLIENT: HCHttpCallPerform [ID 10] [TID 996l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=5 dwError=12
+237	71	0	86602	NO			Loading step: [Tuning Variant]	(E) [22:17:32.013] [000000996]: HTTPCLIENT: HCHttpCallPerform [ID 10] [TID 996l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=5 dwError=12
+281	71	0	86602	NO	s0:1,s1:60	killer tid=0178 susp=0 user=70ms	Loading step: [Tuning Variant]	(E) [22:17:32.013] [000000996]: HTTPCLIENT: HCHttpCallPerform [ID 10] [TID 996l] WINHTTP_CALLBACK_STATUS_REQUEST_ERROR dwResult=5 dwError=12

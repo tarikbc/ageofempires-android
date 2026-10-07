@@ -99,6 +99,18 @@ int main(void)
     fprintf(f, "  returned %d (expect 44)\n", r3);
     q("middle page after running", p);
 
+    fprintf(f, "\n[6] same page through a real handle to this process (OpenProcess + VirtualQueryEx)\n");
+    HANDLE self = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_OPERATION, FALSE, GetCurrentProcessId());
+    if (self) {
+        MEMORY_BASIC_INFORMATION m;
+        if (VirtualQueryEx(self, p, &m, sizeof(m)))
+            fprintf(f, "  %-40s Protect=%-4s (0x%02lx) (expect RWX)\n", "VirtualQueryEx", pn(m.Protect), m.Protect);
+        else
+            fprintf(f, "  VirtualQueryEx failed err=%lu\n", GetLastError());
+        CloseHandle(self);
+    } else
+        fprintf(f, "  OpenProcess failed err=%lu\n", GetLastError());
+
     fprintf(f, "\nEND\n");
     fclose(f);
     return 0;

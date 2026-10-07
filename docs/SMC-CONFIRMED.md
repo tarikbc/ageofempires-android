@@ -1,5 +1,9 @@
 # CONFIRMED: FEX leaks its SMC write trap to the guest
 
+> **Follow-up (2026-10-06, 22:30).** The leak is real, but it is not what triggers the Aegis kill: a FEX
+> build that hides it was still killed in 5 of 5 runs, and in-game counters show no query touched a
+> trapped page. See [SMC-TRAP-HIDDEN.md](SMC-TRAP-HIDDEN.md).
+
 Measured on the AYN Thor, in a live GameNative container, 2026-10-06.
 
 `tools/smctest.c` runs **inside the guest** (emulated by FEX), allocates a page as `PAGE_EXECUTE_READWRITE`,

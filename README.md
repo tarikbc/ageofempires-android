@@ -7,21 +7,22 @@ Device: AYN Thor (Snapdragon 8 Gen 2, Adreno 740, 16 GB, Android 13). Game build
 game 2–4.5 minutes in. The user owns the game, so the aim is to make the protection *accept* this
 environment — not to strip it out.
 
-**Where we are (2026-10-06, 21:10):**
+**Where we are (2026-10-06, 22:30):**
 
-- **The kill is measured on a clean baseline.** With `WINEDEBUG=-all` the game loads to `GEWorld` in under
-  three minutes. 41 to 47 s after the backend session drops (`errno=10038`), 60 of its 61 threads go to
-  Windows suspend count 1 and the kill thread (`RelicCardinal.exe+0x3e69304`) spins on one core. The log
-  never grows again. See [KILL-REMEASURED.md](docs/KILL-REMEASURED.md).
+- **The kill is measured on a clean baseline.** With `WINEDEBUG=-all` the game loads its menu world in under
+  three minutes. Then, 2 min 3 s to 3 min 2 s after start, every thread but one goes to Windows suspend
+  count 1 and the log never grows again. That happened in 8 of the 9 runs that got past start-up today; the
+  ninth (a control build) exited instead. The thread that does it starts at `RelicCardinal.exe+0x3e69304`.
+  See [KILL-REMEASURED.md](docs/KILL-REMEASURED.md) and [SMC-TRAP-HIDDEN.md](docs/SMC-TRAP-HIDDEN.md).
 - **The evening runs (19:52 to 20:29) were slowed by leftover debug channels.** The container still had
   `WINEDEBUG=+thread,+sync,+virtual,+timestamp,+tid` from round 17. With it, a run stopped in
   `Property Bag Manager`; without it, the same step took 22 s. The "MapGen wall" was a misreading: that
   message appears in every run that gets further. See [WINEDEBUG-LEFTOVER.md](docs/WINEDEBUG-LEFTOVER.md).
-- **FEX leaks its SMC write trap to the guest** (confirmed on hardware,
-  [SMC-CONFIRMED.md](docs/SMC-CONFIRMED.md)). Whether Aegis acts on it is **not shown**: the one build that
-  hides the trap (patches 0001 + 0003) stops at start-up on the clean baseline, and so does
-  `SMCChecks=full` with the trap still armed. The factor they share is full-SMC validation, so the game
-  has never run with the trap hidden.
+- **The SMC trap is not the trigger.** FEX does leak its write trap to the guest
+  ([SMC-CONFIRMED.md](docs/SMC-CONFIRMED.md)), but a FEX build that hides it (patch 0004, verified with
+  `smctest2`) was still killed in 5 of 5 runs. Inside the game, 732,206 memory queries passed the filter
+  and none touched a trapped page. See [SMC-TRAP-HIDDEN.md](docs/SMC-TRAP-HIDDEN.md).
+- **The session drop is not the trigger either.** Two runs had no `errno=10038` and were killed on time.
 
 Read [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) first: it is the ledger of what was tried and what
 happened, including the traps that produced wrong conclusions.
@@ -64,7 +65,10 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
    pass a fixed 192-byte high-entropy blob at RVA `0x56fbf40`. See
    [KILL-ANALYSIS.md](docs/KILL-ANALYSIS.md).
    *Test:* resolve the parameter flow (Ghidra) to recover the hashed range and the expected hash.
-2. **FEX leaks its self-modifying-code trap to the guest, and Aegis checks for exactly that.**
+2. **~~FEX leaks its self-modifying-code trap to the guest, and Aegis checks for exactly that.~~ Ruled
+   out 2026-10-06** ([SMC-TRAP-HIDDEN.md](docs/SMC-TRAP-HIDDEN.md)): with the trap hidden the kill still
+   fires (5 of 5), and no in-game query ever touched a trapped page. Original text kept below.
+   **FEX leaks its self-modifying-code trap to the guest, and Aegis checks for exactly that.**
    Under `SMCChecks=mtrack`, FEX re-protects the guest's RWX pages to `PAGE_EXECUTE_READ` to trap writes
    (`InvalidationTracker::GetTrapProt`), and it does **not** intercept the guest's
    `NtQueryVirtualMemory` — so the guest is told its own code page is read-only when it set it
@@ -82,14 +86,18 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
 
 ## Next actions
 
-1. **Hide the trap without `ForceFullSMCDetection`.** Keep FEX's trap and correct what the guest reads
-   back: report `PAGE_EXECUTE_READWRITE` from `NtQueryVirtualMemory` (and as the old protection from
-   `NtProtectVirtualMemory`) for pages FEX trapped. FEX already maps x64 ntdll entry points to their
-   ARM64EC code (`NtDllRedirectionLUT` in `Source/Windows/ARM64EC/Module.cpp`), which is where a wrapper
-   would go. Needs a FEX rebuild ([BUILDING-FEX.md](docs/BUILDING-FEX.md)).
-2. **Ghidra the xxHash64 callers**: recover the hashed range and expected hash.
-3. **Deploy the waitq ntdll properly** (needs a `Proton`-type `.wcp`), and **fix `ThreadHideFromDebugger`**
-   in Wine's unix side.
+1. **Try the game through x86-64 Wine under Box64** instead of ARM64EC Wine + FEX. It splits the problem: if
+   Aegis accepts it, the trigger is specific to ARM64EC. The repo records an earlier Box64 attempt only as
+   "6× slower than Rosetta" (EXPERIMENTS.md); whether the kill fired there is not recorded.
+2. **Trace what Aegis asks the OS.** Patch 0004 already filters every syscall in the process; extend it to log
+   syscalls whose x64 caller lies in Aegis's region (`+0x3e40000..+0x3f90000`), then compare with the same
+   trace where the game works (the Mac, or Proton on x86-64). The first difference points at the check.
+3. **Find what wakes the kill thread.** It sleeps (0 ms CPU) until 2 to 3 minutes in, then suspends every
+   thread within about 50 ms. Two threads share its entry `+0x3e69304` from the start. Capture its stack and
+   the code it runs at that moment (on the base binary it keeps spinning, so its code stays live).
+4. **Ghidra the xxHash64 callers**: recover the hashed range and expected hash.
+5. **Fix `ThreadHideFromDebugger`** in Wine's unix side, and **deploy the waitq ntdll properly** (needs a
+   `Proton`-type `.wcp`).
 
 ## Traps (each cost real time)
 
@@ -135,7 +143,12 @@ note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch
 - **Container config:** `Z:\home\xuser\.container` — editable from inside Wine; `envVars` is honoured.
 - **Per-game FEX settings:** `Z:\home\xuser\.fex-emu\AppConfig\RelicCardinal.exe.json`.
 - **Emulator DLL name:** set by `HKLM\Software\Microsoft\Wow64\amd64`.
-- **Judge a run:** [`tools/run_watch.py`](tools/run_watch.py) `--launch` restarts GameNative, taps Play,
+- **Compare FEX builds:** [`tools/ab_fex.py`](tools/ab_fex.py) installs each build in turn (rename trick,
+  hash checked) and judges a run on each. [`tools/smctest2.c`](tools/smctest2.c) shows whether the SMC trap
+  is visible and still catching rewrites; [`tools/probes/fexstats.c`](tools/probes/fexstats.c) reads patch
+  0004's counters from a live process.
+- **Judge a run:** [`tools/run_watch.py`](tools/run_watch.py) `--launch` restarts GameNative, taps Play
+  (and restarts the app if no game process appears within 90 s, for the "Syncing cloud saves" hang),
   copies `warnings.log` every 10 s and runs `suspinfo` every 20 s through
   [`tools/thor/mon.bat`](tools/thor/mon.bat) (push it to `D:\mon.bat`), and writes a timeline.
 - **Probes:** [`tools/probes`](tools/probes) (`build.sh` builds all), each writing to `D:\` — `tctx`,
@@ -145,6 +158,7 @@ note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch
 
 | Path | What it is |
 |---|---|
+| [`patches/fex/`](patches/fex) | 0002 hides the CPUID vendor; 0004 hides the SMC trap from guest queries (works; does not stop the kill). 0001/0003 stop the game at start-up. |
 | [`patches/box64/`](patches/box64) | Decode SSE/AVX stores so write faults reach Wine as writes. Worth upstreaming. |
 | [`patches/proton-arm64ec-ntdll/`](patches/proton-arm64ec-ntdll) | Two binary patches for the ARM64EC `ntdll.dll` (`invoke_arm64ec_syscall` register fix; `--waitq` spinlock fix). |
 | [`patches/gamenative/`](patches/gamenative) | Fresh Steam ticket per launch. Not built or tested. |
@@ -166,6 +180,7 @@ and what did not. Then:
 | [`SMC-CONFIRMED.md`](docs/SMC-CONFIRMED.md) | **CONFIRMED on hardware:** FEX removes write permission from a guest page the moment it translates code in it — `RWX` becomes `RX` with no request from the guest. |
 | [`CONTAINER-WONT-START.md`](docs/CONTAINER-WONT-START.md) | **How the container was fixed**, and the two things that were NOT the cause (a locked device, and the MapGen message). Also the rename-a-mapped-DLL trick. |
 | [`KILL-STILL-OPEN.md`](docs/KILL-STILL-OPEN.md) | Historical: the pre-SMC state of the kill question. **Superseded** by SMC-CONFIRMED / FIX-VERIFIED. |
+| [`SMC-TRAP-HIDDEN.md`](docs/SMC-TRAP-HIDDEN.md) | **The SMC trap is not the trigger.** Patch 0004 hides it (verified), and the kill still fires in 5 of 5 runs; in-game counters show no query ever touched a trapped page. Fix vs control table. |
 | [`KILL-REMEASURED.md`](docs/KILL-REMEASURED.md) | **The kill on the clean baseline**, measured with `suspinfo`: timeline, suspend counts, timing after `errno=10038`. Also why the no-trap build and `SMCChecks=full` both stop at start-up (shared factor: full-SMC validation). |
 | [`WINEDEBUG-LEFTOVER.md`](docs/WINEDEBUG-LEFTOVER.md) | **Why the evening runs stalled**: leftover debug channels. The A/B, the corrected claims (MapGen, "stock" FEX), and the FEX setup as measured. |
 | [`FIX-VERIFIED.md`](docs/FIX-VERIFIED.md) | Historical. The `smctest` result for the no-trap build stands; its run results were measured with the debug channels on. Read WINEDEBUG-LEFTOVER.md first. |
