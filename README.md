@@ -3,11 +3,54 @@
 Running AoE IV on an Android handheld with [GameNative](https://github.com/utkarshdalal/GameNative).
 Device: AYN Thor (Snapdragon 8 Gen 2, Adreno 740, 16 GB, Android 13). Game build 16.3.11308.
 
-**Goal:** the game's copy protection, **Aegis** (Relic's in-house virtualization/anti-tamper), stops the
-game 2–4.5 minutes in. The user owns the game, so the aim is to make the protection *accept* this
+**Goal:** the game's copy protection, **Aegis** (Relic's in-house virtualization/anti-tamper), stopped the
+game 2–4.5 minutes in (until 2026-10-07, see the status below). The user owns the game, so the aim is to make the protection *accept* this
 environment — not to strip it out.
 
-**Where we are (2026-10-07, 09:45):**
+## Status: it runs (2026-10-07)
+
+AoE IV runs on the Thor and can be played, with the Thor's controls, past the points where the protection used to
+stop it.
+
+| | |
+|---|---|
+| ![Main menu](docs/img/main-menu-2026-10-07.jpg) | ![Controller tutorial](docs/img/controller-tutorial-2026-10-07.jpg) |
+| Main menu, on screen at the first check, 2 min 43 s after the game process appeared | The game's controller UI (tutorial mission) |
+| ![Skirmish, 15 minutes in](docs/img/skirmish-15min-2026-10-07.jpg) | ![Match with controller UI, 15 minutes in](docs/img/controller-match-15min-2026-10-07.jpg) |
+| Skirmish with mouse UI, 15 minutes after launch | Match with the controller UI, 15 minutes after launch |
+
+**Validated runs:**
+
+- 09:27, job build `08172f64` (the patches below plus analysis code): watched for 1,514 s, the log last grew at
+  1,456 s; a Skirmish was being played 15 minutes in. The protection's loop cycle averaged about 1.1 s (10-cycle means
+  0.6 to 2.0 s) and its watchdog bucket was 0 at every check up to 1,469 s ([FAST-CONTINUE.md](docs/FAST-CONTINUE.md)).
+- 10:00, the exact repo patch set, build `86d6da39`: 8,200 continues/s took the fast path and 0 the slow one; past
+  15 minutes (917 s) the log was still growing and a match was being played with the controller UI.
+
+**What it takes (as tested):**
+
+1. GameNative 1.2.1 container: Wine `proton-11.0-99-arm64ec-1`, variant `bionic`, 64-bit emulator FEXCore.
+2. FEX `7d3090f` with [patches](patches/fex) 0002, 0004, 0006, 0007, 0009 and 0010 ([BUILDING-FEX.md](docs/BUILDING-FEX.md)).
+3. That `libarm64ecfex.dll` installed as `C:\windows\system32\libarm64ecfex.dll` from an "Open container"
+   session (rename the old file aside, then copy; `tools/ab_fex.py` does both). The FEXCore Version selected in
+   the Emulation tab must not ship a `libarm64ecfex.dll`, or GameNative writes its own over it at every start
+   ([GAMENATIVE-UI.md](docs/GAMENATIVE-UI.md)); these runs used `ntdll-waitq-fix-1`, a local content that ships
+   only an `ntdll.dll`.
+4. Container `envVars`: `FEX_EXP_FASTCONTINUE=1 FEX_EXP_SKIP_CALLRET_RESET=1`, and `WINEDEBUG=-all`.
+5. For the controls: the Thor's controller set to Xbox style (Thor settings), and in the game Settings, Controls,
+   input set to Gamepad. In the tested run the game then quit by itself (log: `Requesting game quit with reason:
+   Contrast Change`), and it had to be started again from GameNative.
+
+**Known limits:**
+
+- Speed: the user estimated about 20 FPS in a match. Measured at the same time: the GPU 56 to 68 % busy at
+  401 of 680 MHz, and the game's main thread on a CPU 0.66 s per second while it blocked about 3,600 times per
+  second (not on wineserver: 32 sync wake-ups/s). GameNative's power profile caps the CPU during a game
+  (cores 3 to 6 at 2.05 of 2.80 GHz, core 7 at 1.98 of 3.19 GHz).
+- Patch 0009 is unsafe in general; a run without it has not been made yet.
+- The FEX DLL is installed by hand, see step 3.
+
+## How we got here
 
 - **The game runs and is playable (2026-10-07, 09:42).** With FEX patches 0007, 0009 and 0010
   (`FEX_EXP_FASTCONTINUE=1`), the main menu was on screen 2 min 43 s after the game process appeared, and a
@@ -89,6 +132,11 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
 
 ## Open hypotheses, best first
 
+**Superseded (2026-10-07):** the two decisions that stopped the game were found and fixed: the start-up hook check
+([HOOK-CHECK.md](docs/HOOK-CHECK.md), patch 0007) and the watchdog on the protection's loop
+([WATCHDOG.md](docs/WATCHDOG.md), [FAST-CONTINUE.md](docs/FAST-CONTINUE.md), patch 0010). None of the hypotheses
+below was needed to run the game; they stay as notes and were not tested further.
+
 1. **Aegis hashes a memory region and compares it to an expected value.** Most likely `ntdll.dll`, whose
    bytes differ between Wine's ARM64EC build (Thor) and its x86-64 build (Mac/Rosetta) — which is
    exactly where the behaviour differs. **Located:** Aegis carries its own xxHash implementation at RVA
@@ -118,26 +166,20 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
 
 ## Next actions
 
-0. **Confirm the running setup with the exact repo patches and without 0009.** The playable runs used a job-local
-   FEX tree (0002, 0004, 0006, 0007, 0009, 0010 plus analysis experiments). Run the exact set
-   0002+0004+0006+0007+0009+0010 (it builds, `86d6da39`), then the same without 0009, which is unsafe in general
-   ([FAST-CONTINUE.md](docs/FAST-CONTINUE.md)). Then the game's controller UI (Settings, Controls, Gamepad, restart)
-   with GameNative's virtual gamepad.
-1. **x86-64 Wine under Box64** (the setup Rosetta and the Steam Deck use: an x86-64 ntdll). Blocked on
-   2026-10-06; on 2026-10-07 two Box64 patches got `proton-11.0-1-x86_64` through the game's start-up to
-   `Config File`, where it now dies after the protection's illegal-instruction phase. Its hook check (thread
-   `0178` in [KILL-TIMER.md](docs/KILL-TIMER.md)) reports a mismatch there that it never reports under FEX.
-   Next: find why that compare differs under Box64 ([BOX64-ROUTE.md](docs/BOX64-ROUTE.md)).
-2. **Find what the kill job decides.** Answered 2026-10-07: nothing wakes the kill thread; it sleeps for a
-   set time (200.7 s in the measured run) and then runs a job that, after a 150 ms call, enters the
-   suspend-all function with `0x0e00000000000000` ([KILL-TIMER.md](docs/KILL-TIMER.md)). Next: what that call
-   computes. `WINEDEBUG=+seh` traces the protection's control flow without changing it.
-3. **Trace what Aegis asks the OS.** Two FEX trace builds broke the game around thread creation
-   ([AEGIS-TRACE.md](docs/AEGIS-TRACE.md)); a narrower one (only the kill thread, only during its job) is the
-   way to see the 150 ms call's syscalls.
-4. **Ghidra the xxHash64 callers**: recover the hashed range and expected hash.
-5. **Fix `ThreadHideFromDebugger`** in Wine's unix side, and **deploy the waitq ntdll properly** (needs a
-   `Proton`-type `.wcp`).
+0. **Run without patch 0009** (`FEX_EXP_SKIP_CALLRET_RESET=1` removed). 0009 can leave a return prediction into old
+   code; with 0010 the loop may be fast enough without it.
+1. **Speed.** Try GameNative's in-game power profile (Performance) against the CPU caps above, and find what the
+   main thread's 3,600 blocks per second wait for (FEX locks or the game's own job system).
+2. **Install without hand work.** Ship the patched `libarm64ecfex.dll` as a FEXCore `.wcp` so GameNative installs
+   it itself, and turn 0010 on without an environment variable. Not built or tested yet.
+3. **Report upstream.** The wineserver round trip in GameNative/proton-wine's ARM64EC `NtGetContextThread`
+   (self-detection through `NtQueryInformationThread`) affects every program that handles exceptions under
+   ARM64EC; FEX could also avoid it as 0010 does.
+
+Earlier open questions (x86-64 Wine under Box64, the kill job's 150 ms call, the xxHash callers,
+`ThreadHideFromDebugger`, the waitq ntdll) are no longer needed to run the game; see
+[BOX64-ROUTE.md](docs/BOX64-ROUTE.md), [KILL-TIMER.md](docs/KILL-TIMER.md), [KILL-ANALYSIS.md](docs/KILL-ANALYSIS.md)
+and [WINE-GAPS.md](docs/WINE-GAPS.md).
 
 ## Traps (each cost real time)
 
@@ -167,7 +209,8 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
 |---|---|
 | Wine | `proton-11.0-99-arm64ec` |
 | CPU emulator | FEXCore; container variant `bionic` |
-| FEX DLL in use | `C:\windows\system32\libarm64ecfex.dll`, SHA-1 `460568b8` (CPUID-patched). The selected FEXCore Version, `ntdll-waitq-fix-1`, installs only an `ntdll.dll`, so this file is a leftover from earlier installs |
+| FEX DLL in use | `C:\windows\system32\libarm64ecfex.dll` built from FEX `7d3090f` + patches 0002, 0004, 0006, 0007, 0009, 0010 (SHA-1 `86d6da39`, installed by hand 2026-10-07). The selected FEXCore Version, `ntdll-waitq-fix-1`, installs only an `ntdll.dll`, so GameNative leaves this file alone |
+| FEX switches | `FEX_EXP_FASTCONTINUE=1 FEX_EXP_SKIP_CALLRET_RESET=1` in the container `envVars` |
 | DX wrapper | VKD3D (vkd3d-proton 2.14.1 + DXVK 2.4.1-gplasync) |
 | GPU driver | Turnip v26.2.0 R4 |
 | Executable | `RelicCardinal.exe` (set by hand after import) |
@@ -207,7 +250,7 @@ note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch
   `blkread` (copies patch 0008's block dump out of the game; `tools/blkparse.py` and `tools/blkmem.py` read it),
   `stkdump` (one thread's whole stack, for stale return addresses), `thunkprobe` (run as `RelicCardinal.exe`:
   counts the thunks patch 0007 rewrote), `cleancopy` (compares loaded system DLL exports with a fresh image
-  mapping), `exccost` (time of one handled exception, as the protection uses them), `affin` (lists a process's threads with start address, CPU time and affinity; can pin the threads that start at one address). `tools/dettable.py` decodes a `peek` dump of the hook-check table.
+  mapping), `exccost` (time of one handled exception, as the protection uses them), `affin` (lists a process's threads with start address, CPU time and affinity; can pin the threads that start at one address), `modbase` (base address of one module in a process, for `peek` at a FEX global), `xinputprobe` (which XInput pads Wine sees; on 2026-10-07 it saw pad 0 connected. Its state log showed no change in two windows where it is not known whether the controls were used). `tools/dettable.py` decodes a `peek` dump of the hook-check table.
 - **When the game exits instead of freezing, GameNative closes the container at once** (logcat: `Exit called:
   processes_exited` 34 ms after the game's window went away), so the 10 s log copies miss the end. `waitexit`
   copies the log at that moment. The game also keeps one `LogFiles\unhandled.<start time>.txt` per run
