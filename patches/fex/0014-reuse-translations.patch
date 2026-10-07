@@ -1,0 +1,186 @@
+--- a/FEXCore/include/FEXCore/Debug/InternalThreadState.h
++++ b/FEXCore/include/FEXCore/Debug/InternalThreadState.h
+@@ -116,6 +116,8 @@
+ 
+   // Guest RIP of the volatile-region block this thread entered last (see ContextImpl::CompileVolatileBlock).
+   uint64_t VolatileEntryRIP {};
++  // Hash of the guest bytes of the last decoded compile unit (see ContextImpl::TryReuseBlock).
++  uint64_t ReuseDecodeHash {};
+ 
+   uintptr_t JITGuardPage {};
+   uint64_t JITGuardOverflowArgument {};
+--- a/FEXCore/Source/Interface/Context/Context.h
++++ b/FEXCore/Source/Interface/Context/Context.h
+@@ -155,6 +155,7 @@
+   void AddVolatileCodeRegion(uint64_t Base, uint64_t Size) override;
+   bool IsVolatileCode(uint64_t Address) const override;
+   uintptr_t CompileVolatileBlock(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP);
++  uintptr_t TryReuseBlock(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, uint64_t MaxInst);
+   uint32_t ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadState* Thread, bool WasInJIT, const uint64_t* HostGPRs, uint64_t PSTATE) override;
+   void SetFlagsFromCompactedEFLAGS(FEXCore::Core::InternalThreadState* Thread, uint32_t EFLAGS) override;
+ 
+@@ -535,6 +536,14 @@
+   };
+   fextl::vector<VolatileCacheEntry> VolatileCache;
+   std::mutex VolatileCacheMutex;
++  struct ReuseEntry {
++    uint64_t Hash;
++    uintptr_t Host;
++    const void* Buffer;
++    uint64_t Generation;
++  };
++  fextl::unordered_map<uint64_t, ReuseEntry> ReuseCache;
++  std::mutex ReuseCacheMutex;
+ 
+   std::mutex CodeBufferListLock;
+   fextl::vector<std::weak_ptr<CPU::CodeBuffer>> CodeBufferList;
+--- a/FEXCore/Source/Interface/Core/Core.cpp
++++ b/FEXCore/Source/Interface/Core/Core.cpp
+@@ -133,6 +133,53 @@
+ } VolatileCodeStats = {0x3145444F434C4F56ULL, 0, {}, {}, 0, 0, 0, 0, {}, {}};
+ }
+ 
++// Experiment: reuse of translations when the same guest bytes come back (see TryReuseBlock).
++extern "C" {
++struct CodeReuseStatsT {
++  uint64_t Marker; // "REUSE001"
++  uint64_t Stored;
++  uint64_t Lookups;
++  uint64_t Hits;
++  uint64_t Mismatch;
++  uint64_t OtherBuffer;
++  uint64_t Clears;
++} CodeReuseStats = {0x3130304553554552ULL, 0, 0, 0, 0, 0, 0};
++}
++
++static bool CodeReuseEnabled() {
++  static const bool Enabled = [] {
++    const char* Value = getenv("FEX_EXP_REUSE");
++    return !Value || Value[0] != '0';
++  }();
++  return Enabled;
++}
++
++static uint64_t HashDecodedBlocks(const FEXCore::Frontend::Decoder::DecodedBlockInformation* BlockInfo) {
++  uint64_t H = 0x9E3779B97F4A7C15ULL ^ BlockInfo->Blocks.size();
++  auto Mix = [&H](uint64_t V) {
++    H ^= V;
++    H *= 0xff51afd7ed558ccdULL;
++    H ^= H >> 32;
++  };
++  for (const auto& Block : BlockInfo->Blocks) {
++    Mix(Block.Entry);
++    Mix(Block.Size);
++    const auto* P = reinterpret_cast<const uint8_t*>(Block.Entry);
++    uint64_t i = 0;
++    for (; i + 8 <= Block.Size; i += 8) {
++      uint64_t V;
++      memcpy(&V, P + i, sizeof(V));
++      Mix(V);
++    }
++    uint64_t Tail = 0;
++    if (i < Block.Size) {
++      memcpy(&Tail, P + i, Block.Size - i);
++    }
++    Mix(Tail ^ (Block.Size - i) << 56);
++  }
++  return H;
++}
++
+ struct GetFrameBlockInfoResult {
+   const CPU::CPUBackend::JITCodeHeader* InlineHeader;
+   const CPU::CPUBackend::JITCodeTail* InlineTail;
+@@ -579,6 +626,9 @@
+     Thread->FrontendDecoder->DecodeLoop(GuestCode);
+ 
+     const auto* BlockInfo = Thread->FrontendDecoder->GetDecodedBlockInfo();
++    if (CodeReuseEnabled()) {
++      Thread->ReuseDecodeHash = HashDecodedBlocks(BlockInfo);
++    }
+     const auto& CodeBlocks = BlockInfo->Blocks;
+ 
+     Thread->OpDispatcher->BeginFunction(GuestRIP, &CodeBlocks, BlockInfo->TotalInstructionCount, BlockInfo->Is64BitMode,
+@@ -1039,6 +1089,50 @@
+   return reinterpret_cast<uintptr_t>(CodePtr);
+ }
+ 
++// Puts back the translation of GuestRIP from the current code buffer when the guest bytes it was compiled from are back
++// (same decode, same hash). Returns 0 (decoder reset for a normal compile) otherwise.
++uintptr_t ContextImpl::TryReuseBlock(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, uint64_t MaxInst) {
++  if (Thread->CurrentFrame->State.flags[X86State::RFLAG_TF_RAW_LOC]) {
++    return 0;
++  }
++  ReuseEntry Entry;
++  {
++    std::scoped_lock lk(ReuseCacheMutex);
++    auto It = ReuseCache.find(GuestRIP);
++    if (It == ReuseCache.end()) {
++      return 0;
++    }
++    Entry = It->second;
++  }
++  __atomic_fetch_add(&CodeReuseStats.Lookups, 1, __ATOMIC_RELAXED);
++  if (Entry.Buffer != Thread->CPUBackend->GetCurrentCodeBufferPtr() || Entry.Generation != Thread->CPUBackend->GetCurrentCodeBufferGeneration()) {
++    __atomic_fetch_add(&CodeReuseStats.OtherBuffer, 1, __ATOMIC_RELAXED);
++    return 0;
++  }
++
++  Thread->FrontendDecoder->DecodeLoop(reinterpret_cast<const uint8_t*>(GuestRIP));
++  const auto* BlockInfo = Thread->FrontendDecoder->GetDecodedBlockInfo();
++  if (HashDecodedBlocks(BlockInfo) != Entry.Hash) {
++    __atomic_fetch_add(&CodeReuseStats.Mismatch, 1, __ATOMIC_RELAXED);
++    Thread->FrontendDecoder->SetupDecodeInstructionsAtEntry(Thread, GuestRIP, MaxInst);
++    return 0;
++  }
++
++  fextl::vector<uint64_t> CodePages(BlockInfo->CodePages.begin(), BlockInfo->CodePages.end());
++  for (auto CodePage : CodePages) {
++    if (Thread->LookupCache->AddBlockExecutableRange(Thread, BlockInfo->EntryPoints, CodePage, FEXCore::Utils::FEX_PAGE_SIZE)) {
++      SyscallHandler->MarkGuestExecutableRange(Thread, CodePage, FEXCore::Utils::FEX_PAGE_SIZE);
++    }
++  }
++  Thread->LookupCache->AddBlockMapping(Thread, GuestRIP, CodePages, reinterpret_cast<void*>(Entry.Host));
++  __atomic_fetch_add(&CodeReuseStats.Hits, 1, __ATOMIC_RELAXED);
++
++  Thread->FrontendDecoder->DelayedDisownBuffer();
++  Thread->FrontendDecoder->ValidateDisownedOrFree();
++  Thread->OpDispatcher->ValidateDisownedOrFree();
++  return Entry.Host;
++}
++
+ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_t GuestRIP, uint64_t MaxInst) {
+   if constexpr (BLOCK_DEBUGGING) {
+     // Block debugging logic is hand-written and needs to be handled with care.
+@@ -1071,6 +1165,12 @@
+   }
+ 
+   Thread->FrontendDecoder->SetupDecodeInstructionsAtEntry(Thread, GuestRIP, MaxInst);
++
++  if (CodeReuseEnabled()) {
++    if (auto Host = TryReuseBlock(Thread, GuestRIP, MaxInst)) {
++      return Host;
++    }
++  }
+ 
+   std::optional<ExecutableFileSectionInfo> Region = SyscallHandler->LookupExecutableFileSection(Thread, GuestRIP);
+   std::optional<DiskCache::CodeHitData> Hit;
+@@ -1207,6 +1307,19 @@
+     Thread->LookupCache->AddBlockMapping(Thread, GuestAddr, CodePages, HostAddr);
+   }
+ 
++  // Remember translations of code that can be rewritten, for TryReuseBlock.
++  if (CodeReuseEnabled() && NeedsAddGuestCodeRanges && !Thread->CurrentFrame->State.flags[X86State::RFLAG_TF_RAW_LOC] &&
++      SyscallHandler->QueryGuestExecutableRange(Thread, GuestRIP).Writable) {
++    std::scoped_lock lk(ReuseCacheMutex);
++    if (ReuseCache.size() >= 262144) {
++      ReuseCache.clear();
++      __atomic_fetch_add(&CodeReuseStats.Clears, 1, __ATOMIC_RELAXED);
++    }
++    ReuseCache[GuestRIP] = {Thread->ReuseDecodeHash, reinterpret_cast<uintptr_t>(CodePtr), Thread->CPUBackend->GetCurrentCodeBufferPtr(),
++                            Thread->CPUBackend->GetCurrentCodeBufferGeneration()};
++    __atomic_fetch_add(&CodeReuseStats.Stored, 1, __ATOMIC_RELAXED);
++  }
++
+   // Clear any relocations that might have been generated
+   if (!CodeCache.IsGeneratingCache) {
+     Thread->CPUBackend->ClearRelocations();

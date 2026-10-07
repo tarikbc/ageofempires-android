@@ -31,6 +31,10 @@ The parts, which also work alone:
 | Live graph | `tools/fpsgraph.py` | A frame-time graph in the Mac's browser, see below. |
 | Compare | `tools/framecmp.py CSV` | Splits a recording at the longest gap (a Quick Menu visit pauses the game) and compares before and after. |
 
+The player does nothing in these matches. The A.I. kills the idle villagers by about match minute 20 (seen at
+00:21:41 in one run) and can destroy the town (defeat at 00:19:51 in another), so windows up to minute 15 measure a
+running match; later ones may measure the end screen.
+
 ## Controller input from adb
 
 `tools/thor_pad.py` writes evdev events into the Thor's built-in controller, so the game (and GameNative) see them as
