@@ -10,8 +10,9 @@
 >   loading continues after it.
 > - **Wrong label:** "stock FEX" here is `libarm64ecfex.stock.dll`, SHA-1 `460568b8`, which is the
 >   CPUID-patched build, not stock.
-> - **Re-tested clean:** the no-trap build still does not start the game. It hangs at the exe entry point
->   inside FEX's invalidation tracker ([KILL-REMEASURED.md](KILL-REMEASURED.md)).
+> - **Re-tested clean:** the no-trap build still does not start the game, and `SMCChecks=full` with the trap
+>   armed stops the same way. The shared factor is full-SMC validation, not the trap removal
+>   ([KILL-REMEASURED.md](KILL-REMEASURED.md)).
 
 Corrected twice, both times after being wrong.
 

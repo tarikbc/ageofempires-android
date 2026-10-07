@@ -1,6 +1,6 @@
 # Clean-baseline runs, 2026-10-06
 
-Raw data behind [docs/KILL-REMEASURED.md](../../docs/KILL-REMEASURED.md). Both runs used
+Raw data behind [docs/KILL-REMEASURED.md](../../docs/KILL-REMEASURED.md). All runs used
 `WINEDEBUG=-all` and were driven by `tools/run_watch.py`.
 
 | File | What it is |
@@ -10,7 +10,10 @@ Raw data behind [docs/KILL-REMEASURED.md](../../docs/KILL-REMEASURED.md). Both r
 | `run1-log-excerpt.txt` | the loading steps, the `errno=10038` / `1006` lines and the last lines of the game's `warnings.log` (the full log holds account identifiers, so it is not committed) |
 | `run2-timeline.tsv` | 20:58 run, no-trap FEX `b4dbf32d` |
 | `run2-suspinfo.txt` | its `suspinfo` snapshots: one thread, the main thread |
-| `run2-tstack.txt` | the main thread's stack scan, which places it inside `libarm64ecfex.dll` |
+| `run2-tstack.txt` | the main thread's stack scan; its deepest entries are leftovers of a completed `InvalidationTracker` unlock, not the blocking point |
+| `run3-timeline.tsv` | 21:13 run, FEX `460568b8` with `SMCChecks=2` (full; trap still armed) |
+| `run3-suspinfo.txt` | its `suspinfo` snapshots: one thread, the main thread |
+| `run3-tstack.txt` | its stack scan, the same picture as run 2 |
 
 In `run1-timeline.tsv`, rows up to t=18 s took thread counts and CPU from the wrong process
 (`explorer.exe`); the tool was fixed during the run. The log sizes and suspend counts in those rows are

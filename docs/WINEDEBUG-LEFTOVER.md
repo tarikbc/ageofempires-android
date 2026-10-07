@@ -46,8 +46,8 @@ The 22.26 s matches run 16 from before round 17 (`PropertyBagManager Loaded in 2
   `aoe4-fixes.wcp`. The unpatched 2610-aoe build is `6f5f25f6d6f48501880614e77cfe4845e86f93fc`
   (`fexcore-2610-aoe.wcp`). The name came from a file that was already patched when it was renamed.
 - **"The patched build regresses the game"** was measured with the channels on. It was re-tested clean
-  in [KILL-REMEASURED.md](KILL-REMEASURED.md): the no-trap build still does not start the game, and the
-  hang is inside FEX.
+  in [KILL-REMEASURED.md](KILL-REMEASURED.md): the no-trap build still does not start the game, and
+  `SMCChecks=full` with the trap armed stops the same way.
 - The thread counts and the X-connection reading in [DEATH-IS-NOT-THE-KILL.md](DEATH-IS-NOT-THE-KILL.md)
   come from the 20:29 run, so they describe a run slowed by the channels.
 

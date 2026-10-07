@@ -21,7 +21,7 @@ the kill *suspends* the threads and leaves the process hung, so `ps` still shows
 | Debugger signals (`KdDebuggerEnabled`, `OutputDebugString`, `NtQueryObject`) | All correct under Wine |
 | Healthy backend session for the whole run | **Still died** — so session loss is not causal |
 | `SMCChecks`: `none` | Exits ~2 min |
-| `SMCChecks`: `full` | Hangs at launch from Play (config dated 00:12 on 2026-10-06, before the round-17 debug channels) |
+| `SMCChecks`: `full` | Hangs at launch from Play (config dated 00:12 on 2026-10-06, before the round-17 debug channels; reproduced on the clean baseline at 21:13). Note: full mode keeps the trap armed in this FEX revision. |
 | `SMCChecks`: `mtrack` (default) | The freeze described here |
 
 ## Void — the test never ran
@@ -68,7 +68,8 @@ pointing at a tree that was never installed.
 | Run | FEX DLL | Result |
 |---|---|---|
 | 20:51 | `460568b8` (CPUID-patched, SMC trap present) | Loads to `GEWorld`. Session drops at 20:53:47 (`errno=10038`, `1006`). Kill between 20:54:28 and 20:54:34: 60 threads at suspend 1, kill thread `+0x3e69304` spinning. Log frozen at 89,477 bytes. |
-| 20:58 | `b4dbf32d` (no-trap, patches 0001 + 0003) | Never starts: one Windows thread (main, at the exe entry point), 0 % CPU, no log, for 3+ minutes. Its stack is inside FEX's `InvalidationTracker`. |
+| 20:58 | `b4dbf32d` (no-trap, patches 0001 + 0003) | Never starts: one Windows thread (the main thread), 0 % CPU, no log, for 3+ minutes. |
+| 21:13 | `460568b8` with `SMCChecks=2` (full; trap still armed) | Same as 20:58: one Windows thread, 0 % CPU, no log. Removing the trap is not needed for this stop; full-SMC validation is the shared factor. |
 
 Details in [KILL-REMEASURED.md](KILL-REMEASURED.md).
 

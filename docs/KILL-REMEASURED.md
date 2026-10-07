@@ -1,6 +1,6 @@
 # The Aegis kill, measured on a clean baseline with the right instrument
 
-2026-10-06. Two runs, both launched by `tools/run_watch.py --launch` (force-stop GameNative, start it,
+2026-10-06. Three runs, both launched by `tools/run_watch.py --launch` (force-stop GameNative, start it,
 open AoE IV, tap Play) with `WINEDEBUG=-all` ([WINEDEBUG-LEFTOVER.md](WINEDEBUG-LEFTOVER.md)).
 
 `suspinfo` reads each thread's **Windows** suspend count (`NtQueryInformationThread(ThreadSuspendCount)`)
@@ -42,7 +42,7 @@ Where the 60 suspended threads were parked: 56 at ntdll wait sites (`+c63f4` 33,
 `+c5178` 4, `+c55d8` 1), 2 at addresses outside any module (one is the main thread), 1 in `win32u.dll`,
 1 in `mmdevapi.dll`.
 
-## Run 2 (20:58): the no-trap FEX build hangs inside FEX
+## Run 2 (20:58): the no-trap FEX build stops at start-up
 
 `libarm64ecfex.dll` replaced by `libarm64ecfex.notrap.dll` (SHA-1 `b4dbf32d`; patches 0001 and 0003; with it
 `smctest` reports `RWX`, see [FIX-VERIFIED.md](FIX-VERIFIED.md)). Swapped by rename inside a running
@@ -51,37 +51,56 @@ session, and the hash of the installed file was checked before the launch.
 For more than three minutes after Play:
 
 - 5 Linux threads, all `S`, 0 % CPU;
-- `suspinfo`: **one** Windows thread, the main thread (`start=RelicCardinal.exe+4fb0884`, the exe entry
-  point), suspend 0, user 490 ms;
+- `suspinfo`: **one** Windows thread, the main thread (`start=RelicCardinal.exe+4fb0884`), suspend 0,
+  user 490 ms;
 - no new `warnings.log` (its first line still named the 20:51 run).
 
-`tstack` on that thread, with the offsets resolved through the DLL's own COFF symbols (20,113 of them):
+The game never creates a second thread, so Aegis's kill thread never exists. This is a start-up hang, not
+the kill.
 
-| offset in `libarm64ecfex.dll` | symbol |
-|---|---|
-| `+3f1648`, `+3f1678` | data: `(anonymous namespace)::InvalidationTracker` +0x0 and +0x30 |
-| `+1aa25c` | `FEX::Windows::InvalidationTracker::HandleMemoryProtectionNotification` +0x174 |
-| `+183244` | `std::condition_variable::notify_all` +0x8 |
-| `+1cec60` | `std::__libcpp_condvar_broadcast` +0x10 |
-| `+1ceba0` | `std::__libcpp_recursive_mutex_unlock` +0x10 |
+## Run 3 (21:13): `SMCChecks=full` stops the same way, with the trap still armed
 
-A stack scan also collects stale values, so this places the thread in FEX's invalidation tracker but does
-not show which lock it waits on. What is established: the process stops at the exe entry point, inside
-FEX, at 0 % CPU, before the game creates a second thread. Aegis's kill thread never exists in this run,
-so this is a FEX hang and not a protection response.
+Baseline FEX (`460568b8`, trap present), with `"SMCChecks":"2"` added to
+`Z:\home\xuser\.fex-emu\AppConfig\RelicCardinal.exe.json` (restored to `{"Config":{"HideHypervisorBit":"1"}}`
+afterwards). In this FEX revision full mode does **not** remove the trap: `MarkGuestExecutableRange` runs
+whenever a compiled block first covers a page, in every mode, and only `SMCChecks=none` stops `ProtectRWXIntervalsInternal`
+(`SMCDetectionDisabled`). Full mode adds per-instruction validation on top.
 
-`tctx` (which calls `SuspendThread` then `GetThreadContext`) hung on this thread as well and left it at
-suspend 1. The `suspend=1` sample at 21:02 is that probe's doing.
+Result, for two minutes: 5 Linux threads, 0 % CPU, one Windows thread (the main thread, user 1,700 ms),
+no new log. The same signature as run 2.
 
-## Related, not yet tested
+This reproduces the earlier "`SMCChecks=full` hangs at launch from Play" ([EXPERIMENTS.md](EXPERIMENTS.md)),
+whose config (`fexcfg6.txt`) dates from 00:12, before the round-17 debug channels.
 
-- `SMCChecks=2` (full) also "hangs at launch from Play" ([EXPERIMENTS.md](EXPERIMENTS.md)). That config
-  (`fexcfg6.txt`) dates from 00:12, before round 17, so the debug channels do not explain it. Full SMC and
-  patch 0001 both send blocks through `ForceFullSMCDetection`. Whether the two hangs share a cause is
-  **not tested**.
+## What the two hangs have in common
+
+| run | trap | full-SMC validation | result |
+|---|---|---|---|
+| 1 | armed | off (`mtrack`) | loads to `GEWorld`, then the kill |
+| 2 | removed (0003) | on for writable+executable blocks (0001) | stops at start-up |
+| 3 | armed | on for every block (`SMCChecks=full`) | stops at start-up |
+
+Removing the trap is **not needed** to produce this stop: run 3 stops the same way with the trap armed. The
+factor the two stopping runs share is full-SMC validation (`ForceFullSMCDetection` / `SMCChecks=full`).
+Two runs, two FEX binaries; the mechanism is not known.
+
+## Where the main thread is blocked: not known
+
+`tstack` on the main thread gives the same picture in runs 2 and 3, resolved through each DLL's COFF
+symbols: pointers to the `InvalidationTracker` object, `std::condition_variable::notify_all`,
+`__libcpp_recursive_mutex_unlock`, and `InvalidationTracker::HandleMemoryProtectionNotification` +0x174.
+Disassembly shows +0x174 is the return address after a call to `__shared_mutex_base::unlock`, an unlock
+that **completed**. These are leftovers of earlier work in the stack area, not the current blocking
+point. A stack scan cannot show where a blocked thread is now.
+
+`tctx` (which calls `SuspendThread` then `GetThreadContext`) hung on the run 2 main thread and left it at
+suspend 1; the `suspend=1` sample at 21:02 is that probe's doing. So the context of the blocked thread could
+not be read either.
 
 ## Where this leaves the SMC question
 
 Open. The trap leak is real ([SMC-CONFIRMED.md](SMC-CONFIRMED.md)) and the kill is real on the clean
 baseline. No build that removes the trap has yet run the game far enough to show whether the kill still
-fires.
+fires. The only trap-removing build so far relies on full-SMC validation, and full-SMC validation with the
+trap still armed also stops the game at start-up (run 3). A test of the trap needs a way to hide it that keeps the
+default `mtrack` invalidation.
