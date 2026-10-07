@@ -1,0 +1,479 @@
+--- a/FEXCore/include/FEXCore/Debug/InternalThreadState.h
++++ b/FEXCore/include/FEXCore/Debug/InternalThreadState.h
+@@ -114,6 +114,9 @@
+   // The low address of the call-ret stack allocation (not including guard pages)
+   void* CallRetStackBase {};
+ 
++  // Guest RIP of the volatile-region block this thread entered last (see ContextImpl::CompileVolatileBlock).
++  uint64_t VolatileEntryRIP {};
++
+   uintptr_t JITGuardPage {};
+   uint64_t JITGuardOverflowArgument {};
+   FEXCore::UncheckedLongJump::JumpBuf RestartJump;
+--- a/FEXCore/include/FEXCore/Core/Context.h
++++ b/FEXCore/include/FEXCore/Core/Context.h
+@@ -83,6 +83,11 @@
+   FEX_DEFAULT_VISIBILITY virtual bool IsCurrentBlockSingleInst(FEXCore::Core::InternalThreadState* Thread) = 0;
+   FEX_DEFAULT_VISIBILITY virtual uint64_t GetGuestBlockEntry(FEXCore::Core::InternalThreadState* Thread) = 0;
+ 
++  ///< Volatile code regions: guest memory that is rewritten and executed so often that it is not write-trapped and its
++  ///< blocks are never cached by address.
++  FEX_DEFAULT_VISIBILITY virtual void AddVolatileCodeRegion(uint64_t Base, uint64_t Size) = 0;
++  FEX_DEFAULT_VISIBILITY virtual bool IsVolatileCode(uint64_t Address) const = 0;
++
+   ///< State reconstruction helpers
+   ///< Reconstructs the guest RIP from the passed in thread context and related Host PC.
+   FEX_DEFAULT_VISIBILITY virtual uint64_t RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPC) = 0;
+--- a/FEXCore/Source/Interface/Context/Context.h
++++ b/FEXCore/Source/Interface/Context/Context.h
+@@ -152,6 +152,9 @@
+   uint64_t GetGuestBlockEntry(FEXCore::Core::InternalThreadState* Thread) override;
+ 
+   uint64_t RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPC) override;
++  void AddVolatileCodeRegion(uint64_t Base, uint64_t Size) override;
++  bool IsVolatileCode(uint64_t Address) const override;
++  uintptr_t CompileVolatileBlock(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP);
+   uint32_t ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadState* Thread, bool WasInJIT, const uint64_t* HostGPRs, uint64_t PSTATE) override;
+   void SetFlagsFromCompactedEFLAGS(FEXCore::Core::InternalThreadState* Thread, uint32_t EFLAGS) override;
+ 
+@@ -515,6 +518,24 @@
+   bool MonoDetected = false;
+   std::atomic<uint64_t> MonoBackpatcherBlock;
+ 
++  struct VolatileCodeRegion {
++    uint64_t Base;
++    uint64_t End;
++  };
++  VolatileCodeRegion VolatileCodeRegions[4] {};
++  std::atomic<uint32_t> NumVolatileCodeRegions {0};
++  std::mutex VolatileCodeMutex;
++  struct VolatileCacheEntry {
++    const void* Buffer;
++    uint64_t Generation;
++    uint64_t Target;
++    uintptr_t Host;
++    uint8_t Len;
++    uint8_t Bytes[15];
++  };
++  fextl::vector<VolatileCacheEntry> VolatileCache;
++  std::mutex VolatileCacheMutex;
++
+   std::mutex CodeBufferListLock;
+   fextl::vector<std::weak_ptr<CPU::CodeBuffer>> CodeBufferList;
+ };
+--- a/FEXCore/Source/Interface/Core/SharedCodeBufferManager.h
++++ b/FEXCore/Source/Interface/Core/SharedCodeBufferManager.h
+@@ -22,6 +22,8 @@
+ namespace FEXCore::CPU {
+ struct CodeBuffer {
+   fextl::unique_ptr<GuestToHostMap> LookupCache;
++  // Unique per allocated buffer, so a reused address never matches an old buffer.
++  uint64_t Generation {};
+ 
+   CodeBuffer(size_t Size, bool ShouldBeNamed);
+   CodeBuffer(const CodeBuffer&) = delete;
+--- a/FEXCore/Source/Interface/Core/SharedCodeBufferManager.cpp
++++ b/FEXCore/Source/Interface/Core/SharedCodeBufferManager.cpp
+@@ -1,6 +1,8 @@
+ // SPDX-License-Identifier: MIT
+ #include "Interface/Core/LookupCache.h"
+ #include "Interface/Core/SharedCodeBufferManager.h"
++
++#include <atomic>
+ 
+ #include <FEXCore/fextl/memory.h>
+ #include <FEXCore/Utils/AllocatorHooks.h>
+@@ -80,6 +82,8 @@
+ #endif
+ 
+   auto Buffer = fextl::make_shared<CodeBuffer>(Size, NameJITBuffers);
++  static std::atomic<uint64_t> NextGeneration {1};
++  Buffer->Generation = NextGeneration.fetch_add(1, std::memory_order_relaxed);
+ 
+   Latest = Buffer;
+ 
+--- a/FEXCore/Source/Interface/Core/CPUBackend.h
++++ b/FEXCore/Source/Interface/Core/CPUBackend.h
+@@ -138,6 +138,13 @@
+     [[nodiscard]]
+     fextl::shared_ptr<CodeBuffer> CheckCodeBufferUpdate();
+ 
++    const CodeBuffer* GetCurrentCodeBufferPtr() const {
++      return CurrentCodeBuffer.get();
++    }
++    uint64_t GetCurrentCodeBufferGeneration() const {
++      return CurrentCodeBuffer ? CurrentCodeBuffer->Generation : 0;
++    }
++
+   protected:
+     // Max spill slot size in bytes. We need at most 32 bytes
+     // to be able to handle a 256-bit vector store to a slot.
+--- a/FEXCore/Source/Interface/Core/JIT/JIT.cpp
++++ b/FEXCore/Source/Interface/Core/JIT/JIT.cpp
+@@ -584,6 +584,10 @@
+       // Hold a reference to the code buffer, to avoid linking unmapped code if compilation triggers a recreation.
+       auto CodeBuffer = static_cast<Arm64JITCore*>(Thread->CPUBackend.get())->CurrentCodeBuffer;
+       HostCode = static_cast<Context::ContextImpl*>(Thread->CTX)->CompileBlock(Frame, GuestRip, 0);
++      if (static_cast<Context::ContextImpl*>(Thread->CTX)->IsVolatileCode(GuestRip)) {
++        // Volatile blocks are classified again on every visit; a patched branch would skip that.
++        return HostCode;
++      }
+       if (Thread->LookupCache->Shared != CodeBuffer->LookupCache.get()) {
+         return HostCode;
+       }
+--- a/FEXCore/Source/Interface/Core/Core.cpp
++++ b/FEXCore/Source/Interface/Core/Core.cpp
+@@ -9,6 +9,7 @@
+ */
+ 
+ #include <cstdint>
++#include <cstring>
+ #ifdef ZYDIS_DISASSEMBLER
+ #include <Zydis/Zydis.h>
+ #endif
+@@ -116,6 +117,22 @@
+   DiskCache.Init(this);
+ }
+ 
++// Experiment: volatile code regions (see CompileVolatileBlock). Read from outside by RVA.
++extern "C" {
++struct VolatileCodeStatsT {
++  uint64_t Marker; // "VOLCODE1"
++  uint64_t Regions;
++  uint64_t RegionBase[4];
++  uint64_t RegionSize[4];
++  uint64_t Hits;
++  uint64_t Misses;
++  uint64_t Ineligible;
++  uint64_t CodeBufferAllocs;
++  uint64_t AllocTicks[32];
++  uint64_t AllocSize[32];
++} VolatileCodeStats = {0x3145444F434C4F56ULL, 0, {}, {}, 0, 0, 0, 0, {}, {}};
++}
++
+ struct GetFrameBlockInfoResult {
+   const CPU::CPUBackend::JITCodeHeader* InlineHeader;
+   const CPU::CPUBackend::JITCodeTail* InlineTail;
+@@ -144,6 +161,9 @@
+ 
+ uint64_t ContextImpl::GetGuestBlockEntry(FEXCore::Core::InternalThreadState* Thread) {
+   auto [_, InlineTail] = GetFrameBlockInfo(Thread->CurrentFrame);
++  if (InlineTail && Thread->VolatileEntryRIP && IsVolatileCode(InlineTail->RIP)) {
++    return Thread->VolatileEntryRIP;
++  }
+   return InlineTail ? InlineTail->RIP : 0;
+ }
+ 
+@@ -164,6 +184,10 @@
+       // Reconstruct RIP from JIT entries for this block.
+       uint64_t StartingHostPC = BlockBegin;
+       uint64_t StartingGuestRIP = InlineTail->RIP;
++      if (Thread->VolatileEntryRIP && IsVolatileCode(StartingGuestRIP)) {
++        // Shared volatile block: its tail names the slot it was first compiled for.
++        StartingGuestRIP = Thread->VolatileEntryRIP;
++      }
+ 
+       for (uint32_t i = 0; i < InlineTail->NumberOfRIPEntries; ++i) {
+         auto Offset = FEXCore::Utils::vl64pair::Decode(RIPEntry);
+@@ -490,6 +514,13 @@
+     std::scoped_lock lk {CodeBufferListLock};
+     CodeBufferList.emplace_back(Buffer);
+   }
++  {
++    const uint64_t N = __atomic_fetch_add(&VolatileCodeStats.CodeBufferAllocs, 1, __ATOMIC_RELAXED);
++    uint64_t T;
++    __asm__ volatile("mrs %0, cntvct_el0" : "=r"(T));
++    VolatileCodeStats.AllocTicks[N & 31] = T;
++    VolatileCodeStats.AllocSize[N & 31] = Buffer->TotalAllocationSize();
++  }
+ }
+ 
+ void ContextImpl::ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, bool NewCodeBuffer) {
+@@ -848,6 +879,166 @@
+   };
+ }
+ 
++bool ContextImpl::IsVolatileCode(uint64_t Address) const {
++  const uint32_t N = NumVolatileCodeRegions.load(std::memory_order_acquire);
++  for (uint32_t i = 0; i < N; i++) {
++    if (Address >= VolatileCodeRegions[i].Base && Address < VolatileCodeRegions[i].End) {
++      return true;
++    }
++  }
++  return false;
++}
++
++void ContextImpl::AddVolatileCodeRegion(uint64_t Base, uint64_t Size) {
++  std::scoped_lock lk(VolatileCodeMutex);
++  if (IsVolatileCode(Base)) {
++    return;
++  }
++  const uint32_t N = NumVolatileCodeRegions.load(std::memory_order_relaxed);
++  if (N >= 4) {
++    return;
++  }
++  VolatileCodeRegions[N] = {Base, Base + Size};
++  VolatileCodeStats.RegionBase[N] = Base;
++  VolatileCodeStats.RegionSize[N] = Size;
++  VolatileCodeStats.Regions = N + 1;
++  NumVolatileCodeRegions.store(N + 1, std::memory_order_release);
++}
++
++static uint64_t VolatileKeyHash(const uint8_t* Bytes, uint8_t Len, uint64_t Target) {
++  uint64_t H = 0xcbf29ce484222325ULL ^ Target;
++  for (uint8_t i = 0; i < Len; i++) {
++    H = (H ^ Bytes[i]) * 0x100000001b3ULL;
++  }
++  return H ^ (H >> 29);
++}
++
++// A block in a volatile region. It is never added to the lookup caches, so this runs on every visit. Blocks of the
++// form [one position-independent instruction][jmp rel8/rel32 out of the region] produce the same host code wherever they
++// are (the JIT resolves the exit to an absolute target), so they are cached by content for the thread's current code
++// buffer. Anything else is compiled for this one visit.
++uintptr_t ContextImpl::CompileVolatileBlock(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP) {
++  Thread->VolatileEntryRIP = GuestRIP;
++
++  Thread->FrontendDecoder->SetupDecodeInstructionsAtEntry(Thread, GuestRIP, 2);
++  Thread->FrontendDecoder->DecodeLoop(reinterpret_cast<const uint8_t*>(GuestRIP));
++  const auto* BlockInfo = Thread->FrontendDecoder->GetDecodedBlockInfo();
++
++  bool Eligible = false;
++  uint8_t Len = 0;
++  uint8_t Bytes[15] {};
++  uint64_t Target = 0;
++  if (BlockInfo->Blocks.size() == 1) {
++    const auto& Block = BlockInfo->Blocks[0];
++    if (Block.Entry == GuestRIP && Block.BlockStatus == FEXCore::Frontend::Decoder::DecodedBlockStatus::SUCCESS && Block.NumInstructions == 2) {
++      const auto& I0 = Block.DecodedInstructions[0];
++      const auto& I1 = Block.DecodedInstructions[1];
++      auto PositionDependent = [](const FEXCore::X86Tables::DecodedOperand& Op) {
++        return Op.IsRIPRelative() || Op.IsRIPRelativeRelocation() || Op.IsLiteralRelocation() || Op.IsGPRIndirectRelocation() ||
++               Op.IsSIBRelocation() || Op.IsLiteralPatchable();
++      };
++      const auto* P0 = reinterpret_cast<const uint8_t*>(GuestRIP);
++      if (I0.TableInfo && I1.TableInfo && I0.PC == GuestRIP && I0.InstSize > 0 && I0.InstSize <= 15 &&
++          !(I0.TableInfo->Flags & (FEXCore::X86Tables::InstFlags::FLAGS_SETS_RIP | FEXCore::X86Tables::InstFlags::FLAGS_BLOCK_END)) &&
++          !PositionDependent(I0.Dest) && !PositionDependent(I0.Src[0]) && !PositionDependent(I0.Src[1]) &&
++          !PositionDependent(I0.Src[2]) && !(I0.OPRaw >= 0xD8 && I0.OPRaw <= 0xDF)) {
++        const auto* P1 = P0 + I0.InstSize;
++        int64_t Disp = 0;
++        bool IsJmp = false;
++        if (I1.InstSize == 5 && P1[0] == 0xE9) {
++          int32_t D;
++          memcpy(&D, P1 + 1, sizeof(D));
++          Disp = D;
++          IsJmp = true;
++        } else if (I1.InstSize == 2 && P1[0] == 0xEB) {
++          Disp = static_cast<int8_t>(P1[1]);
++          IsJmp = true;
++        }
++        if (IsJmp) {
++          Target = GuestRIP + I0.InstSize + I1.InstSize + Disp;
++          Len = I0.InstSize;
++          memcpy(Bytes, P0, Len);
++          Eligible = !IsVolatileCode(Target);
++        }
++      }
++    }
++  }
++
++  if (Eligible) {
++    const void* Buffer = Thread->CPUBackend->GetCurrentCodeBufferPtr();
++    const uint64_t Generation = Thread->CPUBackend->GetCurrentCodeBufferGeneration();
++    uintptr_t Host = 0;
++    {
++      std::scoped_lock lk(VolatileCacheMutex);
++      if (!VolatileCache.empty()) {
++        const uint64_t H = VolatileKeyHash(Bytes, Len, Target);
++        for (size_t i = 0; i < 8; i++) {
++          const auto& E = VolatileCache[(H + i) & (VolatileCache.size() - 1)];
++          if (E.Host && E.Buffer == Buffer && E.Generation == Generation && E.Target == Target && E.Len == Len &&
++              !memcmp(E.Bytes, Bytes, Len)) {
++            Host = E.Host;
++            break;
++          }
++        }
++      }
++    }
++    if (Host) {
++      __atomic_fetch_add(&VolatileCodeStats.Hits, 1, __ATOMIC_RELAXED);
++      Thread->FrontendDecoder->DelayedDisownBuffer();
++      Thread->FrontendDecoder->ValidateDisownedOrFree();
++      Thread->OpDispatcher->ValidateDisownedOrFree();
++      return Host;
++    }
++  }
++
++  // Compile for this visit only: no lookup cache entry, no executable-range tracking (so no write trap).
++  Thread->FrontendDecoder->SetupDecodeInstructionsAtEntry(Thread, GuestRIP, 2);
++  FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedJITCount, 1);
++  auto [CompiledCode, DebugData, StartAddr, Length, NeedsAddGuestCodeRanges] = CompileCode(Thread, GuestRIP, 2);
++  auto CodePtr = CompiledCode.EntryPoints[GuestRIP];
++  if (CodePtr == nullptr) {
++    return 0;
++  } else if (!DebugData) {
++    return reinterpret_cast<uintptr_t>(CodePtr);
++  }
++  if (!CodeCache.IsGeneratingCache) {
++    Thread->CPUBackend->ClearRelocations();
++  }
++  Thread->FrontendDecoder->ValidateDisownedOrFree();
++  Thread->OpDispatcher->ValidateDisownedOrFree();
++
++  if (Eligible) {
++    const void* Buffer = Thread->CPUBackend->GetCurrentCodeBufferPtr();
++    const uint64_t Generation = Thread->CPUBackend->GetCurrentCodeBufferGeneration();
++    std::scoped_lock lk(VolatileCacheMutex);
++    if (VolatileCache.empty()) {
++      VolatileCache.resize(8192);
++    }
++    const uint64_t H = VolatileKeyHash(Bytes, Len, Target);
++    size_t Slot = H & (VolatileCache.size() - 1);
++    for (size_t i = 0; i < 8; i++) {
++      const size_t Idx = (H + i) & (VolatileCache.size() - 1);
++      const auto& E = VolatileCache[Idx];
++      if (!E.Host || E.Buffer != Buffer || E.Generation != Generation ||
++          (E.Target == Target && E.Len == Len && !memcmp(E.Bytes, Bytes, Len))) {
++        Slot = Idx;
++        break;
++      }
++    }
++    auto& E = VolatileCache[Slot];
++    E.Buffer = Buffer;
++    E.Generation = Generation;
++    E.Target = Target;
++    E.Host = reinterpret_cast<uintptr_t>(CodePtr);
++    E.Len = Len;
++    memcpy(E.Bytes, Bytes, Len);
++    __atomic_fetch_add(&VolatileCodeStats.Misses, 1, __ATOMIC_RELAXED);
++  } else {
++    __atomic_fetch_add(&VolatileCodeStats.Ineligible, 1, __ATOMIC_RELAXED);
++  }
++  return reinterpret_cast<uintptr_t>(CodePtr);
++}
++
+ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_t GuestRIP, uint64_t MaxInst) {
+   if constexpr (BLOCK_DEBUGGING) {
+     // Block debugging logic is hand-written and needs to be handled with care.
+@@ -873,6 +1064,10 @@
+   // The backends only check L1 and L2, not L3
+   if (auto HostCode = Thread->LookupCache->FindBlock(Thread, GuestRIP)) {
+     return HostCode;
++  }
++
++  if (IsVolatileCode(GuestRIP)) {
++    return CompileVolatileBlock(Thread, GuestRIP);
+   }
+ 
+   Thread->FrontendDecoder->SetupDecodeInstructionsAtEntry(Thread, GuestRIP, MaxInst);
+--- a/Source/Windows/Common/InvalidationTracker.h
++++ b/Source/Windows/Common/InvalidationTracker.h
+@@ -80,6 +80,11 @@
+   void RecordTrapped(uint64_t Address, uint64_t Size);
+   void ForgetTrapped(uint64_t Address, uint64_t Size);
+ 
++  // Volatile code region detection (FEX_EXP_VOLATILE). NOTE: called with CodeInvalidationMutex held.
++  void DetectVolatileRegion(uint64_t FaultAddress);
++  uint64_t VolatileFaultPage[1024] {};
++  uint32_t VolatileFaultCount[1024] {};
++
+   bool MonoBackpatcherDetectionPending {false};
+   uint64_t MonoBase {0};
+   uint64_t MonoEnd {0};
+--- a/Source/Windows/Common/InvalidationTracker.cpp
++++ b/Source/Windows/Common/InvalidationTracker.cpp
+@@ -244,11 +244,83 @@
+       if (!NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, UntrapProt, &TmpProt)) {
+         ForgetTrapped(reinterpret_cast<uint64_t>(TmpAddress), TmpSize);
+       }
++      DetectVolatileRegion(FaultAddress);
+     }
+     DetectMonoBackpatcherBlock(Thread, HostPc);
+     return true;
+   }
+   return false;
++}
++
++void InvalidationTracker::DetectVolatileRegion(uint64_t FaultAddress) {
++  static const bool Enabled = [] {
++    const char* Value = getenv("FEX_EXP_VOLATILE");
++    return !Value || Value[0] != '0';
++  }();
++  if (!Enabled) {
++    return;
++  }
++  const uint64_t Page = FaultAddress & FEXCore::Utils::FEX_PAGE_MASK;
++  if (CTX.IsVolatileCode(Page)) {
++    return;
++  }
++  const size_t Idx = (Page >> 12) & 1023;
++  if (VolatileFaultPage[Idx] != Page) {
++    VolatileFaultPage[Idx] = Page;
++    VolatileFaultCount[Idx] = 0;
++  }
++  if (++VolatileFaultCount[Idx] < 16) {
++    return;
++  }
++
++  MEMORY_BASIC_INFORMATION Info;
++  if (NtQueryVirtualMemory(NtCurrentProcess(), reinterpret_cast<void*>(Page), MemoryBasicInformation, &Info, sizeof(Info), nullptr) ||
++      Info.Type != MEM_PRIVATE) {
++    return;
++  }
++  const uint64_t Base = reinterpret_cast<uint64_t>(Info.AllocationBase);
++  uint64_t Size = reinterpret_cast<uint64_t>(Info.BaseAddress) + Info.RegionSize - Base;
++  while (!NtQueryVirtualMemory(NtCurrentProcess(), reinterpret_cast<void*>(Base + Size), MemoryBasicInformation, &Info, sizeof(Info), nullptr) &&
++         reinterpret_cast<uint64_t>(Info.AllocationBase) == Base) {
++    Size += Info.RegionSize;
++  }
++  if (Size > 64ULL * 1024 * 1024) {
++    return;
++  }
++
++  CTX.AddVolatileCodeRegion(Base, Size);
++  if (!CTX.IsVolatileCode(Page)) {
++    return;
++  }
++  LogMan::Msg::IFmt("Volatile code region: {:X} - {:X}", Base, Base + Size);
++
++  // Drop the code compiled there, then give the guest its write permission back on every page FEX trapped.
++  InvalidateIntervalInternalLocked(Base, Size);
++  for (uint64_t Addr = Base; Addr < Base + Size;) {
++    FEXCore::IntervalList<uint64_t>::QueryResult Query;
++    {
++      std::scoped_lock TLock(TrappedLock);
++      Query = TrappedIntervals.Query(Addr);
++    }
++    if (!Query.Size) {
++      break;
++    }
++    const uint64_t End = std::min(Base + Size, Addr + Query.Size);
++    if (Query.Enclosed) {
++      ULONG Prot;
++      {
++        std::shared_lock Lock(IntervalsLock);
++        Prot = GetUntrapProt(Addr);
++      }
++      void* TmpAddress = reinterpret_cast<void*>(Addr);
++      SIZE_T TmpSize = End - Addr;
++      ULONG TmpProt;
++      if (!NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, Prot, &TmpProt)) {
++        ForgetTrapped(Addr, End - Addr);
++      }
++    }
++    Addr = End;
++  }
+ }
+ 
+ bool InvalidationTracker::BeginUntrackedWriteLocked(uint64_t Address, uint64_t Size) {
+@@ -382,6 +454,9 @@
+         // Trap page by page: the old protection NtProtectVirtualMemory reports is that of the first page only, and a
+         // page is only recorded as trapped if the guest really had it writable (it may have set it read-only since).
+         for (uint64_t Page = Address & FEXCore::Utils::FEX_PAGE_MASK; Page < RangeEnd; Page += FEXCore::Utils::FEX_PAGE_SIZE) {
++          if (CTX.IsVolatileCode(Page)) {
++            continue;
++          }
+           void* TmpAddress = reinterpret_cast<void*>(Page);
+           SIZE_T TmpSize = FEXCore::Utils::FEX_PAGE_SIZE;
+           ULONG TmpProt = 0;

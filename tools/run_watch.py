@@ -130,6 +130,25 @@ def start_dialog_click():
     winexec("cmd", "/c D:\\dlgclick.bat")
 
 
+def keep_local_on_save_conflict():
+    """GameNative's "Save Conflict" dialog (a new remote and a new local save) holds the launch until it is answered.
+    Keep the local save: no other machine plays this game. Returns True if the dialog was answered."""
+    from gn_nav import GN, find_nodes
+    gn = GN(SERIAL or None)
+    try:
+        root = gn.dump()
+    except (RuntimeError, subprocess.TimeoutExpired):
+        return False
+    if not find_nodes(root, text="Save Conflict"):
+        return False
+    hits = find_nodes(root, text="Keep local")
+    if not hits:
+        return False
+    gn._tap_node(hits[0])
+    print(f"[{time.strftime('%H:%M:%S')}] Save Conflict: kept the local save", flush=True)
+    return True
+
+
 def launch():
     sh("am force-stop app.gamenative")
     time.sleep(4)
@@ -158,6 +177,9 @@ def main():
                     help="stop this many seconds after the log stops growing while threads are suspended")
     ap.add_argument("--start", action="append", default=[],
                     help="a D:\\ batch file to run in the session as soon as the game process exists (repeatable)")
+    ap.add_argument("--quiet", action="store_true",
+                    help="for benchmarks: after the start-up helpers, only watch the process over adb (no mon.bat, so "
+                         "no cmd window or extra process inside Wine every 10 s)")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     if "deviceLocked=1" in sh("dumpsys trust"):
@@ -174,6 +196,8 @@ def main():
             t_launch = time.time()
             while time.time() - t_launch < 90 and not pid:
                 pid = game_pid()
+                if not pid:
+                    keep_local_on_save_conflict()
                 time.sleep(3)
             if pid:
                 break
@@ -197,6 +221,12 @@ def main():
         # space the requests out: one sent while winhandler was busy was lost (2026-10-07)
         time.sleep(2)
         winexec("cmd", f"/c {bat}")
+    if a.quiet:
+        while time.time() - t0 < a.minutes * 60 and game_pid():
+            time.sleep(10)
+        print(f"[{time.strftime('%H:%M:%S')}] {'process gone' if not game_pid() else 'time up'} after "
+              f"{int(time.time() - t0)}s", flush=True)
+        return
     new = not os.path.exists(os.path.join(a.out, "timeline.tsv"))
     tl = open(os.path.join(a.out, "timeline.tsv"), "a")
     new and tl.write("t_s\tthreads\tcpu_pct\tlog_bytes\tgrowing\tsusp\tkiller\tstep\tlast\n")
