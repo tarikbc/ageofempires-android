@@ -23,6 +23,11 @@ environment — not to strip it out.
   `smctest2`) was still killed in 5 of 5 runs. Inside the game, 732,206 memory queries passed the filter
   and none touched a trapped page. See [SMC-TRAP-HIDDEN.md](docs/SMC-TRAP-HIDDEN.md).
 - **The session drop is not the trigger either.** Two runs had no `errno=10038` and were killed on time.
+- **The kill is a timed job (2026-10-07).** Traced with `WINEDEBUG=+seh`: the kill thread's wait ends by timeout
+  (`STATUS_TIMEOUT`) after 200.7 s, and its job then enters the suspend-all function. Two sibling threads run
+  other jobs after 8.9 s and 98 s. See [KILL-TIMER.md](docs/KILL-TIMER.md).
+- **x86-64 Wine under Box64 now gets through start-up (2026-10-07)** with two new Box64 patches, and stops in
+  `Config File` after the protection's hook check reports a mismatch. See [BOX64-ROUTE.md](docs/BOX64-ROUTE.md).
 - **Fixing the raw-syscall return registers does not stop the kill (2026-10-07).** On the Thor a raw x64 `syscall` returns
   `rcx` = status instead of the return address. FEX patch 0006 fixes that (verified with `syscallregs`), and
   the game still stopped in 3 of 3 runs. See [SYSCALL-RETURN.md](docs/SYSCALL-RETURN.md).
@@ -89,14 +94,18 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
 
 ## Next actions
 
-1. ~~Try x86-64 Wine under Box64~~ **Tried 2026-10-06: blocked.** Both x86-64 Protons die within seconds
-   of start, long before the kill window ([BOX64-ROUTE.md](docs/BOX64-ROUTE.md)).
-2. **Trace what Aegis asks the OS.** Patch 0004 already filters every syscall in the process; extend it to log
-   syscalls whose x64 caller lies in Aegis's region (`+0x3e40000..+0x3f90000`), then compare with the same
-   trace where the game works (the Mac, or Proton on x86-64). The first difference points at the check.
-3. **Find what wakes the kill thread.** It sleeps (0 ms CPU) until 2 to 3 minutes in, then suspends every
-   thread within about 50 ms. Two threads share its entry `+0x3e69304` from the start. Capture its stack and
-   the code it runs at that moment (on the base binary it keeps spinning, so its code stays live).
+1. **x86-64 Wine under Box64** (the setup Rosetta and the Steam Deck use: an x86-64 ntdll). Blocked on
+   2026-10-06; on 2026-10-07 two Box64 patches got `proton-11.0-1-x86_64` through the game's start-up to
+   `Config File`, where it now dies after the protection's illegal-instruction phase. Its hook check (thread
+   `0178` in [KILL-TIMER.md](docs/KILL-TIMER.md)) reports a mismatch there that it never reports under FEX.
+   Next: find why that compare differs under Box64 ([BOX64-ROUTE.md](docs/BOX64-ROUTE.md)).
+2. **Find what the kill job decides.** Answered 2026-10-07: nothing wakes the kill thread; it sleeps for a
+   set time (200.7 s in the measured run) and then runs a job that, after a 150 ms call, enters the
+   suspend-all function with `0x0e00000000000000` ([KILL-TIMER.md](docs/KILL-TIMER.md)). Next: what that call
+   computes. `WINEDEBUG=+seh` traces the protection's control flow without changing it.
+3. **Trace what Aegis asks the OS.** Two FEX trace builds broke the game around thread creation
+   ([AEGIS-TRACE.md](docs/AEGIS-TRACE.md)); a narrower one (only the kill thread, only during its job) is the
+   way to see the 150 ms call's syscalls.
 4. **Ghidra the xxHash64 callers**: recover the hashed range and expected hash.
 5. **Fix `ThreadHideFromDebugger`** in Wine's unix side, and **deploy the waitq ntdll properly** (needs a
    `Proton`-type `.wcp`).
@@ -172,7 +181,7 @@ note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch
 | Path | What it is |
 |---|---|
 | [`patches/fex/`](patches/fex) | 0002 hides the CPUID vendor; 0004 hides the SMC trap from guest queries (works; does not stop the kill); 0006 makes a raw x64 `syscall` return registers like hardware (works; does not stop the kill). 0001/0003 stop the game at start-up. |
-| [`patches/box64/`](patches/box64) | Decode SSE/AVX stores so write faults reach Wine as writes. Worth upstreaming. |
+| [`patches/box64/`](patches/box64) | Against GameNative's Box64 (`Pipetto-crypto` `eb6fb21f`), in order: 0001 decode SSE/AVX stores so write faults reach Wine as writes; 0002 keep the guest's execute permission on `noexec` storage; 0003 send raw Windows syscalls to Wine's dispatcher when Wine installed no seccomp handler (39-bit address space). With all three, `proton-11.0-1-x86_64` runs the game to `Config File` ([BOX64-ROUTE.md](docs/BOX64-ROUTE.md)). |
 | [`patches/proton-arm64ec-ntdll/`](patches/proton-arm64ec-ntdll) | Two binary patches for the ARM64EC `ntdll.dll` (`invoke_arm64ec_syscall` register fix; `--waitq` spinlock fix). |
 | [`patches/gamenative/`](patches/gamenative) | Fresh Steam ticket per launch. Not built or tested. |
 
@@ -184,6 +193,7 @@ and what did not. Then:
 | Doc | Covers |
 |---|---|
 | [`AEGIS.md`](docs/AEGIS.md) | The protection: identity, build log, blocklist, timing constants |
+| [`KILL-TIMER.md`](docs/KILL-TIMER.md) | **The kill thread is a timed job** (wakes by timeout after ~200 s, then calls the suspend-all function with `0x0e00000000000000`), and the protection's hook-check loop, both read from `WINEDEBUG=+seh` exception traces. |
 | [`SYSCALL-RETURN.md`](docs/SYSCALL-RETURN.md) | **A raw x64 `syscall` returns `rcx` = status on the Thor, not the return address as on hardware.** Measured with `syscallregs`; patch 0006 fixes it; its runs. |
 | [`AEGIS-TRACE.md`](docs/AEGIS-TRACE.md) | Tracing the game's syscalls inside FEX: how, what broke, and the first findings: most raw syscalls pass one gateway in private memory, a second gateway in the exe allocates and protects memory from 0.3 s, and one thread walks the module list through `NtReadVirtualMemory`. |
 | [`WINE-SOURCE.md`](docs/WINE-SOURCE.md) | The device's Wine is GameNative's Proton 11.0-1 ARM64EC (commit `7c98acd6`); its syscall numbers; the ARM64EC suspend fixes it lacks; the newer 11.0-2 build. |

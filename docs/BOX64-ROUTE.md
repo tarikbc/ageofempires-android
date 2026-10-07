@@ -5,6 +5,10 @@ when it runs through x86-64 Wine under Box64 instead of ARM64EC Wine + FEX, whic
 trigger is specific to ARM64EC. **It cannot answer that yet: both x86-64 builds die within seconds of
 start, long before the 2 to 3 minute kill window.**
 
+**Update 2026-10-07:** both Proton 11 blockers are fixed in Box64 (patches 0002 and 0003); the game now runs
+its own start-up and stops in `Config File`, after the protection's illegal-instruction phase. See the last
+section.
+
 Setup changed for the test: container Wine Version (GameNative UI, General tab). With an x86-64 Proton the
 64-bit emulator is fixed to Box64; the container had Box64 `0.4.5-aoefix-1` (this repo's
 `patches/box64/` build), preset Compatibility. Everything else as on the clean baseline. The game's
@@ -73,3 +77,44 @@ covers the same two routes on the same hardware.
 The Box64 route is not a quick way to split the question. Making it useful would mean fixing Box64's
 handling of the game's own DLLs (Proton 11) or of whatever ends the run in `Config File` (Proton 10)
 first. The trace of Aegis's syscalls under FEX is the next step instead.
+
+## 2026-10-07: both Proton 11 blockers fixed in Box64; the game now stops in `Config File`
+
+Setup: container Wine `proton-11.0-1-x86_64-1`, Box64 built from GameNative's fork (`Pipetto-crypto/box64`
+`eb6fb21f`) with this repo's [`patches/box64/`](../patches/box64) 0001 to 0003, NDK r26b, API 31, imported as
+`.wcp`; preset Compatibility; `WINEDEBUG=+seh BOX64_SHOWSEGV=1` for the diagnostic launches. Settings folder
+and both container configs backed up first.
+
+1. **The execute fault was the `noexec` mount.** Box64 records a guest page as executable only after the
+   host `mmap`/`mprotect` with `PROT_EXEC` succeeds, and the host refuses that for files on
+   `/storage/emulated`. Patch 0002 retries without host exec and keeps the guest's protection. With it the
+   loader runs `ucrtbase.dll`'s entry and the game's own code starts (run 01:05).
+2. **Raw syscalls ran as Linux syscalls.** Wine logs, in every process:
+   `install_bpf Native libs are being loaded in low addresses, sc_seccomp 0x3f00094b80, syscall 0x600201a0,
+   not installing seccomp`. Box64 hands a raw `syscall` from Windows code to Wine only through Wine's
+   `SIGSYS` handler, which Wine installs together with the seccomp filter, so here the game's raw syscalls
+   ran as Linux syscalls. The result: a read of address 0 at `RelicCardinal.exe+0x3fa0d3a`, in a check that
+   loads a function pointer from `.data` (`0x14754a8b0`, still 0), reads the first 8 bytes of its target and
+   compares the top 2; the same pointer is the jump target at `+0x3fa0ce0`.
+3. **Patch 0003 sends those syscalls to Wine's dispatcher** the way Wine's own x86-64 stubs do
+   (`call [0x7ffe1000]` when `KUSER_SHARED_DATA+0x308` bit 0 is set; checked in this build's `ntdll.dll`).
+   The first version pushed the plain return address, and the game crashed at `+0x3f91053`: 0xb bytes before
+   the instruction after the `syscall` at `+0x3f9105c`, inside the exe's own syscall gateway (which hides its
+   return address in `r15` during the call). Pushing the address + 0xb, as in Wine's stub layout, passes.
+4. **With 0001 to 0003 (run 01:18) the game writes its log and stops in `Config File`**, the step where
+   Proton 10 stopped on 2026-10-06: started 01:19, last line `Loading step: [Config File]` at 01:19:23.578.
+   Then 682 `c000001d` exceptions, each resumed by the game's vectored handler at `+0x3e46ff8`
+   (`returned ffffffff`). After the last one, at `+0x3e768f9`, execution reached address 0 (Box64:
+   `Emit Signal 11 at IP=0x0`), the game called `__fastfail` (`int 0x29`, `c0000409` at `+0x4fb0dc9`), and
+   GameNative closed the container (`guest_terminated`).
+5. **Interpreter only, for the game** (`[RelicCardinal.exe]` `BOX64_DYNAREC=0` in `Z:\etc\config.box64rc`,
+   which Box64 applies after the environment): `__fastfail` at the same address 2.6 s after the settings were
+   applied, with no `c000001d` before it. Not a clean test of the dynarec: the interpreter is much slower, and
+   the protection has timing checks.
+
+The code around `+0x3e768f9` is encrypted on disk, so what the handler does with that exception is not
+known. Under FEX the game passes this step in under a second.
+
+Two things that matter for tooling: under Box64 every Wine process is renamed `wine` (Box64 log: `Rename
+process to "wine"`), so `run_watch.py`'s match on the process name does not find the game; and when the game
+exits, GameNative closes the container, so read `warnings.log` from a new session.
