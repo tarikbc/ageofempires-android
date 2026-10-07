@@ -32,7 +32,7 @@ def ensure_session():
     container with it, so open a plain container session first (detail page, cog, "Open container")."""
     if "winhandler.exe" in rw.sh("ps -A -o NAME"):
         return True
-    from gn_nav import GN
+    from gn_nav import GN, bounds_center, find_nodes
     for attempt in range(1, 4):
         print(f"[{time.strftime('%H:%M:%S')}] no container session; opening one (attempt {attempt})", flush=True)
         rw.sh("am force-stop app.gamenative")
@@ -47,10 +47,15 @@ def ensure_session():
             time.sleep(3)
             g.tap(1651, 536)  # the cog next to Play
             time.sleep(3)
-            g.tap_text("Open container")
         except RuntimeError as e:
             print(f"    {e}", flush=True)
             continue
+        # Tap the item itself: its first clickable parent is the full-screen panel (tap_text would hit the middle).
+        hits = find_nodes(g.dump(), text="Open container")
+        if not hits:
+            print("    'Open container' not shown after the cog tap", flush=True)
+            continue
+        g.tap(*bounds_center(hits[0]))
         for _ in range(30):
             time.sleep(3)
             if "winhandler.exe" in rw.sh("ps -A -o NAME"):

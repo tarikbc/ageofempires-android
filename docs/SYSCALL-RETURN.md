@@ -55,14 +55,22 @@ module, instead of into ntdll.
 
 With it installed, `winhandler`, `suspinfo` and `syscallregs` work (checked 2026-10-06).
 
-## The game with patch 0006
+## The game with patch 0006: still stopped, 3 of 3
 
-Runs so far (A/B against fix2 in progress):
+Runs on 2026-10-06/07, judged by `tools/run_watch.py`. Start = the time in the game's own
+`LogFiles\unhandled.<start>.txt` name.
 
-| run | FEX | start | session drop | last log line | last loading step | threads at suspend 1 | end |
+| run | FEX | start | session drop | last log line (after start) | last loading step | threads at suspend 1 | end |
 |---|---|---|---|---|---|---|---|
 | s1 | 0006 | 23:53:28 | 23:55:39 | 23:57:00.887 (3 min 32 s) | `Scenario Lua System` | 59 | hung |
 | ab2-1 | 0006 | 00:01:45 | 00:03:44.774 | 00:04:26.118 (2 min 41 s) | `Load Resources from Precache` | none seen | **exited** about 00:04:26 |
+| ab3-1 | 0004 fix2 (control) | 00:11:34 | 00:13:22.510 | 00:14:42.344 (3 min 8 s) | `Scenario Lua System` | 60 | hung |
+| ab3-2 | 0006 | 00:19:19 | 00:21:35.540 | 00:21:41.750 (2 min 22 s) | `Tuning Variant` | 60 | hung |
+
+**Patch 0006 does not stop the kill**: two runs were suspended like the control, and the third exited at a
+time inside the usual kill window. The series was stopped after these runs: more runs could only show a
+shift in timing, and three runs per build cannot measure that against the spread already seen
+(2 min 3 s to 3 min 32 s).
 
 Run ab2-1 exited like control run 5 in [SMC-TRAP-HIDDEN.md](SMC-TRAP-HIDDEN.md). GameNative logged
 `Exit called: processes_exited` at 00:04:26.610 and closed the container. The game's own
