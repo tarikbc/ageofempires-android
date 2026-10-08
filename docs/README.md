@@ -24,6 +24,7 @@ The patch files themselves, with a status line each: [patches/fex](../patches/fe
 
 | Doc | Covers |
 |---|---|
+| [TURNIP.md](guides/TURNIP.md) | The repo's Turnip driver from Mesa main: +27 % FPS, why, and how to build it |
 | [TUNING.md](guides/TUNING.md) | What helps after the fixes (120 Hz display, driver choice, CPU and GPU clocks, `WINEDEBUG`), the late game measured on a replay, and what was measured and reverted |
 | [TESTING.md](guides/TESTING.md) | The automated test over adb: launch, intros, skirmish, camera turn, frame times and temperatures; the in-game agent; the late-game replay benchmark; profiling |
 | [BUILDING-FEX.md](guides/BUILDING-FEX.md) | Building ARM64EC FEX on macOS, and packaging it as a `.wcp` |

@@ -8,7 +8,7 @@ all (black screen, it exits after about a second).
 | | Age of Empires IV | Age of Empires II: DE |
 |---|---|---|
 | Plays | A full 51-minute game against one A.I., to victory | A 3-player skirmish against two Hardest A.I.s, 17 minutes, no crash |
-| Speed | High 20s to low 30s in a full game; 42 to 46 FPS in the first minutes; **about 39 FPS** in the late-game benchmark (v1.2.0) | **60 FPS** in that skirmish (the game stayed at 60); 27 to 30 FPS in the game's heavy 8-player benchmark |
+| Speed | **52 FPS** in the first minutes and **46 FPS** in the late-game benchmark with the repo's Turnip driver (v1.3.0); 41 and 39 with the earlier driver. A full game on the earlier driver ran at high 20s to low 30s | **60 FPS** in that skirmish (the game stayed at 60); 27 to 30 FPS in the game's heavy 8-player benchmark |
 | Controls | The Thor's controller, with the game's own controller UI | Touch screen as a touchpad, or a mouse (not tried by a player yet) |
 
 ![AoE IV: a skirmish with the controller UI, 15 minutes in](docs/img/controller-match-15min-2026-10-07.jpg)
@@ -24,7 +24,7 @@ all (black screen, it exits after about a second).
 |---|---|
 | Tested device | AYN Thor (Snapdragon 8 Gen 2, Adreno 740, 16 GB RAM, Android 13) |
 | GameNative | 1.2.1 |
-| Age of Empires IV | Anniversary Edition (Steam), build 16.3.11308. Main menu, tutorial, skirmish vs the A.I.; a full 51-minute game played to victory. Full game (one A.I., GameNative's FPS counter): high 20s to low 30s, about 24 in big late-game battles. Benchmark (first minutes of a 1v1, 1280×720, display at 120 Hz): 42 to 46 FPS, frames over 100 ms rare (0 to 2 per 90 s). Late-game benchmark (minutes 46 and 48 of that game's replay, v1.2.0, GPU at 680 MHz): 39.0 / 38.6 FPS |
+| Age of Empires IV | Anniversary Edition (Steam), build 16.3.11308. Main menu, tutorial, skirmish vs the A.I.; a full 51-minute game played to victory (on the earlier driver). With the repo's Turnip driver: benchmark 52.3 FPS, late-game replay 46.1 FPS. Full game on the earlier driver (one A.I., GameNative's FPS counter): high 20s to low 30s, about 24 in big late-game battles. Benchmark (first minutes of a 1v1, 1280×720, display at 120 Hz): 42 to 46 FPS, frames over 100 ms rare (0 to 2 per 90 s). Late-game benchmark (minutes 46 and 48 of that game's replay, v1.2.0, GPU at 680 MHz): 39.0 / 38.6 FPS |
 | Age of Empires II: DE | Steam, build 101.103.54800.0, three civilization DLCs, no Enhanced Graphics Pack. Main menu, skirmish vs the A.I.; 59.3 to 60.0 FPS in seven 60 s windows over 17 minutes |
 | Not tested | Multiplayer, the campaigns, other devices |
 
@@ -36,15 +36,17 @@ all (black screen, it exits after about a second).
 - The package `fexcore-aoe4-perf5.wcp` (900 KB) from the
   [latest release](https://github.com/tarikbc/ageofempires-android/releases/latest). Its name starts with `aoe4`
   because it was made for AoE IV first; the same package runs both games.
-- For AoE IV: the graphics driver **Turnip v26.2.0 R4** (`Turnio_v26.2.0_R4.zip` from
-  [StevenMXZ's release v26.2.0-R4](https://github.com/StevenMXZ/Adreno-Tools-Drivers/releases/tag/v26.2.0-R4)).
+- For AoE IV: the graphics driver `turnip-main-c78a9e9.zip` (2.7 MB) from the same release: Mesa's Turnip built from
+  its 2026-10-08 main branch, **+27 % FPS** over the Turnip v26.2.0 R4 the setup used before
+  ([TURNIP.md](docs/guides/TURNIP.md)). R4 still works if you have it (41 FPS instead of 52).
 
 ## Setup
 
 ### 1. Install the patched emulator (and the AoE IV driver)
 
 1. Download [`fexcore-aoe4-perf5.wcp`](https://github.com/tarikbc/ageofempires-android/releases/latest/download/fexcore-aoe4-perf5.wcp)
-   (and, for AoE IV, the driver zip) on the device; they land in the Download folder.
+   and, for AoE IV, [`turnip-main-c78a9e9.zip`](https://github.com/tarikbc/ageofempires-android/releases/latest/download/turnip-main-c78a9e9.zip)
+   on the device; they land in the Download folder.
 2. In GameNative: **Menu → Settings → Contents Manager → Import .wcp from device**, and pick the `.wcp`.
    It shows up under the FEXCore type as `aoe4-perf5 (23)`.
 3. For AoE IV: **Menu → Settings → Driver Manager → Import ZIP from device**, and pick the driver zip.
@@ -58,7 +60,7 @@ Open the game in GameNative, tap the **cog** next to Play, then **Edit container
 | General | Container Variant | `bionic` |
 | General | Wine Version | `proton-11.0-99-arm64ec-1` (see the note below) |
 | General | Executable Path | `RelicCardinal.exe` |
-| Graphics | Graphics Driver / Version | `Wrapper` / `Turnip v26.2.0 R4` |
+| Graphics | Graphics Driver / Version | `Wrapper` / **`turnip-main-c78a9e9`** (or `Turnip v26.2.0 R4`, slower) |
 | Graphics | DX Wrapper | `VKD3D` |
 | Emulation | 64-bit Emulator | `FEXCore` |
 | Emulation | FEXCore Version | **`aoe4-perf5-23`** |
@@ -128,6 +130,7 @@ compositor):
 | Earlier package (protection fixes only), 60 Hz | 26.0 to 26.7 | 33.4 ms | 71 to 83 per 90 s |
 | **This package**, display at 60 Hz | 42.0 to 43.7 | 16.7 ms | 0 to 2 |
 | **This package**, display at 120 Hz | 42 to 46 | 25.3 ms | 0 to 2 |
+| **This package + the repo's Turnip driver** (v1.3.0) | 52.3 | 16.9 ms | 0 to 2 |
 
 These were measured with v1.0.0. v1.1.0 gave the same numbers as v1.0.0 in a back-to-back test
 ([TUNING.md](docs/guides/TUNING.md)).
@@ -144,6 +147,7 @@ own camera, the CPU at full clocks ([TESTING.md](docs/guides/TESTING.md)):
 | v1.1.0 | 36.0 / 36.2 | 19 / 15 |
 | v1.2.0 | 36.7 / 36.5 | 10 / 11 |
 | **v1.2.0, GPU held at 680 MHz** | **39.0 / 38.6** | 18 / 22 |
+| **v1.3.0: the same + the repo's Turnip driver** | **46.1** (48:23 only) | 15 |
 
 The CPU runs hot in long sessions: the hottest CPU sensor read about 95 °C during the tests (GPU about 77 °C).
 
@@ -171,8 +175,9 @@ sensor up to 94 °C.
 - **The game needs AVX.** FEX provides it; hiding it makes the game refuse to start.
 - **Sometimes it stops while loading** with "Failed to wait for DX12 fence (error 102)" in its log (three times on
   2026-10-08). Start it again; the next start worked each time.
-- **Other graphics drivers:** Turnip v26.3.0-R6 ran the same; purple-turnip T30 was about 2.5 FPS slower;
-  **Balemuni Apex v2 crashes the game** after about two minutes ([TUNING.md](docs/guides/TUNING.md)).
+- **Other graphics drivers:** StevenMXZ's Turnip v26.2.0 R4 and v26.3.0-R6 ran the same (41 FPS); purple-turnip T30
+  was about 2.5 FPS slower; **Balemuni Apex v2 crashes the game** after about two minutes
+  ([TUNING.md](docs/guides/TUNING.md)). A full game on the repo's driver has not been played yet.
 - **Display mode:** the option stored as `windowmode` 1 gave a black screen; borderless works.
 - **End screen "Retrieving...":** after the 51-minute game the result panel said "Waiting to retrieve match results
   from the server" for minutes. The game was not frozen, and the match then appeared in Match History.
@@ -212,6 +217,10 @@ the emulator three things went wrong:
 Since v1.2.0, **patch 0016** also answers the game's CPU-speed question from a short cache. The game asks for the MHz
 of every core about 45 times per second, and Wine read two files per core for each answer: 11 % of the main thread in
 the late game. ([POWER-INFORMATION.md](docs/how-it-works/POWER-INFORMATION.md))
+
+**The graphics driver** (v1.3.0) is Mesa's Turnip built from its 2026-10-08 main branch. The Turnip builds in
+circulation waited for the GPU on every submit because of a kernel-driver quirk (fixed in Mesa that day), so the game's
+render thread spent about 10 ms per frame waiting. ([TURNIP.md](docs/guides/TURNIP.md))
 
 **Age of Empires II: DE** (protected with Arxan) crashed about 1 s after the start with GameNative's own FEX 2512,
 inside code it decrypts at run time. Every FEX build from this repo that was tried fixes it. Plain upstream FEX-2610
