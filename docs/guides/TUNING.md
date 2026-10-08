@@ -236,6 +236,10 @@ it did with pinned threads ("Thread placement" below). So the late game is not l
 side: it is limited by the GPU work per frame and the game waiting on it. The levers left are on the GPU side: less
 GPU work per frame (the 75 % render scale gave about 2 FPS, "Not kept" above) or a faster driver path.
 
+*Later the same day:* the GPU traces in [TURNIP.md](TURNIP.md) showed that the GPU itself worked only 37 % of the
+time; the wait was vkd3d-proton holding each command buffer until the previous one finished
+(`VKD3D_CONFIG=no_staggered_submit`, +12 % in the skirmish benchmark).
+
 ## Thread placement in the late game (2026-10-08, 10:56 to 11:18)
 
 The same replay windows, v1.2.0 with the GPU at 680 MHz, one replay pass per setup. `agent.py procaffin ff` first

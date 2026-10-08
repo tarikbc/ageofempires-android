@@ -8,7 +8,7 @@ all (black screen, it exits after about a second).
 | | Age of Empires IV | Age of Empires II: DE |
 |---|---|---|
 | Plays | A full 51-minute game against one A.I., to victory | A 3-player skirmish against two Hardest A.I.s, 17 minutes, no crash |
-| Speed | **52 FPS** in the first minutes and **46 FPS** in the late-game benchmark with the repo's Turnip driver (v1.3.0); 41 and 39 with the earlier driver. A full game on the earlier driver ran at high 20s to low 30s | **60 FPS** in that skirmish (the game stayed at 60); 27 to 30 FPS in the game's heavy 8-player benchmark |
+| Speed | **58 FPS** in the first minutes with the repo's Turnip driver and `VKD3D_CONFIG=no_staggered_submit` (52 without the variable) and **46 FPS** in the late-game benchmark (v1.3.0, measured without the variable); 41 and 39 with the earlier driver. A full game on the earlier driver ran at high 20s to low 30s | **60 FPS** in that skirmish (the game stayed at 60); 27 to 30 FPS in the game's heavy 8-player benchmark |
 | Controls | The Thor's controller, with the game's own controller UI | Touch screen as a touchpad, or a mouse (not tried by a player yet) |
 
 ![AoE IV: a skirmish with the controller UI, 15 minutes in](docs/img/controller-match-15min-2026-10-07.jpg)
@@ -24,7 +24,7 @@ all (black screen, it exits after about a second).
 |---|---|
 | Tested device | AYN Thor (Snapdragon 8 Gen 2, Adreno 740, 16 GB RAM, Android 13) |
 | GameNative | 1.2.1 |
-| Age of Empires IV | Anniversary Edition (Steam), build 16.3.11308. Main menu, tutorial, skirmish vs the A.I.; a full 51-minute game played to victory (on the earlier driver). With the repo's Turnip driver: benchmark 52.3 FPS, late-game replay 46.1 FPS. Full game on the earlier driver (one A.I., GameNative's FPS counter): high 20s to low 30s, about 24 in big late-game battles. Benchmark (first minutes of a 1v1, 1280×720, display at 120 Hz): 42 to 46 FPS, frames over 100 ms rare (0 to 2 per 90 s). Late-game benchmark (minutes 46 and 48 of that game's replay, v1.2.0, GPU at 680 MHz): 39.0 / 38.6 FPS |
+| Age of Empires IV | Anniversary Edition (Steam), build 16.3.11308. Main menu, tutorial, skirmish vs the A.I.; a full 51-minute game played to victory (on the earlier driver). With the repo's Turnip driver: benchmark 52.3 FPS, 58.6 with `VKD3D_CONFIG=no_staggered_submit`; late-game replay 46.1 FPS (without the variable). Full game on the earlier driver (one A.I., GameNative's FPS counter): high 20s to low 30s, about 24 in big late-game battles. Benchmark (first minutes of a 1v1, 1280×720, display at 120 Hz): 42 to 46 FPS, frames over 100 ms rare (0 to 2 per 90 s). Late-game benchmark (minutes 46 and 48 of that game's replay, v1.2.0, GPU at 680 MHz): 39.0 / 38.6 FPS |
 | Age of Empires II: DE | Steam, build 101.103.54800.0, three civilization DLCs, no Enhanced Graphics Pack. Main menu, skirmish vs the A.I.; 59.3 to 60.0 FPS in seven 60 s windows over 17 minutes |
 | Not tested | Multiplayer, the campaigns, other devices |
 
@@ -66,6 +66,7 @@ Open the game in GameNative, tap the **cog** next to Play, then **Edit container
 | Emulation | FEXCore Version | **`aoe4-perf5-23`** |
 | Environment | add `WINEDEBUG` | `-all` (no Wine debug output, even when GameNative's Wine debug setting is on) |
 | Environment | add `FEX_EXP_SKIP_CALLRET_RESET` | `1` (roughly doubles the FPS) |
+| Environment | add `VKD3D_CONFIG` | `no_staggered_submit` (about 12 % more FPS, see below) |
 
 Then tap **Save** (top right).
 
@@ -131,6 +132,7 @@ compositor):
 | **This package**, display at 60 Hz | 42.0 to 43.7 | 16.7 ms | 0 to 2 |
 | **This package**, display at 120 Hz | 42 to 46 | 25.3 ms | 0 to 2 |
 | **This package + the repo's Turnip driver** (v1.3.0) | 52.3 | 16.9 ms | 0 to 2 |
+| **The same + `VKD3D_CONFIG=no_staggered_submit`** | 58.6 / 58.1 (minutes 1 / 3) | 16.9 ms | 0 to 2 |
 
 These were measured with v1.0.0. v1.1.0 gave the same numbers as v1.0.0 in a back-to-back test
 ([TUNING.md](docs/guides/TUNING.md)).
