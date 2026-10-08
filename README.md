@@ -70,7 +70,7 @@ Then tap **Save** (top right).
 
 **About the Wine version:** the tested one is listed on the Thor as `proton-11.0-99-arm64ec-1`. It came from a
 manual import, and research says it is the same build as GameNative's official `proton-11.0-1-arm64ec`
-([details](docs/WINE-SOURCE.md)). The official one was not run directly here; if you try it, please report back.
+([details](docs/guides/WINE-SOURCE.md)). The official one was not run directly here; if you try it, please report back.
 
 ### 3. Recommended device settings
 
@@ -82,7 +82,7 @@ manual import, and research says it is the same build as GameNative's official `
   bind A to B, B to A, X to Y and Y to X.
 - **Power:** GameNative's Power Control can cap the CPU (with a cap of about 2 GHz the game ran at about
   14 FPS). The tested profile let the CPU reach its full 3.19 GHz and kept the GPU at its top two levels; see
-  [TUNING.md](docs/TUNING.md).
+  [TUNING.md](docs/guides/TUNING.md).
 
 ### 4. Play
 
@@ -112,10 +112,10 @@ The CPU runs hot in long sessions: the hottest CPU sensor read about 95 °C duri
   exited once (a 9 s pause was fine).
 - **A "video card's installed driver version" dialog** can block loading after its one-day "Don't show this
   message" choice expires. GameNative's touch input did not reach its button in our tests; the repo's helper
-  `tools/probes/dlgclick` clicks it from adb ([RESEARCH-LOG.md](docs/RESEARCH-LOG.md), Traps).
+  `tools/probes/dlgclick` clicks it from adb ([RESEARCH-LOG.md](docs/research/RESEARCH-LOG.md), Traps).
 - **The game needs AVX.** FEX provides it; hiding it makes the game refuse to start.
 - **Other graphics drivers:** Turnip v26.3.0-R6 ran the same; purple-turnip T30 was about 2.5 FPS slower;
-  **Balemuni Apex v2 crashes the game** after about two minutes ([TUNING.md](docs/TUNING.md)).
+  **Balemuni Apex v2 crashes the game** after about two minutes ([TUNING.md](docs/guides/TUNING.md)).
 - **Display mode:** the option stored as `windowmode` 1 gave a black screen; borderless works.
 - **GameNative "Save Conflict" dialog:** it asks which save to keep when the local and the cloud save both changed.
   Pick the one from where you played last.
@@ -130,16 +130,15 @@ behaves more like Windows; the game and the protection are not modified.
 1. **A start-up check failed.** The protection checks that Windows functions are not hooked. Wine's ARM64EC
    build lays out some function stubs (`jmp [addr]`, `FF 25`) in a way that looked like a hook, and the protection
    stopped the game 2 to 3 minutes after the start. **Patch 0007** rewrites those stubs, in the game's process only, into a
-   form the check accepts. ([HOOK-CHECK.md](docs/HOOK-CHECK.md))
+   form the check accepts. ([HOOK-CHECK.md](docs/how-it-works/HOOK-CHECK.md))
 2. **A watchdog fired.** One protection thread runs a loop that must keep up with a time budget, and it raises
    thousands of exceptions per second. Each exception cost about 230 µs under Wine (a round trip to the
    wineserver), the loop fell behind, and 8 to 13 minutes in the protection froze the game. **Patch 0010** lets
-   FEX resume from an exception directly: 2.5 µs. ([FAST-CONTINUE.md](docs/FAST-CONTINUE.md),
-   [WATCHDOG.md](docs/WATCHDOG.md))
+   FEX resume from an exception directly: 2.5 µs. ([WATCHDOG.md](docs/how-it-works/WATCHDOG.md))
 3. **It was slow.** The protection runs some code one instruction at a time from a 16 MB scratch buffer. For FEX
    every step was new code: a fault, a cache flush and a recompile, about 16,000 times per second, eating 44 % of
    the game's main thread. **Patches 0012 to 0014** recognise that buffer and reuse translations instead of
-   recompiling: 26.7 → 43.7 FPS. ([INSTRUCTION-STEPPER.md](docs/INSTRUCTION-STEPPER.md))
+   recompiling: 26.7 → 43.7 FPS. ([INSTRUCTION-STEPPER.md](docs/how-it-works/INSTRUCTION-STEPPER.md))
 
 <details>
 <summary>All patches in the package</summary>
@@ -159,7 +158,7 @@ All against FEX `7d3090f`, in this order ([patches/fex](patches/fex)):
 | 0014 | Reuses compiled code when the protection decrypts the same code again |
 
 The package's DLL is `libarm64ecfex.dll`, SHA-1 `6990a221`. To build it yourself:
-[BUILDING-FEX.md](docs/BUILDING-FEX.md) and [`tools/make_fex_wcp.py`](tools/make_fex_wcp.py).
+[BUILDING-FEX.md](docs/guides/BUILDING-FEX.md) and [`tools/make_fex_wcp.py`](tools/make_fex_wcp.py).
 </details>
 
 <details>
@@ -169,21 +168,26 @@ The speed work was measured from a Mac over adb: [`tools/bench.py`](tools/bench.
 intros, starts a skirmish with the camera turning (controller input written to the Thor's input device) and records
 frame times from Android's compositor, with temperatures; [`tools/fpsgraph.py`](tools/fpsgraph.py) shows a live
 frame-time graph in a browser; [`tools/agent.py`](tools/agent.py) reads memory and threads inside the game without
-console windows. See [TESTING.md](docs/TESTING.md).
+console windows. See [TESTING.md](docs/guides/TESTING.md).
 </details>
 
 ## The whole story
 
 Getting here took a long investigation: what the protection checks, what was ruled out, and every measurement.
-It is all in [docs/RESEARCH-LOG.md](docs/RESEARCH-LOG.md) (the former README) and the write-ups it links. The
-`.wcp` files `aoe4-fixes.wcp` and `fexcore-2610-aoe-nofex*.wcp` in the repo root are from that investigation and do
-not run the game.
+Start at the [docs index](docs/README.md), or read the full [research log](docs/research/RESEARCH-LOG.md) (the
+former README).
 
 | Folder | What is in it |
 |---|---|
-| [`docs/`](docs) | The write-ups, the research log, screenshots |
-| [`patches/`](patches) | FEX patches (the package), plus earlier Box64, Wine and GameNative experiments |
-| [`tools/`](tools) | Build, install, test and analysis scripts; Windows probes in `tools/probes` |
+| [`docs/how-it-works/`](docs/how-it-works) | One write-up per problem the patches fix, and the protection itself |
+| [`docs/guides/`](docs/guides) | Tuning, testing over adb, building FEX, driving GameNative |
+| [`docs/research/`](docs/research) | The research log, the dead ends, and redacted raw run data |
+| [`patches/fex/`](patches/fex) | The FEX patches in the package |
+| [`patches/experiments/`](patches/experiments) | Earlier Box64, Wine and GameNative patches that are not needed |
+| [`tools/`](tools) | Test, install and build scripts ([list](tools/README.md)); one-off scripts in `tools/research` |
+
+The package is on the [releases page](https://github.com/tarikbc/aoe4-gamenative/releases). Older `.wcp` builds from
+the investigation do not run the game; they are only in the git history.
 
 ## Credits and license
 
