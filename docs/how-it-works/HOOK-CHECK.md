@@ -48,15 +48,18 @@ or ntdll syscall stubs (`4C 8B D1 B8 ...`), which the detector does not flag.
 `tools/winebuild/spec32.c` (`output_exports`, Valve Wine `proton_11.0`) gives every `-import` export a hot-patch
 prolog, `48 8D A4 24 00 00 00 00`, before `jmp *__imp_x(%rip)`. That branch only runs for `CPU_i386` and
 `CPU_x86_64`. The ARM64EC kernel32 has bare `FF 25` thunks instead: its `.text` holds 933 `FF 25 disp32` sequences
-followed by padding.
+followed by padding. Where they come from (lld's x64 import thunk), and a possible fix in Wine:
+[UPSTREAM-WINE-ISSUE.md](../research/UPSTREAM-WINE-ISSUE.md).
 
 ## Patch 0007: rewrite exported `FF 25` thunks
 
 [0007](../../patches/fex/0007-rewrite-ff25-export-thunks.patch) rewrites each exported `FF 25 disp32` in an ARM64X
 image (one with a `.hexpthk` section) as `48 FF 25 disp32-1`: the same jump, one byte longer. It only rewrites when
-the byte after the jump is padding and the 7 bytes stay inside an executable section. It runs only in
-`RelicCardinal.exe`: on the first image mapping after the main thread has a CPU area, for every module already
-loaded, and for each image mapped after that.
+the byte after the jump is padding and the 7 bytes stay inside an executable section. It runs on the first image
+mapping after the main thread has a CPU area, for every module already loaded, and for each image mapped after that.
+Until v1.0.0 it ran only in `RelicCardinal.exe`; since v1.1.0 it runs in every process where FEX runs. Read with
+`tools/agent.py` on 2026-10-07: kernel32 `+0x62710` holds `48 ff 25` in the game, `aoeagent.exe` and
+`winhandler.exe`, and `ff 25` in `explorer.exe`, which has no FEX loaded (no x64 code runs there).
 
 `tools/probes/thunkprobe.c`, run as `RelicCardinal.exe`, counted the rewritten exports: kernel32 798, kernelbase 2,
 user32 208, advapi32 200, ntdll 0, ws2_32 0.
@@ -118,7 +121,8 @@ settings, and `r12` at `+0x3ebb5f8` was still `0x96fce`.
 
 - **Link error after adding a global to FEX's Module.cpp:** `ld.lld: error: misaligned ldr/str offset`. `CheckCall`
   in `Module.S` loads `NtDllRedirectionLUTSize` (a `uint32_t`) with a 64-bit `ldr`. When the data layout moves it to
-  a 4-byte boundary the link fails. `alignas(8)` on that variable fixes it.
+  a 4-byte boundary the link fails. `alignas(8)` on that variable avoids it; patch 0015 loads it as 32 bits instead,
+  which also keeps the bound from including the next 4 bytes.
 - **An intermittent start-up failure:** in 4 runs the game process failed in `loader_init` with an execute fault at
   the entry of its own `ucrtbase.dll` (`ucrtbase.dll+0x63c10`). In all 4 the game process had ntdll at
   `0x7fff9a0000` and ucrtbase at `0x7f..`; a run that started normally had ntdll at `0x6fff9a0000`. One of the builds

@@ -30,7 +30,7 @@ things the emulator does differently from Windows. See [How it works](#how-it-wo
 - An Android device with a Snapdragon / Adreno GPU and GameNative 1.2.1. Only the AYN Thor was tested; similar
   Snapdragon 8 Gen 2 devices are the most likely to work.
 - Age of Empires IV on Steam, installed through GameNative.
-- The package `fexcore-aoe4-perf2.wcp` (900 KB) from the
+- The package `fexcore-aoe4-perf3.wcp` (900 KB) from the
   [latest release](https://github.com/tarikbc/aoe4-gamenative/releases/latest).
 - The graphics driver **Turnip v26.2.0 R4** (`Turnio_v26.2.0_R4.zip` from
   [StevenMXZ's release v26.2.0-R4](https://github.com/StevenMXZ/Adreno-Tools-Drivers/releases/tag/v26.2.0-R4)).
@@ -39,10 +39,10 @@ things the emulator does differently from Windows. See [How it works](#how-it-wo
 
 ### 1. Install the patched emulator and the driver
 
-1. Download [`fexcore-aoe4-perf2.wcp`](https://github.com/tarikbc/aoe4-gamenative/releases/latest/download/fexcore-aoe4-perf2.wcp)
+1. Download [`fexcore-aoe4-perf3.wcp`](https://github.com/tarikbc/aoe4-gamenative/releases/latest/download/fexcore-aoe4-perf3.wcp)
    and the driver zip on the device (they land in the Download folder).
 2. In GameNative: **Menu → Settings → Contents Manager → Import .wcp from device**, and pick the `.wcp`.
-   It shows up under the FEXCore type as `aoe4-perf2 (20)`.
+   It shows up under the FEXCore type as `aoe4-perf3 (21)`.
 3. **Menu → Settings → Driver Manager → Import ZIP from device**, and pick the driver zip.
 
 ### 2. Set up the game's container
@@ -57,7 +57,7 @@ Open the game in GameNative, tap the **cog** next to Play, then **Edit container
 | Graphics | Graphics Driver / Version | `Wrapper` / `Turnip v26.2.0 R4` |
 | Graphics | DX Wrapper | `VKD3D` |
 | Emulation | 64-bit Emulator | `FEXCore` |
-| Emulation | FEXCore Version | **`aoe4-perf2-20`** |
+| Emulation | FEXCore Version | **`aoe4-perf3-21`** |
 | Environment | add `WINEDEBUG` | `-all` (no Wine debug output, even when GameNative's Wine debug setting is on) |
 | Environment | add `FEX_EXP_SKIP_CALLRET_RESET` | `1` (roughly doubles the FPS) |
 
@@ -103,6 +103,9 @@ compositor):
 | **This package**, display at 60 Hz | 42.0 to 43.7 | 16.7 ms | 0 to 2 |
 | **This package**, display at 120 Hz | 42 to 46 | 25.3 ms | 0 to 2 |
 
+These were measured with v1.0.0. v1.1.0 gave the same numbers as v1.0.0 in a back-to-back test
+([TUNING.md](docs/guides/TUNING.md)).
+
 The CPU runs hot in long sessions: the hottest CPU sensor read about 95 °C during the tests (GPU about 77 °C).
 
 ## Known issues
@@ -128,8 +131,9 @@ behaves more like Windows; the game and the protection are not modified.
 
 1. **A start-up check failed.** The protection checks that Windows functions are not hooked. Wine's ARM64EC
    build lays out some function stubs (`jmp [addr]`, `FF 25`) in a way that looked like a hook, and the protection
-   stopped the game 2 to 3 minutes after the start. **Patch 0007** rewrites those stubs, in the game's process only, into a
-   form the check accepts. ([HOOK-CHECK.md](docs/how-it-works/HOOK-CHECK.md))
+   stopped the game 2 to 3 minutes after the start. **Patch 0007** rewrites those stubs into a form the check
+   accepts, in every process that runs x64 code. ([HOOK-CHECK.md](docs/how-it-works/HOOK-CHECK.md); the stubs come
+   from Wine's build tools, see [UPSTREAM-WINE-ISSUE.md](docs/research/UPSTREAM-WINE-ISSUE.md))
 2. **A watchdog fired.** One protection thread runs a loop that must keep up with a time budget, and it raises
    thousands of exceptions per second. Each exception cost about 230 µs under Wine (a round trip to the
    wineserver), the loop fell behind, and 8 to 13 minutes in the protection froze the game. **Patch 0010** lets
@@ -146,17 +150,19 @@ All against FEX `7d3090f`, in this order ([patches/fex](patches/fex)):
 
 | Patch | What it does |
 |---|---|
-| 0002 | Hides FEX's hypervisor vendor string in CPUID |
 | 0004 | Reports the game's own memory protection back to it, while FEX keeps its write traps |
 | 0006 | A raw x64 `syscall` returns registers like Windows does |
-| 0007 | Rewrites Wine's `FF 25` export stubs so the protection's hook check passes |
+| 0007 | Rewrites Wine's `FF 25` export stubs, in every process that runs x64 code, so the protection's hook check passes |
 | 0009 | Skips a costly per-fault reset (on only with `FEX_EXP_SKIP_CALLRET_RESET=1`; about twice the FPS) |
 | 0010 | Resumes x64 code after an exception without a wineserver round trip |
 | 0012 | Handles the protection's one-instruction-at-a-time buffer without faults and recompiles |
 | 0013 | Larger code buffer (512 MB), so FEX clears its whole cache less often |
 | 0014 | Reuses compiled code when the protection decrypts the same code again |
+| 0015 | Fixes a FEX bug: a 32-bit value was loaded as 64 bits (it also broke the build without 0002) |
 
-The package's DLL is `libarm64ecfex.dll`, SHA-1 `6990a221`. To build it yourself:
+Since v1.1.0 the package leaves out patch 0002, which hid FEX's name from the game: the game runs the same without
+it, so the package hides less. v1.0.0 had 0002, and 0007 only in the game's process. The package's DLL is
+`libarm64ecfex.dll`, SHA-1 `bc82c565`. To build it yourself:
 [BUILDING-FEX.md](docs/guides/BUILDING-FEX.md) and [`tools/make_fex_wcp.py`](tools/make_fex_wcp.py).
 </details>
 

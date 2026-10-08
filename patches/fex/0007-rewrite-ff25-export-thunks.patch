@@ -1,28 +1,19 @@
 --- a/Source/Windows/ARM64EC/Module.cpp
 +++ b/Source/Windows/ARM64EC/Module.cpp
-@@ -57,6 +57,7 @@
- #include <optional>
- #include <unordered_map>
- #include <utility>
-+#include <string_view>
- #include <ntstatus.h>
- #include <windef.h>
- #include <winternl.h>
-@@ -345,6 +346,93 @@
-   FillNtDllLUTs(NtDll);
-   PatchCallChecker();
+@@ -369,6 +369,94 @@
    return true;
-+}
-+
-+// Experiment: Wine's ARM64EC DLLs export some functions as bare x64 `jmp [rip+disp32]` thunks (FF 25), where x86-64
-+// Wine puts a hot-patch prolog first and Windows uses `48 FF 25`. Inline-hook detectors treat a function that starts
-+// with FF 25 as hooked. Rewrite each such exported thunk as `48 FF 25 disp32-1`: the same jump, one byte longer.
+ }
+ 
++// Wine's ARM64EC DLLs export some functions as bare x64 `jmp [rip+disp32]` thunks (FF 25). On Windows, x64 code that
++// resolves an ARM64EC export finds a fast-forward sequence (an x64 prolog, then a jump), and x86-64 Wine puts a
++// hot-patch prolog first; x64 hooking and hook-detection code expects such a start, not a bare FF 25. Present each such
++// exported thunk as `48 FF 25 disp32-1`, the REX.W form of the same jump, in every process and every ARM64X image.
 +struct {
 +  uint64_t Marker; // "THUNKFX1"
 +  uint64_t Images;
 +  uint64_t Rewritten;
 +  uint64_t Skipped;
-+  uint64_t Walked; // 1 game process, 2 other process
++  uint64_t Walked; // 1 once the images loaded before the first image map are done
 +} ThunkFixStats = {0x3158464b4e554854ULL, 0, 0, 0, 0};
 +
 +void RewriteExportThunks(uint64_t Address) {
@@ -99,25 +90,20 @@
 +  for (auto* Entry = Head->Flink; Entry != Head; Entry = Entry->Flink) {
 +    RewriteExportThunks(reinterpret_cast<uint64_t>(CONTAINING_RECORD(Entry, LDR_DATA_TABLE_ENTRY, InMemoryOrderLinks)->DllBase));
 +  }
- }
- 
++}
++
  void HandleImageMap(uint64_t Address, bool MainImage = false) {
-@@ -904,6 +992,18 @@
+   fextl::string ModulePath = FEX::Windows::GetSectionFilePath(Address);
+   fextl::string ModuleName = fextl::string {FEX::Windows::BaseName(ModulePath)};
+@@ -1141,6 +1229,11 @@
      std::scoped_lock Lock(ThreadCreationMutex);
      HandleImageMap(reinterpret_cast<uint64_t>(Address));
    }
 +  if (!ThunkFixStats.Walked) {
-+    // Experiment scope: only the game process.
-+    const auto* Params = reinterpret_cast<__TEB*>(NtCurrentTeb())->Peb->ProcessParameters;
-+    const std::wstring_view Image(reinterpret_cast<const wchar_t*>(Params->ImagePathName.Buffer), Params->ImagePathName.Length / sizeof(WCHAR));
-+    ThunkFixStats.Walked = Image.ends_with(L"RelicCardinal.exe") ? 1 : 2;
-+    if (ThunkFixStats.Walked == 1) {
-+      RewriteLoadedExportThunks();
-+    }
++    ThunkFixStats.Walked = 1;
++    RewriteLoadedExportThunks();
 +  }
-+  if (ThunkFixStats.Walked == 1) {
-+    RewriteExportThunks(reinterpret_cast<uint64_t>(Address));
-+  }
++  RewriteExportThunks(reinterpret_cast<uint64_t>(Address));
  
  
    return STATUS_SUCCESS;
