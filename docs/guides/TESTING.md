@@ -99,8 +99,9 @@ python3 tools/agent.py peek libarm64ecfex.dll 3ee000 40
 python3 tools/agent.py peekfile 0 149c40000 1000 D:\\aoe\\agent\\slots.bin   # raw bytes into a file (0 = absolute)
 ```
 
-Tested through the agent: `ping`, `threads`, `mod`, `peek`, `peekfile`. `affin` reports the threads it set, but on
-2026-10-07 `/proc`'s `Cpus_allowed_list` stayed unchanged after it ([TUNING.md](TUNING.md)). A screenshot after starting it and running
+Tested through the agent: `ping`, `threads`, `mod`, `peek`, `peekfile`, and the profiling commands below. `affin`
+reports the threads it set, but a mask outside the game's process mask is refused, so on 2026-10-07 `/proc`'s
+`Cpus_allowed_list` stayed unchanged after it; `procaffin` sets the process mask first ([TUNING.md](TUNING.md)). A screenshot after starting it and running
 commands showed no window. It also has `pause`, `duty` and `blkdump`, ported from the tested probes
 `tpause`, `tduty` and `blkread`; those three were not run through the agent yet.
 
@@ -120,9 +121,32 @@ player's own camera:
 4. **Measure** at 1X: `tools/replay.py window LABEL` (90 s of frame times with temperatures, then 20 s of per-thread
    CPU), once per condition, while the replay runs on.
 
-Results so far: [TUNING.md](TUNING.md), "The late game, measured on that game's replay". The replay file holds the
+Results so far: [TUNING.md](TUNING.md), "The late game, measured on that game's replay" and "The late game at full
+clocks". A fresh game start applies the container's power profile again; check the clocks before a window
+(`tools/thermals.py`). The replay file holds the
 players' names and IDs, so it stays out of the repo. `probes/lsgame.exe` lists the game's `My Games` folder into
 `D:\aoe\ls.txt`, also without a window.
+
+## Where the game spends its time
+
+The commands behind patch 0016 and the late-game tuning ([POWER-INFORMATION.md](../how-it-works/POWER-INFORMATION.md)),
+with the agent started first:
+
+```sh
+python3 tools/agent.py prio list                       # every thread: id, Windows name, priority
+python3 tools/agent.py sample Game/Main 1500 2 D:\\aoe\\agent\\rips.txt   # 1,500 samples of the main thread's RIP, 2 ms apart
+python3 tools/agent.py callers Game/Main 1500 2 LO HI    # samples with RIP in [LO, HI): first argument, exe return addresses
+python3 tools/agent.py procaffin ff                    # let every game thread run on all 8 cores
+python3 tools/threadwaits.py 20                        # per thread: CPU, waits per second, preemptions per second
+python3 tools/excrate.py 10                            # handled exceptions per second (patch 0010's counters)
+python3 tools/research/ntdll_syscall_table.py ntdll.dll --out syscalls.tsv   # system-call numbers of that ntdll
+```
+
+`sample` reports by module; a sample at the return of a Wine system-call stub (`mov x8, #id`) names the call through
+the table, which differs between Wine builds. The `ntdll.dll` to read is the game's own copy (`tools/wincopy.py`).
+
+**The fan.** The measured runs used the Thor's fan at Custom (88 %). Set it with `tools/thor_fan.py custom` right
+before a measured run and `tools/thor_fan.py smart` as soon as the game stops, so the fan does not wear for nothing.
 
 ## Things that cost time
 

@@ -121,7 +121,58 @@ minutes it advanced only 59 game seconds between two clock crops taken about a m
 **Thread placement could not be tested.** All game threads had `Cpus_allowed_list: 0-5,7` (mask `bf`, core 6 left
 out; where that comes from is not known). `tools/agent.py affin 0 f8 f8` reported 65 threads set to cores 3 to 7, but
 `/proc` showed the list unchanged and threads kept running on cores 0 to 2; `taskset` from the adb shell is not
-permitted (`Operation not permitted`). So the windows at 46:13 and 48:23 ran with the default placement.
+permitted (`Operation not permitted`). So the windows at 46:13 and 48:23 ran with the default placement. (The cause,
+found the next day: a thread mask outside the process mask is refused; see the next section.)
+
+## The late game at full clocks (2026-10-08, 00:37 to 03:25)
+
+The same replay and windows at full CPU clocks. A fresh game start was enough: GameNative applies the container's
+power profile at every start, and after it the limits were 2.02 GHz (cores 0 to 2), 2.80 GHz (cores 3 to 6) and
+3.19 GHz (core 7), governor `schedutil`, while the Thor's `performance_mode` setting was still 2. 120 Hz, R4 driver,
+the Thor's fan at Custom 88 % during the measured windows. Each row adds one change to the row above it, except the
+last:
+
+| Setup | FPS 46:13 / 48:23 | frames > 50 ms | GPU busy |
+|---|---|---|---|
+| CPU capped (the section above), v1.1.0 | 27.8 / 27.8 | 270 / 264 | 54 / 55 % at 615 MHz |
+| Full clocks, v1.1.0 (`bc82c565`) | 36.0 / 36.2 | 19 / 15 | 66 / 68 % at 615 MHz |
+| + patch 0016 (v1.2.0, `b5e6e357`) | 36.7 / 36.5 | 10 / 11 | 69 / 70 % at 615 MHz |
+| + every game thread allowed on all 8 cores (`agent.py procaffin ff`, live) | 37.6 / 37.0 | 2 / 10 | 72 / 72 % at 615 MHz |
+| + GPU held at 680 MHz (power profile GPU levels 8 and 8) | 40.1 / 40.1 | 1 / 3 | 69 / 70 % at 680 MHz |
+| **v1.2.0 and GPU at 680 MHz, default core mask** (the package as released, fresh start) | **39.0 / 38.6** | 18 / 22 | 67 / 68 % at 680 MHz |
+
+Mid game (25:43, full clocks, v1.1.0): 37.7 FPS and 16 frames over 50 ms, against 29.3 FPS at 24:52 with the cap. The
+median frame was 25.3 ms in every full-clock window (33.7 ms capped). The two windows of one run differed by up to
+0.6 FPS; the spread between runs was not measured. Hottest sensors in the last row: CPU 95.1 / 93.1 °C, GPU 78.8 / 77.6 °C.
+
+**The GPU clock.** With levels 7 and 8 (sysfs levels 1 and 0) the GPU stayed at 615 MHz in every window; with 8 and 8
+it ran at 680 MHz, and the late game gained about 2 FPS (36.7 / 36.5 to 39.0 / 38.6; 2.5 to 3.1 FPS with all cores
+allowed). That run had more frames over 50 ms (18 / 22) than v1.2.0 at 615 MHz (10 / 11) and the all-cores run at
+680 MHz (1 / 3); not explained, and one run each. In the early-game benchmark the same change gave nothing
+("Tried and reverted" below). The setting: `"minGpuPowerLevel":8,"maxGpuPowerLevel":8` in the container's
+`.config/.power-profile` (GameNative writes sysfs level = 8 - value). It was written with `tools/wincopy.py`; GameNative's
+Power Control tab has GPU minimum and maximum controls and saves the profile when the game stops (read in its source,
+not tried).
+
+**The core mask.** The game's process affinity mask leaves out one core: `df` (core 5) at one start, `bf` (core 6) at
+another. The container lists all 8 cores, so where it comes from is not known. A thread mask that is not inside the
+process mask is refused, which is why `affin` changed nothing in the section above. `agent.py procaffin ff` sets the
+process mask first, then every thread: 68 of 68 threads set, and `/proc` then showed `Cpus_allowed_list: 0-7`. The
+gain (+0.9 / +0.5 FPS, fewer long frames) is close to the spread, so the package does not set it.
+
+**Not kept** (each against "Full clocks, v1.1.0"):
+
+| Change | FPS 46:13 / 48:23 | frames > 50 ms | Notes |
+|---|---|---|---|
+| Render scale 75 % (game Settings, Graphics; from 100 %) | 38.3 / 37.9 | 30 / 39 | Softer picture and more long frames; set back to 100 % |
+| Render thread at `THREAD_PRIORITY_HIGHEST` (`agent.py prio Game/Render 2`) | 35.1 / 34.6 | 24 / 32 | Slower |
+
+**Where the time goes now** (v1.2.0, full clocks, GPU at 615 MHz): the main thread used 47.7 / 48.6 % of one core
+(55.6 % with v1.1.0) and spent 35.5 % of its samples waiting in `NtWaitForAlertByThreadId` (locks and condition
+variables); the render thread 35 %; the GPU about 70 % busy. No stage is saturated, so the stages wait on each other.
+The protection's loop still raises about 25,000 handled exceptions per second (`tools/excrate.py`); at 2.5 us each
+(`exccost`) that is about 6 % of one core, an estimate. How patch 0016 was found:
+[POWER-INFORMATION.md](../how-it-works/POWER-INFORMATION.md).
 
 ## v1.1.0 package: same speed without 0002 (21:54 to 22:17)
 
@@ -146,8 +197,8 @@ on each other.
 
 | Change | FPS minute 1 / 5 | Notes |
 |---|---|---|
-| GPU fixed at 680 MHz (power profile GPU levels 8/8; normally 7/8 = 615 to 680 MHz) | 44.7 | GPU still 65 to 70 % busy at 680 MHz: no gain. |
-| Main thread pinned to the prime core 7, all other threads to cores 0 to 6 (`tools/agent.py affin 4fb0884 80 7f`, live) | 44.6 | 53 frames > 50 ms and 2 > 100 ms, against 45.3 FPS, 3 and 0 just before. Not checked whether the masks took effect; a later `affin` left `/proc`'s `Cpus_allowed_list` unchanged (see the replay section). |
+| GPU fixed at 680 MHz (power profile GPU levels 8/8; normally 7/8 = 615 to 680 MHz) | 44.7 | GPU still 65 to 70 % busy at 680 MHz: no gain in the early game. **In the late game it gave about 2 FPS, so it is in use since 2026-10-08** ("The late game at full clocks"). |
+| Main thread pinned to the prime core 7, all other threads to cores 0 to 6 (`tools/agent.py affin 4fb0884 80 7f`, live) | 44.6 | 53 frames > 50 ms and 2 > 100 ms, against 45.3 FPS, 3 and 0 just before. Not checked whether the masks took effect; a mask outside the game's process mask is refused ("The late game at full clocks"). |
 | FEX TSO off (`FEX_TSOENABLED=0`) | 42.7 / 42.2 | Cheaper CPU code did not raise the FPS. |
 | `shadows` 4 → 2 and `volumetriclighting` 3 → 1 in `configuration_system.lua` | 34.3 / 34.2 | GPU 71 to 78 % busy. The file has no labels, so these numbers may not mean "lower"; the original file was put back byte for byte. |
 | Turnip forced to tile rendering (`TU_DEBUG=noconform,gmem`) | 28.8 | Rendered correctly, a third slower. |

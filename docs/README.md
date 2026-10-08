@@ -12,6 +12,7 @@ The problems the patches fix, one write-up each, and the protection itself.
 | [HOOK-CHECK.md](how-it-works/HOOK-CHECK.md) | **Problem 1, patch 0007.** The start-up API hook check, and why Wine's ARM64EC `FF 25` stubs fail it |
 | [WATCHDOG.md](how-it-works/WATCHDOG.md) | **Problem 2, patch 0010.** The lateness bucket on the protection's loop, and the wineserver round trip per exception that filled it |
 | [INSTRUCTION-STEPPER.md](how-it-works/INSTRUCTION-STEPPER.md) | **Problem 3, patches 0012 to 0014.** Code run one instruction at a time from a scratch buffer, and how FEX now handles it (26.7 → 43.7 FPS) |
+| [POWER-INFORMATION.md](how-it-works/POWER-INFORMATION.md) | **Speed, patch 0016.** The game asks for every core's MHz each frame, and Wine read cpufreq files on every call |
 | [SMC-TRAP.md](how-it-works/SMC-TRAP.md) | Patch 0004. FEX's self-modifying-code trap was visible to the game; hiding it did not stop the kill |
 | [FEX-VENDOR-LEAK.md](how-it-works/FEX-VENDOR-LEAK.md) | Patch 0002 (not in the package since v1.1.0). FEX's name in CPUID leaf `0x40000000` |
 | [SYSCALL-RETURN.md](how-it-works/SYSCALL-RETURN.md) | Patch 0006. Registers after a raw x64 `syscall` |
@@ -22,8 +23,8 @@ The patch files themselves, with a status line each: [patches/fex](../patches/fe
 
 | Doc | Covers |
 |---|---|
-| [TUNING.md](guides/TUNING.md) | What helps after the fixes (120 Hz display, driver choice, power profile, `WINEDEBUG`) and what was measured and reverted |
-| [TESTING.md](guides/TESTING.md) | The automated test over adb: launch, intros, skirmish, camera turn, frame times and temperatures; the in-game agent |
+| [TUNING.md](guides/TUNING.md) | What helps after the fixes (120 Hz display, driver choice, CPU and GPU clocks, `WINEDEBUG`), the late game measured on a replay, and what was measured and reverted |
+| [TESTING.md](guides/TESTING.md) | The automated test over adb: launch, intros, skirmish, camera turn, frame times and temperatures; the in-game agent; the late-game replay benchmark; profiling |
 | [BUILDING-FEX.md](guides/BUILDING-FEX.md) | Building ARM64EC FEX on macOS, and packaging it as a `.wcp` |
 | [GAMENATIVE-UI.md](guides/GAMENATIVE-UI.md) | Driving GameNative's UI over adb, and how to recover from a bad FEX build |
 | [CONTAINER-CONFIG.md](guides/CONTAINER-CONFIG.md) | Editing the container config from inside Wine; "Open container" |

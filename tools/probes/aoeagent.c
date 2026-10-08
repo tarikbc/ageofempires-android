@@ -18,6 +18,19 @@
 //   pause <exerva> <ms>                suspend the threads that start at exe+rva for ms (runs in the background)
 //   duty <exerva> <off_ms> <on_ms> <total_ms>   suspend/resume those threads in a cycle (background)
 //   affin <exerva> <mask> [others]     set the affinity of those threads (and of all other threads)
+//   procaffin <mask>                   SetProcessAffinityMask(target, mask), then SetThreadAffinityMask on every
+//                                      thread; prints the old process/system masks and how many calls succeeded
+//   prio list                          tid, Windows thread name and priority of every thread
+//   prio <name-prefix> <priority>      SetThreadPriority on the threads whose name starts with the prefix
+//                                      (e.g. Game/Render 2 = THREAD_PRIORITY_HIGHEST)
+//   sample <name-prefix|#tid> <count> [ms] [file]  suspend the first thread whose name starts with the prefix (or the
+//                                      thread with that hex id) <count> times,
+//                                      every [ms] (default 5), read its RIP and resume; prints samples per module,
+//                                      the exe split at 0x143800000-0x145000000 (protection) and the top 4 KB pages;
+//                                      with [file], also every sampled RIP, one hex value per line
+//   callers <name-prefix|#tid> <count> <ms> <rip_lo> <rip_hi>  like sample, but only for samples whose RIP is in
+//                                      [rip_lo, rip_hi): histogram of RCX (first argument) and of the exe return
+//                                      addresses found in the first 0x800 bytes of the stack
 //   quit
 #include <windows.h>
 #include <winternl.h>
@@ -259,6 +272,223 @@ static int run(char *line)
         }
         CloseHandle(snap);
         fprintf(out, "id=%s ok matched=%d others=%d\n", id, hit, rest);
+    } else if (!strcmp(cmd, "procaffin") && argc > 2) {
+        DWORD_PTR mask = (DWORD_PTR)_strtoui64(argv[2], NULL, 16), pm = 0, sm = 0;
+        GetProcessAffinityMask(proc, &pm, &sm);
+        HANDLE ph = OpenProcess(PROCESS_SET_INFORMATION | PROCESS_QUERY_INFORMATION, FALSE, pid);
+        BOOL pok = ph && SetProcessAffinityMask(ph, mask);
+        DWORD perr = pok ? 0 : GetLastError();
+        if (ph) CloseHandle(ph);
+        int ok = 0, bad = 0;
+        HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+        THREADENTRY32 te = { sizeof(te) };
+        for (BOOL more = Thread32First(snap, &te); more; more = Thread32Next(snap, &te)) {
+            if (te.th32OwnerProcessID != pid) continue;
+            HANDLE t = OpenThread(THREAD_QUERY_INFORMATION | THREAD_SET_INFORMATION, FALSE, te.th32ThreadID);
+            if (!t) { bad++; continue; }
+            if (SetThreadAffinityMask(t, mask)) ok++; else bad++;
+            CloseHandle(t);
+        }
+        CloseHandle(snap);
+        fprintf(out, "id=%s ok process_mask_was=%llx system_mask=%llx set_process=%s(err %lu) threads_ok=%d failed=%d\n",
+                id, (unsigned long long)pm, (unsigned long long)sm, pok ? "ok" : "failed", perr, ok, bad);
+    } else if (!strcmp(cmd, "prio") && argc > 2) {
+        typedef HRESULT (WINAPI *GTD)(HANDLE, PWSTR *);
+        GTD gtd = (GTD)GetProcAddress(GetModuleHandleA("kernelbase.dll"), "GetThreadDescription");
+        BOOL list = !strcmp(argv[2], "list");
+        int want = argc > 3 ? atoi(argv[3]) : 0, hit = 0;
+        WCHAR prefix[128] = L"";
+        if (!list) MultiByteToWideChar(CP_UTF8, 0, argv[2], -1, prefix, 128);
+        HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+        THREADENTRY32 te = { sizeof(te) };
+        fprintf(out, "id=%s ok\n", id);
+        for (BOOL ok = Thread32First(snap, &te); ok; ok = Thread32Next(snap, &te)) {
+            if (te.th32OwnerProcessID != pid) continue;
+            HANDLE t = OpenThread(THREAD_QUERY_INFORMATION | THREAD_SET_INFORMATION, FALSE, te.th32ThreadID);
+            if (!t) continue;
+            PWSTR name = NULL;
+            if (gtd) gtd(t, &name);
+            int before = GetThreadPriority(t);
+            if (list) {
+                fprintf(out, "tid %04lx prio %d name %ls\n", te.th32ThreadID, before, name ? name : L"");
+            } else if (name && !wcsncmp(name, prefix, wcslen(prefix))) {
+                BOOL set = SetThreadPriority(t, want);
+                fprintf(out, "tid %04lx %ls prio %d -> %d %s\n", te.th32ThreadID, name, before, GetThreadPriority(t),
+                        set ? "ok" : "failed");
+                hit++;
+            }
+            if (name) LocalFree(name);
+            CloseHandle(t);
+        }
+        CloseHandle(snap);
+        if (!list) fprintf(out, "matched=%d\n", hit);
+    } else if (!strcmp(cmd, "sample") && argc > 3) {
+        typedef HRESULT (WINAPI *GTD)(HANDLE, PWSTR *);
+        GTD gtd = (GTD)GetProcAddress(GetModuleHandleA("kernelbase.dll"), "GetThreadDescription");
+        int count = atoi(argv[3]), ms = argc > 4 ? atoi(argv[4]) : 5;
+        WCHAR prefix[128];
+        MultiByteToWideChar(CP_UTF8, 0, argv[2], -1, prefix, 128);
+        DWORD want_tid = argv[2][0] == '#' ? strtoul(argv[2] + 1, NULL, 16) : 0;  // "#<hex tid>" picks a thread by id
+        HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0), th = NULL;
+        THREADENTRY32 te = { sizeof(te) };
+        for (BOOL ok = Thread32First(snap, &te); ok && !th; ok = Thread32Next(snap, &te)) {
+            if (te.th32OwnerProcessID != pid) continue;
+            HANDLE t = OpenThread(THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_QUERY_INFORMATION, FALSE, te.th32ThreadID);
+            if (!t) continue;
+            PWSTR name = NULL;
+            if (gtd) gtd(t, &name);
+            if (want_tid ? te.th32ThreadID == want_tid : (name && !wcsncmp(name, prefix, wcslen(prefix)))) th = t;
+            else CloseHandle(t);
+            if (name) LocalFree(name);
+        }
+        CloseHandle(snap);
+        if (!th) {
+            fprintf(out, "id=%s err no thread named %s*\n", id, argv[2]);
+        } else {
+            HMODULE mods[512];
+            DWORD need = 0;
+            EnumProcessModulesEx(proc, mods, sizeof(mods), &need, LIST_MODULES_ALL);
+            int nmod = need / sizeof(HMODULE);
+            if (nmod > 512) nmod = 512;
+            static ULONG64 mbase[512], msize[512];
+            static char mname[512][64];
+            static int mhits[512];
+            for (int i = 0; i < nmod; i++) {
+                MODULEINFO mi;
+                GetModuleInformation(proc, mods[i], &mi, sizeof(mi));
+                mbase[i] = (ULONG64)mi.lpBaseOfDll; msize[i] = mi.SizeOfImage; mhits[i] = 0;
+                GetModuleBaseNameA(proc, mods[i], mname[i], sizeof(mname[i]));
+            }
+            ULONG64 *rips = malloc(sizeof(ULONG64) * (count ? count : 1));
+            const char *dump = argc > 5 ? argv[5] : NULL;
+            int got = 0, other = 0, prot = 0, exe = 0;
+            for (int i = 0; i < count; i++) {
+                if (SuspendThread(th) == (DWORD)-1) break;
+                CONTEXT c;
+                memset(&c, 0, sizeof(c));
+                c.ContextFlags = CONTEXT_CONTROL;
+                BOOL okc = GetThreadContext(th, &c);
+                ResumeThread(th);
+                if (okc) rips[got++] = c.Rip;
+                Sleep(ms);
+            }
+            if (dump) {
+                FILE *f = fopen(dump, "w");
+                if (f) {
+                    for (int i = 0; i < got; i++) fprintf(f, "%llx\n", rips[i]);
+                    fclose(f);
+                }
+            }
+            for (int i = 0; i < got; i++) {
+                ULONG64 r = rips[i];
+                int found = 0;
+                for (int m = 0; m < nmod; m++) {
+                    if (r >= mbase[m] && r < mbase[m] + msize[m]) {
+                        mhits[m]++;
+                        found = 1;
+                        if (!_stricmp(mname[m], "RelicCardinal.exe")) {
+                            exe++;
+                            if (r >= 0x143800000ULL && r < 0x145000000ULL) prot++;
+                        }
+                        break;
+                    }
+                }
+                if (!found) other++;
+            }
+            fprintf(out, "id=%s ok samples=%d thread=%04lx\n", id, got, te.th32ThreadID);
+            for (int m = 0; m < nmod; m++)
+                if (mhits[m]) fprintf(out, "module %-28s %5d %5.1f%%\n", mname[m], mhits[m], 100.0 * mhits[m] / got);
+            fprintf(out, "module (no module: JIT code, heap) %5d %5.1f%%\n", other, 100.0 * other / (got ? got : 1));
+            fprintf(out, "exe split: protection range %d, rest of exe %d\n", prot, exe - prot);
+            // top 4 KB pages of the exe
+            for (int k = 0; k < 15; k++) {
+                ULONG64 best = 0;
+                int bestn = 0;
+                for (int i = 0; i < got; i++) {
+                    ULONG64 page = rips[i] & ~0xfffULL;
+                    if (!page || page < 0x140000000ULL || page >= 0x150000000ULL) continue;
+                    int n = 0;
+                    for (int j = 0; j < got; j++) if ((rips[j] & ~0xfffULL) == page) n++;
+                    if (n > bestn) { bestn = n; best = page; }
+                }
+                if (!bestn) break;
+                fprintf(out, "page exe+%llx %d\n", best - 0x140000000ULL, bestn);
+                for (int j = 0; j < got; j++) if ((rips[j] & ~0xfffULL) == best) rips[j] = 0;
+            }
+            free(rips);
+            CloseHandle(th);
+        }
+    } else if (!strcmp(cmd, "callers") && argc > 6) {
+        typedef HRESULT (WINAPI *GTD)(HANDLE, PWSTR *);
+        GTD gtd = (GTD)GetProcAddress(GetModuleHandleA("kernelbase.dll"), "GetThreadDescription");
+        int count = atoi(argv[3]), ms = atoi(argv[4]);
+        ULONG64 lo = _strtoui64(argv[5], NULL, 16), hi = _strtoui64(argv[6], NULL, 16);
+        WCHAR prefix[128];
+        MultiByteToWideChar(CP_UTF8, 0, argv[2], -1, prefix, 128);
+        DWORD want_tid = argv[2][0] == '#' ? strtoul(argv[2] + 1, NULL, 16) : 0;
+        HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0), th = NULL;
+        THREADENTRY32 te = { sizeof(te) };
+        for (BOOL ok = Thread32First(snap, &te); ok && !th; ok = Thread32Next(snap, &te)) {
+            if (te.th32OwnerProcessID != pid) continue;
+            HANDLE t = OpenThread(THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_QUERY_INFORMATION, FALSE, te.th32ThreadID);
+            if (!t) continue;
+            PWSTR name = NULL;
+            if (gtd) gtd(t, &name);
+            if (want_tid ? te.th32ThreadID == want_tid : (name && !wcsncmp(name, prefix, wcslen(prefix)))) th = t;
+            else CloseHandle(t);
+            if (name) LocalFree(name);
+        }
+        CloseHandle(snap);
+        if (!th) {
+            fprintf(out, "id=%s err no such thread\n", id);
+        } else {
+            enum { MAXK = 256 };
+            static ULONG64 argk[MAXK], retk[MAXK];
+            static int argn[MAXK], retn[MAXK];
+            int nargs = 0, nrets = 0, hits = 0, total = 0;
+            for (int i = 0; i < count; i++) {
+                if (SuspendThread(th) == (DWORD)-1) break;
+                CONTEXT c;
+                memset(&c, 0, sizeof(c));
+                c.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+                BOOL okc = GetThreadContext(th, &c);
+                ULONG64 stack[0x100];
+                SIZE_T got = 0;
+                if (okc && c.Rip >= lo && c.Rip < hi)
+                    ReadProcessMemory(proc, (LPCVOID)c.Rsp, stack, sizeof(stack), &got);
+                ResumeThread(th);
+                if (!okc) continue;
+                total++;
+                if (c.Rip < lo || c.Rip >= hi) { Sleep(ms); continue; }
+                hits++;
+                int k;
+                for (k = 0; k < nargs && argk[k] != c.Rcx; k++) ;
+                if (k < nargs) argn[k]++; else if (nargs < MAXK) { argk[nargs] = c.Rcx; argn[nargs++] = 1; }
+                for (SIZE_T q = 0; q < got / 8; q++) {
+                    ULONG64 v = stack[q];
+                    if (v < 0x140001000ULL || v >= 0x146000000ULL) continue;
+                    for (k = 0; k < nrets && retk[k] != v; k++) ;
+                    if (k < nrets) retn[k]++; else if (nrets < MAXK) { retk[nrets] = v; retn[nrets++] = 1; }
+                }
+                Sleep(ms);
+            }
+            fprintf(out, "id=%s ok samples=%d in_range=%d\n", id, total, hits);
+            for (int r = 0; r < 8; r++) {
+                int b = -1;
+                for (int k = 0; k < nargs; k++) if (argn[k] && (b < 0 || argn[k] > argn[b])) b = k;
+                if (b < 0) break;
+                fprintf(out, "rcx %llx %d\n", argk[b], argn[b]);
+                argn[b] = 0;
+            }
+            for (int r = 0; r < 15; r++) {
+                int b = -1;
+                for (int k = 0; k < nrets; k++) if (retn[k] && (b < 0 || retn[k] > retn[b])) b = k;
+                if (b < 0) break;
+                fprintf(out, "ret exe+%llx %d\n", retk[b] - 0x140000000ULL, retn[b]);
+                retn[b] = 0;
+            }
+            CloseHandle(th);
+        }
     } else {
         fprintf(out, "id=%s err unknown command or missing arguments: %s\n", id, cmd);
     }

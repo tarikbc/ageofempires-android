@@ -13,13 +13,15 @@
 | `0013` (2026-10-07) | FEX's code buffer cap from 128 to 512 MB. With 0012 the 128 MB buffer was still replaced (full recompile, a stutter of up to 300 ms) about every 30 s; with 512 MB every 2 to 3 minutes. |
 | `0014` (2026-10-07) | On by default (the code reads `FEX_EXP_REUSE=0` as off; that switch was not tested): **reuse translations of re-decrypted code.** The protection scrambles some of its functions after use and decrypts them again; FEX recompiled them each time and still replaced its 512 MB code buffer (a full recompile) every 2 to 3 minutes. After a compile in a writable executable range FEX keeps the entry's host code with a hash of the decoded guest bytes, and puts it back when the same bytes return. 0 mismatches in 759,256 reuses; the code buffer then stayed at 256 MB for the 13.9 minutes checked ([INSTRUCTION-STEPPER.md](../../docs/how-it-works/INSTRUCTION-STEPPER.md)). Verified with the set 0002+0004+0006+0007+0009+0010+0012+0013+0014 (`6990a221`). |
 | `0015` (2026-10-07) | `CheckCall` in `Module.S` loads the `uint32_t` `NtDllRedirectionLUTSize` with a 64-bit `ldr`: its bound then includes the next 4 bytes in memory, and the link fails (`misaligned ldr/str offset`) when the variable is not 8-byte aligned, which happened in the build without 0002. Loads it as 32 bits. A FEX bug, not specific to this game. |
+| `0016` (2026-10-08) | **Caches `powrprof!CallNtPowerInformation(ProcessorInformation)` for x64 callers, 250 ms.** The game calls it about 45 times per second on its frame path, and Wine opens two cpufreq files per core for each call (228.5 us per call at the menu, `tools/probes/pwrcost.c`). When x64 code enters that function, `ExitFunctionEC` (`Module.S`) calls `FEXCachedCallNtPowerInformation` instead, through the original function's entry thunk; the target is found when `powrprof.dll` is mapped. No memory the game can see changes. The call's share of the main thread fell from 11.1 to 1.7 %, and the late-game replay went from 36.0 / 36.2 to 36.7 / 36.5 FPS ([POWER-INFORMATION.md](../../docs/how-it-works/POWER-INFORMATION.md)). Verified in the package `aoe4-perf5-23` (`b5e6e357`). Two first versions used the wrapper's own entry thunk and froze the game at start. |
 | `0008` (2026-10-07) | Analysis tool: copies every distinct decoded block in `0x143800000..0x145000000` of the game process into a 96 MB buffer; `tools/probes/blkread.c` reads it out. The game runs normally with it. |
 
 Build: fresh clone of FEX `7d3090f`, the macOS fixes from [BUILDING-FEX.md](../../docs/guides/BUILDING-FEX.md), then the
-package's patches in this order: 0004, 0006, 0007, 0009, 0010, 0012, 0013, 0014, 0015 (release v1.1.0), then `ninja
-arm64ecfex`. Checked 2026-10-07: a clean build of these files gives the tested DLL `bc82c565` except the 4 bytes of the
-build time stamp (PE header and debug directory), and a clean build of the v1.0.0 set (0002, 0004, 0006, 0007 in its
-game-only form, 0009, 0010, 0012, 0013, 0014; tag `v1.0.0`) gives the released `6990a221` the same way.
+package's patches in this order: 0004, 0006, 0007, 0009, 0010, 0012, 0013, 0014, 0015, 0016 (release v1.2.0), then
+`ninja arm64ecfex`. Checked 2026-10-08: a clean build of these files gives the tested DLL `b5e6e357` except the 4 bytes
+of the build time stamp (PE header and debug directory). Checked 2026-10-07 the same way: the v1.1.0 set (the same
+without 0016) gives `bc82c565`, and the v1.0.0 set (0002, 0004, 0006, 0007 in its game-only form, 0009, 0010, 0012,
+0013, 0014; tag `v1.0.0`) gives the released `6990a221`.
 
 ## `0001-hide-smc-trap-from-guest.patch`
 
