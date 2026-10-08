@@ -99,9 +99,30 @@ python3 tools/agent.py peek libarm64ecfex.dll 3ee000 40
 python3 tools/agent.py peekfile 0 149c40000 1000 D:\\aoe\\agent\\slots.bin   # raw bytes into a file (0 = absolute)
 ```
 
-Tested through the agent: `ping`, `threads`, `mod`, `peek`, `peekfile`, `affin`. A screenshot after starting it and running
+Tested through the agent: `ping`, `threads`, `mod`, `peek`, `peekfile`. `affin` reports the threads it set, but on
+2026-10-07 `/proc`'s `Cpus_allowed_list` stayed unchanged after it ([TUNING.md](TUNING.md)). A screenshot after starting it and running
 commands showed no window. It also has `pause`, `duty` and `blkdump`, ported from the tested probes
 `tpause`, `tduty` and `blkread`; those three were not run through the agent yet.
+
+## Late-game benchmark from a replay
+
+The automated skirmish measures an idle early game. A finished game's replay gives a repeatable late game with the
+player's own camera:
+
+1. **Keep the replay.** The game writes the last match to `playback\temp.rec` under `%USERPROFILE%\Documents\My
+   Games\Age of Empires IV` and overwrites it with the next match. Copy it out with `tools/wincopy.py` (uses
+   `probes/gcopy.exe`, no console window), for example to `D:\aoe\m51.rec`.
+2. **Start it in the game:** profile (LS on the main menu), Match History, select the match, X "View Replay". In the
+   replay, X locks the camera to the player's recorded view (a lock shows next to the name), and the D-pad sets the
+   speed (`tools/replay.py speed up|down N`; steps 1/2X, 1X, 2X, 4X, 8X).
+3. **Run to the late game** at 8X and read the clock with `tools/replay.py clock` (a small crop of the game clock and
+   the speed). Reaching 42 minutes took about 15 minutes on the Thor.
+4. **Measure** at 1X: `tools/replay.py window LABEL` (90 s of frame times with temperatures, then 20 s of per-thread
+   CPU), once per condition, while the replay runs on.
+
+Results so far: [TUNING.md](TUNING.md), "The late game, measured on that game's replay". The replay file holds the
+players' names and IDs, so it stays out of the repo. `probes/lsgame.exe` lists the game's `My Games` folder into
+`D:\aoe\ls.txt`, also without a window.
 
 ## Things that cost time
 

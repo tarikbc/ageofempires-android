@@ -92,6 +92,37 @@ After the match the result panel said "Retrieving..." ("Waiting to retrieve matc
 minutes. The game log had no network error and nothing from the server after the match ended; the match then showed
 in Match History.
 
+## The late game, measured on that game's replay (2026-10-07 23:46 to 2026-10-08 00:02)
+
+The replay of that game (profile, Match History, the match, X "View Replay"; X again in the replay locks the camera to
+the player's recorded view), at 1X, measured with `tools/replay.py window` (90 s of compositor frame times, then 20 s
+of per-thread CPU). Package v1.1.0. **The CPU clocks were capped by a Thor setting the user had changed at 23:32**
+(`performance_mode=2`, governor `performance`): cores 3 to 6 at most 1.92 GHz and core 7 at most 1.98 GHz, against
+2.80 and 3.19 GHz possible; the container's GameNative power profile file was unchanged (`SCHEDUTIL`, 307 MHz to
+3.19 GHz). So these numbers are for those clocks.
+
+| Window (game time at start) | FPS | median frame | p99 | frames > 50 ms / > 100 ms | GPU busy |
+|---|---|---|---|---|---|
+| 24:52 | 29.3 | 33.7 ms | 50.5 ms | 128 / 1 | 54 % at 615 MHz |
+| 42:31 | 27.4 | 33.7 ms | 59.0 ms | 283 / 0 | 55 % |
+| 46:13 | 27.8 | 33.7 ms | 59.0 ms | 270 / 0 | 54 % |
+| 48:23 | 27.8 | 33.7 ms | 59.0 ms | 264 / 2 | 55 % |
+| 50:42 (includes the end at 51:22 and the end screen) | 25.4 | 33.7 ms | 75.8 ms | 373 / 17 | 45 % |
+
+The late game holds at about 27.7 FPS with many frames over 50 ms, which matches the user's reading. In the four windows
+before the end the game's threads used 3.0 to 3.3 cores in total: main thread 55 to 58 % of one core, render thread 34 to 40 %, the
+protection's loop about 26 %, eight `rcss worker` threads 12 to 23 % each, audio (`AK::EventManager`) 16 to 21 %,
+`Simulation Thread` 15 to 19 %. No thread is saturated and the GPU is about half busy, so the stages wait on each
+other, as in the early game.
+
+At 8X the replay ran at about 3.3 times real time early in the game (00:41 to 08:40 in about 2 to 2.5 minutes); near 41
+minutes it advanced only 59 game seconds between two clock crops taken about a minute apart (not timed exactly).
+
+**Thread placement could not be tested.** All game threads had `Cpus_allowed_list: 0-5,7` (mask `bf`, core 6 left
+out; where that comes from is not known). `tools/agent.py affin 0 f8 f8` reported 65 threads set to cores 3 to 7, but
+`/proc` showed the list unchanged and threads kept running on cores 0 to 2; `taskset` from the adb shell is not
+permitted (`Operation not permitted`). So the windows at 46:13 and 48:23 ran with the default placement.
+
 ## v1.1.0 package: same speed without 0002 (21:54 to 22:17)
 
 The package without patch 0002, with 0007 in every process and with 0015 (`aoe4-perf3-21`, DLL `bc82c565`), against
@@ -116,7 +147,7 @@ on each other.
 | Change | FPS minute 1 / 5 | Notes |
 |---|---|---|
 | GPU fixed at 680 MHz (power profile GPU levels 8/8; normally 7/8 = 615 to 680 MHz) | 44.7 | GPU still 65 to 70 % busy at 680 MHz: no gain. |
-| Main thread pinned to the prime core 7, all other threads to cores 0 to 6 (`tools/agent.py affin 4fb0884 80 7f`, live) | 44.6 | 53 frames > 50 ms and 2 > 100 ms, against 45.3 FPS, 3 and 0 just before. |
+| Main thread pinned to the prime core 7, all other threads to cores 0 to 6 (`tools/agent.py affin 4fb0884 80 7f`, live) | 44.6 | 53 frames > 50 ms and 2 > 100 ms, against 45.3 FPS, 3 and 0 just before. Not checked whether the masks took effect; a later `affin` left `/proc`'s `Cpus_allowed_list` unchanged (see the replay section). |
 | FEX TSO off (`FEX_TSOENABLED=0`) | 42.7 / 42.2 | Cheaper CPU code did not raise the FPS. |
 | `shadows` 4 → 2 and `volumetriclighting` 3 → 1 in `configuration_system.lua` | 34.3 / 34.2 | GPU 71 to 78 % busy. The file has no labels, so these numbers may not mean "lower"; the original file was put back byte for byte. |
 | Turnip forced to tile rendering (`TU_DEBUG=noconform,gmem`) | 28.8 | Rendered correctly, a third slower. |

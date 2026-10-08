@@ -17,6 +17,8 @@ Scripts that run on a Mac with the Thor connected over adb. How they fit togethe
 | [`agent.py`](agent.py) | Reads memory and threads inside the game without console windows (host side of [`probes/aoeagent.c`](probes/aoeagent.c)) |
 | [`run_watch.py`](run_watch.py) | Starts a run and watches it: the game process, its log, Windows suspend counts; answers GameNative's Save Conflict dialog |
 | [`ab_fex.py`](ab_fex.py) | Runs FEX builds in turn and summarises each run |
+| [`replay.py`](replay.py) | Late-game benchmark from a replay: reads the game clock, sets the replay speed, measures one window |
+| [`wincopy.py`](wincopy.py) | Copies files inside the game's Wine session (for example the replay or the game log) with no console window |
 
 ## GameNative and packaging
 
