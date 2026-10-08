@@ -206,6 +206,21 @@ The protection's file loop is off the frame path, and changing it would change h
 pursued. Note for `callers`: during these waits RCX read FEX's `RetToEntryThunk`, not the waited-on address, so RCX
 only shows a call's first argument when the game calls the stub's module directly (as in patch 0016's case).
 
+## Thread placement in the late game (2026-10-08, 10:56 to 11:18)
+
+The same replay windows, v1.2.0 with the GPU at 680 MHz, one replay pass per setup. `agent.py procaffin ff` first
+(the process mask was `bf` in pass A and `df` in pass B), then per-thread masks; `/proc` showed them in effect for 68
+threads, while about 10 threads that Windows does not list (likely Wine or driver threads) kept the process default.
+
+| Setup | FPS 46:13 / 48:23 | frames > 50 ms | GPU busy | render thread pushed off its core /s |
+|---|---|---|---|---|
+| Default core mask (03:23, "The late game at full clocks") | 39.0 / 38.6 | 18 / 22 | 67 / 68 % | 573 (09:20 profile) |
+| A: main thread on core 7 only, all others on cores 0 to 6 | 38.3 / 38.8 | 31 / 12 | 66 / 68 % | 432 |
+| B: main on core 7, render thread on core 6, all others on cores 0 to 5 | 38.9 / 39.0 | 34 / 5 | 67 / 67 % | 304 |
+
+Pass A's windows started about 12 s late (46:25, 48:35). Pinning halved how often the render thread lost its core,
+but the FPS stayed within the spread, so the package does not set it. `agent.py taffin '#tid' mask` sets one thread.
+
 ## v1.1.0 package: same speed without 0002 (21:54 to 22:17)
 
 The package without patch 0002, with 0007 in every process and with 0015 (`aoe4-perf3-21`, DLL `bc82c565`), against

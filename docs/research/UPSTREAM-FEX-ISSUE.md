@@ -1,5 +1,10 @@
 # Draft: FEX issue — the SMC write trap is observable by the guest
 
+> **Filed (2026-10-08)** as FEX issue [#6023](https://github.com/FEX-Emu/FEX/issues/6023), rewritten for current main,
+> with the reproducer measured: [`tools/probes/smcquery.c`](../../tools/probes/smcquery.c) reads `0x40` before the
+> page's code runs and `0x20` after with GameNative's FEX-2512, and stays `0x40` with patch 0004. The text below is
+> the older draft.
+
 > **Note (2026-10-06).** The leak is real and reproducible with `tools/research/smctest2.c`, but it is not what breaks
 > AoE IV ([`SMC-TRAP.md`, part 3](../how-it-works/SMC-TRAP.md#part-3-hiding-fexs-smc-trap-does-not-stop-the-aegis-kill)). A fix that keeps the trap and corrects the query results
 > is `patches/fex/0004`. Separately, `SMCChecks=full` stops AoE IV at start-up

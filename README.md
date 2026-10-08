@@ -252,6 +252,14 @@ frame-time graph in a browser; [`tools/agent.py`](tools/agent.py) reads memory a
 console windows. See [TESTING.md](docs/guides/TESTING.md).
 </details>
 
+## Upstream
+
+The fixes that belong in FEX or Wine were reported there on 2026-10-08: FEX pull request
+[#6021](https://github.com/FEX-Emu/FEX/pull/6021) and issues [#6022](https://github.com/FEX-Emu/FEX/issues/6022) and
+[#6023](https://github.com/FEX-Emu/FEX/issues/6023); Wine bugs [60461](https://bugs.winehq.org/show_bug.cgi?id=60461),
+[60462](https://bugs.winehq.org/show_bug.cgi?id=60462) and [60463](https://bugs.winehq.org/show_bug.cgi?id=60463).
+Which patch is which: [patches/fex](patches/fex#upstream-2026-10-08).
+
 ## The whole story
 
 Getting here took a long investigation: what AoE IV's protection checks, what was ruled out, and every measurement.

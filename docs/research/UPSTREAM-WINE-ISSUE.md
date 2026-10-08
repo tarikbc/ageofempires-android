@@ -1,6 +1,6 @@
 # Draft Wine bug: ARM64EC `-import` exports start with a bare x64 `jmp [rip+x]`
 
-Not filed. This is the source-level cause of the hook-check failure in [HOOK-CHECK.md](../how-it-works/HOOK-CHECK.md),
+Filed on 2026-10-08 as Wine bug [60463](https://bugs.winehq.org/show_bug.cgi?id=60463). This is the source-level cause of the hook-check failure in [HOOK-CHECK.md](../how-it-works/HOOK-CHECK.md),
 written as a Wine bug report. FEX patch 0007 works around it inside the emulator; a fix in Wine would make that patch
 unnecessary. Sources were read on 2026-10-07 at Wine master `63f62f7cd696` and llvm-project main `1a5b507c6c6f`.
 
