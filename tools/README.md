@@ -33,6 +33,7 @@ Scripts that run on a Mac with the Thor connected over adb. How they fit togethe
 | [`gn_driver.py`](gn_driver.py) | Imports and selects a graphics driver |
 | [`build_turnip.sh`](build_turnip.sh) | Builds Mesa's Turnip for Android on a Mac and packages it as a GameNative driver zip |
 | [`research/turnip_stages.py`](research/turnip_stages.py) | GPU time per render stage from a Perfetto trace of a Turnip built with perfetto (with `turnip_lrz_reasons.py` and `turnip_renderstages.cfg`) |
+| [`research/turnip_gpu_timeline.py`](research/turnip_gpu_timeline.py) | GPU busy share and idle gaps from the same trace; `turnip_submit_latency.py` matches each `vkQueueSubmit` to its GPU execution, `turnip_cpu_events.py` counts the driver's CPU events per thread |
 | [`gn_nav.py`](gn_nav.py) | GameNative UI automation, used by the scripts above |
 | [`redact.py`](redact.py) | Removes personal data (Steam name, IDs, tokens) from logs before they are committed |
 

@@ -99,8 +99,10 @@ def select(search):
     time.sleep(1)
     g.tap(1800, 238)  # keyboard DONE
     time.sleep(1.5)
+    # the search box itself (an EditText) also carries the typed text; an exact name wins over longer matches
     hits = [n for n in _nodes(g.dump()) if n.get("text") and search.lower() in n.get("text").lower()
-            and n.get("text") != search and bounds_center(n)[0] > 1150 and bounds_center(n)[1] > 340]
+            and "EditText" not in n.get("class", "") and bounds_center(n)[0] > 1150 and bounds_center(n)[1] > 340]
+    hits.sort(key=lambda n: n.get("text").lower() != search.lower())
     white = [n for n in hits if is_white(g, n)]
     print("matches:", [n.get("text") for n in hits], "installed:", [n.get("text") for n in white])
     if not white:

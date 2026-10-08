@@ -89,6 +89,42 @@ were not recorded.
 The CPU side of the same trace: 1,100 `vkQueueSubmit` per second from `vkd3d_queue` (about 25 per frame) and
 24,000 semaphore waits per second.
 
+## What the GPU waits for: vkd3d-proton's staggered submissions (2026-10-08, 15:40 to 16:30)
+
+**Result:** `VKD3D_CONFIG=no_staggered_submit` in the container's environment gives **58.6 / 58.1 FPS** in the skirmish
+benchmark (minutes 1 / 3) against 52.3 / 52.3 the same afternoon with the same driver, median frame 16.9 ms, the GPU
+reported 95 % busy instead of 85 %. It is in the README setup. The late-game replay was not re-measured yet.
+
+How it was found, from the render-stage traces above
+([`turnip_gpu_timeline.py`](../../tools/research/turnip_gpu_timeline.py),
+[`turnip_submit_latency.py`](../../tools/research/turnip_submit_latency.py),
+[`turnip_cpu_events.py`](../../tools/research/turnip_cpu_events.py); two traces, 11 s each, same numbers in both):
+
+- **The GPU worked only 37 % of the time.** The union of all "Command Buffer" GPU intervals covers 36 to 37 % of the
+  trace, about 7 ms of each 19 ms frame. The kernel's "GPU busy" counter (85 %) counts clock-on time, not work. The
+  idle time is 2,600 to 2,900 gaps of 1 to 2 ms and 2,200 of 0.5 to 1 ms per 11 s between consecutive command buffers.
+- **Each submission waited before the GPU started it.** Matching the 4,644 `vkQueueSubmit` calls to their GPU
+  execution by submission id gives a median 3.4 ms (p90 6.2 ms) between the end of `vkQueueSubmit` and the GPU
+  start, a lower bound (the GPU clock in these traces has no usable sync to boot time, so the tightest submission is
+  taken as zero latency). The GPU work of a submission is 1.5 ms median. In 2,618 of the 2,663 idle gaps the next
+  submission had already been submitted when the GPU went idle.
+- **The vkd3d queue thread spent 87 % of its time inside `vkWaitSemaphores`** (871 ms per second, 404 waits per
+  second). vkd3d-proton 2.14.1 does that on purpose when several D3D12 command queues share one Vulkan queue and were
+  all active in the last second (`d3d12_command_queue_needs_cpu_waits_locked` and
+  `d3d12_command_queue_needs_staggered_submissions_locked` in `libs/vkd3d/command.c`): fence waits are resolved on
+  the CPU instead of on the GPU, and each virtual queue waits for its previous command buffer to finish before it
+  submits the next one ("essentially allows one command buffer in flight"). Turnip exposes one queue family with one
+  queue, so the game's graphics, compute and copy queues all alias it. `VKD3D_CONFIG=no_staggered_submit` turns both
+  behaviours off.
+
+Also tried in the same session, on top of `no_staggered_submit`:
+
+- A Turnip change that drops a timestamp wait on the submission's own KGSL context before the `IOCTL_KGSL_GPU_COMMAND`
+  (in-order execution makes it redundant; the kernel otherwise routes even a same-context sync through its event and
+  dispatcher path): 56.4 / 56.6 FPS, no gain, not kept.
+- The GPU's inter-frame power collapse (`/sys/class/kgsl/kgsl-3d0/ifpc`) is on and fires about 16 times per second
+  in the match with the new setting; the knob is root-only on the Thor, so it was not tested.
+
 ## Not tested yet
 
 - A full game played by a person on the new driver (the benchmark skirmish and the replay ran without a crash).
@@ -96,3 +132,6 @@ The CPU side of the same trace: 1,100 `vkQueueSubmit` per second from `vkd3d_que
 - Run-time options tried in the skirmish benchmark on this driver (52.3 FPS as released): `TU_AUTOTUNE_ALGO=bandwidth`
   50.5 / 50.7, a build with Mesa MR !43714 52.5 / 52.6, `disable_conservative_lrz=true` 51.0 / 50.8. `TU_DEBUG=gmem`
   got no clean run (two starts stopped with the DX12 fence error). Nothing beats the default.
+- Turnip's `tu_emulate_second_queue=true` (a second Vulkan queue on the same kernel submit queue, which would give
+  vkd3d-proton's compute and copy queues their own Vulkan queue): the run was stopped before it measured.
+- The late-game replay with `VKD3D_CONFIG=no_staggered_submit`.
