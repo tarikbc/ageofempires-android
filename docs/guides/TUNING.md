@@ -48,8 +48,9 @@ Thor was hot; earlier the same R4 setup gave 43.8 to 45.6 FPS.
 `-- FATAL EXIT --` in the game's log (error 102 is a wait timeout: the GPU did not finish the submitted work). Its
 `meta.json` name contains `/`, and GameNative installed it under the folder name `tmp`.
 
-R4 and R6 are the same within the test's spread; R4 stays. Checksums: the Balemuni and T30 files on the Thor matched
-the SHA-256 digests of their GitHub release assets.
+R4 and R6 are the same within the test's spread; R4 stayed until 2026-10-08, when a Turnip built from Mesa main gave
+52.3 FPS in this test ([TURNIP.md](TURNIP.md)). Checksums: the Balemuni and T30 files on the Thor matched the SHA-256
+digests of their GitHub release assets.
 
 ## Power profile: let the CPU scale (20:00)
 

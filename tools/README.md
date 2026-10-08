@@ -31,6 +31,7 @@ Scripts that run on a Mac with the Thor connected over adb. How they fit togethe
 | [`gn_import_wcp.py`](gn_import_wcp.py) | Imports a `.wcp` into GameNative's Contents Manager |
 | [`gn_select_fex.py`](gn_select_fex.py) | Selects the FEXCore version of the AoE IV container |
 | [`gn_driver.py`](gn_driver.py) | Imports and selects a graphics driver |
+| [`build_turnip.sh`](build_turnip.sh) | Builds Mesa's Turnip for Android on a Mac and packages it as a GameNative driver zip |
 | [`gn_nav.py`](gn_nav.py) | GameNative UI automation, used by the scripts above |
 | [`redact.py`](redact.py) | Removes personal data (Steam name, IDs, tokens) from logs before they are committed |
 
