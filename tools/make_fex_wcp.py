@@ -5,7 +5,7 @@
 
 A .wcp is an xz-compressed tar with profile.json and the files it names. GameNative's Contents Manager imports it,
 and the FEXCore Version selected in the container's Emulation tab is then copied to its targets at every container
-start (docs/GAMENATIVE-UI.md). The dropdown shows it as <name>-<code>. Only libarm64ecfex.dll is shipped: that is the
+start (docs/guides/GAMENATIVE-UI.md). The dropdown shows it as <name>-<code>. Only libarm64ecfex.dll is shipped: that is the
 one file the tested setup replaced.
 """
 import argparse
