@@ -147,7 +147,9 @@ python3 tools/research/ntdll_syscall_table.py ntdll.dll --out syscalls.tsv   # s
 the table, which differs between Wine builds. The `ntdll.dll` to read is the game's own copy (`tools/wincopy.py`), and
 `NTDLL_BASE` comes from `agent.py mod ntdll.dll` in the same session. Pick threads by id (`#tid` from `prio list`): a
 name prefix cannot contain spaces, and before 2026-10-08 the agent printed the next thread's id after `thread=` (the
-sampled thread itself was right). `tools/probes/wakecost.c` times one sleep/wake hand-off between two threads.
+sampled thread itself was right). `agent.py taffin '#tid' MASK` sets one thread's affinity. `tools/probes/wakecost.c`
+times one sleep/wake hand-off between two threads, and `tools/probes/smcquery.c` checks whether FEX's write trap shows
+in `VirtualQuery` (the reproducer of FEX issue #6023).
 
 **The fan.** The measured runs used the Thor's fan at Custom (88 %). Set it with `tools/thor_fan.py custom` right
 before a measured run and `tools/thor_fan.py smart` as soon as the game stops, so the fan does not wear for nothing.

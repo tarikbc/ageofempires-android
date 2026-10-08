@@ -23,6 +23,22 @@ of the build time stamp (PE header and debug directory). Checked 2026-10-07 the 
 without 0016) gives `bc82c565`, and the v1.0.0 set (0002, 0004, 0006, 0007 in its game-only form, 0009, 0010, 0012,
 0013, 0014; tag `v1.0.0`) gives the released `6990a221`.
 
+## Upstream (2026-10-08)
+
+Where each problem was reported or proposed. Wine's source was checked at master `63f62f7cd696` and FEX's at main
+`14c92681f` (FEX-2610) first.
+
+| Patch | Upstream |
+|---|---|
+| 0015 | FEX pull request [#6021](https://github.com/FEX-Emu/FEX/pull/6021), with a second fix found while porting it: `CheckCall`'s bound used `b.hi`, which let an offset equal to the table size through and read one entry past the end (`b.hs`). Both built on upstream main; a build of this package plus `b.hs` ran AoE II DE (menu, its ranked benchmark, score 1079.3) and AoE IV (skirmish, 41.2 / 41.4 FPS). |
+| 0012, 0014 | FEX issue [#6022](https://github.com/FEX-Emu/FEX/issues/6022), asking how the maintainers want it before a clean PR. |
+| 0004 | FEX issue [#6023](https://github.com/FEX-Emu/FEX/issues/6023). Its reproducer is [`tools/probes/smcquery.c`](../../tools/probes/smcquery.c): with GameNative's FEX-2512 a fresh RWX page reads `0x40` before its code runs and `0x20` after; with this package it stays `0x40` (AoE II container session, 2026-10-08). |
+| 0006 | Wine bug [60461](https://bugs.winehq.org/show_bug.cgi?id=60461): the cause is Wine's `invoke_arm64ec_syscall`, still the same in master. |
+| 0016 | Wine bug [60462](https://bugs.winehq.org/show_bug.cgi?id=60462): `NtPowerInformation(ProcessorInformation)` still opens two cpufreq files per CPU per call in master. |
+| 0007 | Wine bug [60463](https://bugs.winehq.org/show_bug.cgi?id=60463) (from [UPSTREAM-WINE-ISSUE.md](../../docs/research/UPSTREAM-WINE-ISSUE.md)). |
+| 0010 | Not reported: the wineserver round trip it avoids is gone in Proton 11.0-2 and Wine master (`NtContinueEx` only calls the server for alertable continues); with the Wine this package runs on (11.0-99) it still helps. |
+| 0009, 0013, 0002, 0008 | Not proposed: 0009 is unsafe in general, 0013 is a tuning constant, 0002 hid FEX from the game, 0008 is an analysis tool. |
+
 ## `0001-hide-smc-trap-from-guest.patch`
 
 **The problem.** Under the default `SMCChecks=mtrack`, FEX catches self-modifying code by clearing the

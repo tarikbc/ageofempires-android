@@ -18,6 +18,7 @@
 //   pause <exerva> <ms>                suspend the threads that start at exe+rva for ms (runs in the background)
 //   duty <exerva> <off_ms> <on_ms> <total_ms>   suspend/resume those threads in a cycle (background)
 //   affin <exerva> <mask> [others]     set the affinity of those threads (and of all other threads)
+//   taffin <tid> <mask>                SetThreadAffinityMask on one thread (hex id, optional #)
 //   procaffin <mask>                   SetProcessAffinityMask(target, mask), then SetThreadAffinityMask on every
 //                                      thread; prints the old process/system masks and how many calls succeeded
 //   prio list                          tid, Windows thread name and priority of every thread
@@ -272,6 +273,16 @@ static int run(char *line)
         }
         CloseHandle(snap);
         fprintf(out, "id=%s ok matched=%d others=%d\n", id, hit, rest);
+    } else if (!strcmp(cmd, "taffin") && argc > 3) {
+        // taffin <hex tid, optional leading #> <hex mask>: SetThreadAffinityMask on that one thread
+        DWORD tid = strtoul(argv[2][0] == '#' ? argv[2] + 1 : argv[2], NULL, 16);
+        ULONG_PTR mask = (ULONG_PTR)_strtoui64(argv[3], NULL, 16);
+        HANDLE t = OpenThread(THREAD_QUERY_INFORMATION | THREAD_SET_INFORMATION, FALSE, tid);
+        DWORD_PTR old = t ? SetThreadAffinityMask(t, mask) : 0;
+        DWORD err = old ? 0 : GetLastError();
+        if (t) CloseHandle(t);
+        fprintf(out, "id=%s ok tid=%04lx mask=%llx old=%llx %s(err %lu)\n", id, tid, (unsigned long long)mask,
+                (unsigned long long)old, old ? "set" : "failed", err);
     } else if (!strcmp(cmd, "procaffin") && argc > 2) {
         DWORD_PTR mask = (DWORD_PTR)_strtoui64(argv[2], NULL, 16), pm = 0, sm = 0;
         GetProcessAffinityMask(proc, &pm, &sm);
