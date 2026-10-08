@@ -30,6 +30,7 @@ The patch files themselves, with a status line each: [patches/fex](../patches/fe
 | [CONTAINER-CONFIG.md](guides/CONTAINER-CONFIG.md) | Editing the container config from inside Wine; "Open container" |
 | [AUTOMATION-PATHS.md](guides/AUTOMATION-PATHS.md) | GameNative's intents, and what did not work |
 | [WINE-SOURCE.md](guides/WINE-SOURCE.md) | Which Wine build the Thor runs, its source commit, and what it lacks |
+| [AOE2-DE.md](guides/AOE2-DE.md) | Age of Empires II: DE on the Thor with this package: the start-up crash, the setup that works, speed |
 | [ANALYSIS-GOTCHAS.md](guides/ANALYSIS-GOTCHAS.md) | Two checks before trusting an offline analysis of the game binary |
 
 ## Research
