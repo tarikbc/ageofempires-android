@@ -8,7 +8,7 @@ Every 10 s: copy warnings.log out through winhandler (tools/thor/mon.bat -> D:\\
 Every 20 s: also run suspinfo, which reads each thread's *Windows* suspend count without suspending
 anything. /proc thread states cannot see Wine's SuspendThread, so suspinfo is the kill detector.
 
-Guards from docs/EXPERIMENTS.md: the log's first line must name this run's start time, and a run
+Guards from docs/research/EXPERIMENTS.md: the log's first line must name this run's start time, and a run
 with ~5 threads at 0 % CPU never initialised.
 """
 import argparse

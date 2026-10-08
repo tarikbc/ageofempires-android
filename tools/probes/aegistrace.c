@@ -2,7 +2,7 @@
 // usage: aegistrace.exe <exename> <rva_hex of AegisTrace> <outfile>
 //   rva: llvm-nm Bin/libarm64ecfex.dll | grep ' AegisTrace$', minus the image base 0x180000000.
 // Writes the 136-byte header followed by the whole ring buffer (Capacity * 64 bytes) to <outfile>;
-// tools/parse_aegistrace.py decodes it.
+// tools/research/parse_aegistrace.py decodes it.
 #include <windows.h>
 #include <tlhelp32.h>
 #include <psapi.h>

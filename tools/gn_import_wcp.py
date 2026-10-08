@@ -5,7 +5,7 @@
 
 Restarts GameNative, opens Menu > Settings > Contents Manager > Import .wcp from device, searches the Android file
 picker for WORD (one word: the keyboard splits compound words) and picks FILE_NAME. Coordinates and labels are from
-docs/GAMENATIVE-UI.md.
+docs/guides/GAMENATIVE-UI.md.
 """
 import argparse
 import sys

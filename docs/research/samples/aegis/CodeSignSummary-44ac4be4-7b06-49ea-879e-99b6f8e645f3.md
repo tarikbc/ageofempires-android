@@ -1,0 +1,37 @@
+﻿ | FileName                  | Status | FileSize | TotalTime(sec) | Upload(sec) | Submit(sec) | SignWait(sec) | Retry Count | 
+ |---------------------------|--------|----------|----------------|-------------|-------------|---------------|-------------|
+ | Essence.Telemetry.dll     | Pass   | 27.5KB   | 20.6           | 0.51        | 0.4         | 15.28         | 0           | 
+ | Essence.Telemetry.dll     | Pass   | 27.5KB   | 20.6           | 0.51        | 0.4         | 15.28         | 0           | 
+ | EngineObjectModel.dll     | Pass   | 125.5KB  | 20.6           | 0.6         | 0.31        | 15.28         | 0           | 
+ | EngineObjectModel.dll     | Pass   | 125.5KB  | 20.6           | 0.6         | 0.31        | 15.28         | 0           | 
+ | EngineObjectModel.dll     | Pass   | 125.5KB  | 20.6           | 0.6         | 0.31        | 15.28         | 0           | 
+ | EngineObjectModel.dll     | Pass   | 125.5KB  | 20.6           | 0.6         | 0.31        | 15.28         | 0           | 
+ | Relic.Windows.dll         | Pass   | 145KB    | 20.59          | 0.6         | 0.29        | 15.28         | 0           | 
+ | Relic.Windows.dll         | Pass   | 145KB    | 20.59          | 0.6         | 0.29        | 15.28         | 0           | 
+ | Essence.RPC.dll           | Pass   | 76.5KB   | 33.39          | 0.55        | 0.43        | 28.07         | 0           | 
+ | Essence.RPC.dll           | Pass   | 76.5KB   | 33.39          | 0.55        | 0.43        | 28.07         | 0           | 
+ | Essence.RPC.dll           | Pass   | 76.5KB   | 33.39          | 0.55        | 0.43        | 28.07         | 0           | 
+ | Essence.RPC.dll           | Pass   | 76.5KB   | 33.39          | 0.55        | 0.43        | 28.07         | 0           | 
+ | itor.Bridge.Resources.dll | Pass   | 32KB     | 20.6           | 0.51        | 0.41        | 15.28         | 0           | 
+ | unctionalTests.Editor.dll | Pass   | 20KB     | 91.09          | 0.51        | 0.92        | 85.77         | 0           | 
+ | EssenceEditor.exe         | Pass   | 9.75MB   | 91.09          | 1.38        | 0.29        | 85.77         | 0           | 
+ | GPUBurner.exe             | Pass   | 49.22MB  | 78.99          | 2.12        | 0.35        | 73.68         | 0           | 
+ | Essence.Core.dll          | Pass   | 384KB    | 33.39          | 0.72        | 0.35        | 28.07         | 0           | 
+ | Essence.Core.dll          | Pass   | 384KB    | 33.39          | 0.72        | 0.35        | 28.07         | 0           | 
+ | Essence.Core.dll          | Pass   | 384KB    | 33.39          | 0.72        | 0.35        | 28.07         | 0           | 
+ | Essence.Core.dll          | Pass   | 384KB    | 33.39          | 0.72        | 0.35        | 28.07         | 0           | 
+ | e.Editor.Localization.dll | Pass   | 486KB    | 20.59          | 0.73        | 0.41        | 15.28         | 0           | 
+ | tor.Localization.Core.dll | Pass   | 225.5KB  | 20.59          | 0.67        | 0.34        | 15.28         | 0           | 
+ | nce.Editor.Attributes.dll | Pass   | 1.26MB   | 20.59          | 0.9         | 1.92        | 15.28         | 0           | 
+ | ssence.Editor.Modding.dll | Pass   | 138KB    | 20.59          | 0.62        | 0.27        | 15.28         | 0           | 
+ | ssence.MemoryAnalysis.dll | Pass   | 60KB     | 20.6           | 0.55        | 0.31        | 15.28         | 0           | 
+ | nce.Rpc.TestUtilities.dll | Pass   | 69KB     | 67.2           | 0.55        | 0.37        | 61.88         | 0           | 
+ | nce.Rpc.TestUtilities.dll | Pass   | 69KB     | 67.2           | 0.55        | 0.37        | 61.88         | 0           | 
+ | nce.Rpc.TestUtilities.dll | Pass   | 69KB     | 67.2           | 0.55        | 0.37        | 61.88         | 0           | 
+ | Essence.Editor.Bridge.dll | Pass   | 136.62MB | 112.29         | 3.39        | 0.3         | 106.98        | 0           | 
+ | Essence.Editor.Core.dll   | Pass   | 3.13MB   | 20.6           | 0.87        | 0.29        | 15.28         | 0           | 
+ | Essence.Editor.Core.dll   | Pass   | 3.13MB   | 20.6           | 0.87        | 0.29        | 15.28         | 0           | 
+ | Relic.Core.dll            | Pass   | 113.5KB  | 33.39          | 0.6         | 0.42        | 28.07         | 0           | 
+ | Relic.Core.dll            | Pass   | 113.5KB  | 33.39          | 0.6         | 0.42        | 28.07         | 0           | 
+ | Relic.Core.dll            | Pass   | 113.5KB  | 33.39          | 0.6         | 0.42        | 28.07         | 0           | 
+ | Relic.Core.dll            | Pass   | 113.5KB  | 33.39          | 0.6         | 0.42        | 28.07         | 0           | 
