@@ -174,6 +174,38 @@ The protection's loop still raises about 25,000 handled exceptions per second (`
 (`exccost`) that is about 6 % of one core, an estimate. How patch 0016 was found:
 [POWER-INFORMATION.md](../how-it-works/POWER-INFORMATION.md).
 
+## Where the late game waits (2026-10-08, 09:19 to 09:23)
+
+The replay at 46:12, 1X, v1.2.0 with the GPU at 680 MHz and the default core mask (the setup as released). First
+`tools/threadwaits.py 20`, then 1,500 RIP samples per thread, 2 ms apart (`tools/agent.py sample '#tid' ...`), with
+the system calls named by `tools/research/sysprof.py`:
+
+| Thread | CPU | waits/s | pushed off its core /s | Where its samples are |
+|---|---|---|---|---|
+| Game/Main Thread | 52.3 % | 1,111 | 112 | game code 49 %; `NtWaitForAlertByThreadId` 34.9 %, `NtAlertThreadByThreadId` 5.1 %, `NtPowerInformation` 1.5 % |
+| Game/Render thread | 36.5 % | 333 | 573 | game code 29 %; `NtWaitForAlertByThreadId` 17.1 %, `NtWaitForSingleObject` 14.5 %; `winevulkan.dll` 13.3 %, `d3d12core.dll` 7.4 % |
+| The protection's loop (start `exe+3e1b04c`) | 23.0 % | 529 | 170 | `NtWaitForSingleObject` 49.1 %; file calls 13 % (`NtQueryInformationFile` 5.0 %, `NtCreateFile` 4.4 %, `NtClose` 3.6 %), all from the protection's code |
+| 8 × rcss worker | 10.7 to 17.7 % each | 1,026 to 1,609 each | 186 to 589 | worker 00: `NtWaitForAlertByThreadId` 87.1 %, game code 7.9 % |
+| Simulation Thread | 12.3 % | 358 | 25 | `NtWaitForSingleObject` 63.7 %, `NtWaitForAlertByThreadId` 16.6 % |
+| AK::EventManager (audio) | 11.2 % | 114 | 49 | `NtWaitForSingleObject` 91.0 % |
+| vkd3d_queue | 9.8 % | 894 | 161 | `winevulkan.dll` 91.1 % (inside the Vulkan driver) |
+
+No single call stands out the way `NtPowerInformation` did before patch 0016. The main thread waits for other game
+threads: 476 of its 515 wait samples have `exe+3254372` among the return addresses on the stack. The render thread
+waits about a third of the time and is pushed off its core 573 times per second. The workers sleep and wake about
+9,000 times per second together.
+
+**What one sleep/wake costs** (`tools/probes/wakecost.c`, in an AoE IV container session with this package, no
+game running): a plain system call (`SwitchToThread`) 1.09 µs; a `WaitOnAddress` / `WakeByAddressSingle` round trip
+between two threads 16.95 µs (two hand-offs, about 8.5 µs each); the same with an SRW lock and a condition variable
+17.64 µs. So Wine and FEX add about 1 µs per call and most of a hand-off is the Linux scheduler waking the other
+thread. A faster path for these calls in FEX would save about 1 to 2 % of one core at 9,000 hand-offs per second
+(an estimate from these numbers); not pursued.
+
+The protection's file loop is off the frame path, and changing it would change how the anti-tamper behaves; not
+pursued. Note for `callers`: during these waits RCX read FEX's `RetToEntryThunk`, not the waited-on address, so RCX
+only shows a call's first argument when the game calls the stub's module directly (as in patch 0016's case).
+
 ## v1.1.0 package: same speed without 0002 (21:54 to 22:17)
 
 The package without patch 0002, with 0007 in every process and with 0015 (`aoe4-perf3-21`, DLL `bc82c565`), against

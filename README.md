@@ -133,6 +133,8 @@ The CPU runs hot in long sessions: the hottest CPU sensor read about 95 °C duri
   message" choice expires. GameNative's touch input did not reach its button in our tests; the repo's helper
   `tools/probes/dlgclick` clicks it from adb ([RESEARCH-LOG.md](docs/research/RESEARCH-LOG.md), Traps).
 - **The game needs AVX.** FEX provides it; hiding it makes the game refuse to start.
+- **Sometimes it stops while loading** with "Failed to wait for DX12 fence (error 102)" in its log (twice on
+  2026-10-08). Start it again; the next start worked both times.
 - **Other graphics drivers:** Turnip v26.3.0-R6 ran the same; purple-turnip T30 was about 2.5 FPS slower;
   **Balemuni Apex v2 crashes the game** after about two minutes ([TUNING.md](docs/guides/TUNING.md)).
 - **Display mode:** the option stored as `windowmode` 1 gave a black screen; borderless works.

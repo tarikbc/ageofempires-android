@@ -134,8 +134,9 @@ with the agent started first:
 
 ```sh
 python3 tools/agent.py prio list                       # every thread: id, Windows name, priority
-python3 tools/agent.py sample Game/Main 1500 2 D:\\aoe\\agent\\rips.txt   # 1,500 samples of the main thread's RIP, 2 ms apart
-python3 tools/agent.py callers Game/Main 1500 2 LO HI    # samples with RIP in [LO, HI): first argument, exe return addresses
+python3 tools/agent.py sample '#013c' 1500 2 D:\\aoe\\agent\\rips.txt   # 1,500 RIP samples of thread 013c, 2 ms apart
+python3 tools/agent.py callers '#013c' 1500 2 LO HI     # samples with RIP in [LO, HI): first argument, exe return addresses
+python3 tools/research/sysprof.py rips.txt ntdll.dll syscalls.tsv NTDLL_BASE   # name the system calls in a dump
 python3 tools/agent.py procaffin ff                    # let every game thread run on all 8 cores
 python3 tools/threadwaits.py 20                        # per thread: CPU, waits per second, preemptions per second
 python3 tools/excrate.py 10                            # handled exceptions per second (patch 0010's counters)
@@ -143,7 +144,10 @@ python3 tools/research/ntdll_syscall_table.py ntdll.dll --out syscalls.tsv   # s
 ```
 
 `sample` reports by module; a sample at the return of a Wine system-call stub (`mov x8, #id`) names the call through
-the table, which differs between Wine builds. The `ntdll.dll` to read is the game's own copy (`tools/wincopy.py`).
+the table, which differs between Wine builds. The `ntdll.dll` to read is the game's own copy (`tools/wincopy.py`), and
+`NTDLL_BASE` comes from `agent.py mod ntdll.dll` in the same session. Pick threads by id (`#tid` from `prio list`): a
+name prefix cannot contain spaces, and before 2026-10-08 the agent printed the next thread's id after `thread=` (the
+sampled thread itself was right). `tools/probes/wakecost.c` times one sleep/wake hand-off between two threads.
 
 **The fan.** The measured runs used the Thor's fan at Custom (88 %). Set it with `tools/thor_fan.py custom` right
 before a measured run and `tools/thor_fan.py smart` as soon as the game stops, so the fan does not wear for nothing.
