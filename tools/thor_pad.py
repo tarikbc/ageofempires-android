@@ -31,6 +31,9 @@ def node():
             dev = line.split(":", 1)[1].strip()
         if "Xbox Wireless Controller" in line and dev:
             return dev
+        if "Odin Controller" in line and dev:
+            sys.exit("the Thor's controller is in standard mode; set it to Xbox style in the Thor's settings "
+                     "(these tools were tested only in Xbox style, see docs/guides/TESTING.md)")
     sys.exit("controller node not found")
 
 
