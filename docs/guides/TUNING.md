@@ -206,6 +206,35 @@ The protection's file loop is off the frame path, and changing it would change h
 pursued. Note for `callers`: during these waits RCX read FEX's `RetToEntryThunk`, not the waited-on address, so RCX
 only shows a call's first argument when the game calls the stub's module directly (as in patch 0016's case).
 
+## What gates a late-game frame (2026-10-08, 11:52 to 12:14)
+
+Two replay passes, windows at 46:13 and 48:23, v1.2.0 with the GPU at 680 MHz. Between the windows a 5 s
+`atrace -t 5 sched freq sync gfx` (the system `perfetto` crashed in `traced_probes` while building its ftrace table on
+this firmware, so its ftrace data is empty), analysed with [`tools/research/at_analyze.py`](../../tools/research/at_analyze.py).
+
+| Pass | FPS 46:13 / 48:23 | frames > 50 ms | render thread running | main thread running |
+|---|---|---|---|---|
+| Released setup | 39.8 / 39.7 | 15 / 9 | 41.0 % | 45.5 % |
+| `FEX_TSOENABLED=0` | 39.4 / 39.3 | 14 / 10 | 36.6 % | 44.0 % |
+
+What the trace shows (released setup):
+
+- **The render thread waits for the GPU once per frame.** The `vkd3d_fence` thread woke it 185 times in 5 s (about
+  once per frame), after a median wait of 9.8 ms, 38 % of the render thread's time. `vkd3d_fence` signals the game's
+  own D3D12 fence events, so this is the game waiting for an earlier frame's GPU work, not vkd3d-proton's swapchain
+  limit (that defaults to 3 frames, `VKD3D_SWAPCHAIN_LATENCY_FRAMES`, swapchain.c in 2.14.1).
+- **The main thread waits for its job workers.** It ran 45.5 % and slept 50.7 %; the 8 `rcss worker` threads woke it
+  most often. It also slept 783 times in a 1 ms timed wait (157 per second).
+- **The workers queue for cores.** Each was runnable but not running 11 to 22 % of the time, and ran 15 to 25 % of
+  its time on the small cores 0 to 2. The process mask left out one big core (`0-5,7` this start; the game's cpuset
+  `top-app` allows 0-7, and GameNative logged CPU list 0-7, so something sets it explicitly; not found).
+- **Frames sit on the 120 Hz grid:** about 60 % took 3 refreshes (25.3 ms), 20 % took 2 and 17 % took 4.
+
+TSO off cut the render thread's CPU time by about a tenth and the time went into waiting; the FPS stayed the same, as
+it did with pinned threads ("Thread placement" below). So the late game is not limited by how fast FEX runs the CPU
+side: it is limited by the GPU work per frame and the game waiting on it. The levers left are on the GPU side: less
+GPU work per frame (the 75 % render scale gave about 2 FPS, "Not kept" above) or a faster driver path.
+
 ## Thread placement in the late game (2026-10-08, 10:56 to 11:18)
 
 The same replay windows, v1.2.0 with the GPU at 680 MHz, one replay pass per setup. `agent.py procaffin ff` first
