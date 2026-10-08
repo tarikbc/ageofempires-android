@@ -21,7 +21,7 @@ the GPU held at 680 MHz ([TUNING.md](../guides/TUNING.md)).
 |---|---|
 | GameNative | 1.2.1, container variant `bionic` |
 | Wine | `proton-11.0-99-arm64ec-1` |
-| CPU emulator | FEXCore content `aoe4-perf5-23`: [`fexcore-aoe4-perf5.wcp`](https://github.com/tarikbc/aoe4-gamenative/releases/tag/v1.2.0) (release v1.2.0), FEX `7d3090f` + [patches](../../patches/fex) 0004, 0006, 0007, 0009, 0010, 0012, 0013, 0014, 0015, 0016 (`libarm64ecfex.dll`, SHA-1 `b5e6e357`; release v1.1.0 was the same without 0016, `bc82c565`; release v1.0.0 also had 0002 and the game-only 0007, `6990a221`) |
+| CPU emulator | FEXCore content `aoe4-perf5-23`: [`fexcore-aoe4-perf5.wcp`](https://github.com/tarikbc/ageofempires-android/releases/tag/v1.2.0) (release v1.2.0), FEX `7d3090f` + [patches](../../patches/fex) 0004, 0006, 0007, 0009, 0010, 0012, 0013, 0014, 0015, 0016 (`libarm64ecfex.dll`, SHA-1 `b5e6e357`; release v1.1.0 was the same without 0016, `bc82c565`; release v1.0.0 also had 0002 and the game-only 0007, `6990a221`) |
 | Container `envVars` | `WRAPPER_MAX_IMAGE_COUNT=0 ZINK_DESCRIPTORS=lazy ZINK_DEBUG=compact,deck_emu MESA_SHADER_CACHE_DISABLE=false MESA_SHADER_CACHE_MAX_SIZE=512MB mesa_glthread=true WINEESYNC=1 MESA_VK_WSI_PRESENT_MODE=mailbox TU_DEBUG=noconform VKD3D_SHADER_MODEL=6_0 PULSE_LATENCY_MSEC=144 BOX64_AVX=1 VKD3D_DEBUG=warn WINEDEBUG=-all FEX_EXP_SKIP_CALLRET_RESET=1` (read back from both `.container` copies) |
 | GPU driver | Turnip v26.2.0 R4 (v26.3.0-R6, T30 and Balemuni Apex v2 compared in [TUNING.md](../guides/TUNING.md)) |
 | Display | 120 Hz (`peak_refresh_rate` and `min_refresh_rate` 120), set before the game starts |
@@ -77,7 +77,7 @@ recompile that still came every 2 to 3 minutes: no frame over 100 ms after the f
    ([BUILDING-FEX.md](../guides/BUILDING-FEX.md)); 0009 only acts with `FEX_EXP_SKIP_CALLRET_RESET=1`. Without 0012 to
    0014 the game also runs, at about 27 FPS.
 3. That `libarm64ecfex.dll` packaged as a FEXCore content with [`tools/make_fex_wcp.py`](../../tools/make_fex_wcp.py)
-   (the current one is in release v1.2.0: [`fexcore-aoe4-perf5.wcp`](https://github.com/tarikbc/aoe4-gamenative/releases/tag/v1.2.0), versionName `aoe4-perf5`,
+   (the current one is in release v1.2.0: [`fexcore-aoe4-perf5.wcp`](https://github.com/tarikbc/ageofempires-android/releases/tag/v1.2.0), versionName `aoe4-perf5`,
    versionCode 23, DLL `b5e6e357`),
    imported in GameNative (Settings, Contents Manager, Import .wcp from device) and selected in the container's
    Emulation tab, FEXCore Version (tested 2026-10-07 10:34 with `aoe-fastcontinue-10`: at the next start logcat

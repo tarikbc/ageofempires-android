@@ -1,16 +1,22 @@
-# Age of Empires IV on Android (GameNative)
+# Age of Empires on Android (GameNative)
 
-Play **Age of Empires IV** on an Android handheld with [GameNative](https://github.com/utkarshdalal/GameNative).
-This repo has a patched CPU emulator package that gets the game past its copy protection and runs it at
-**high 20s to low 30s FPS in a full game** (about 24 in big late-game battles, 42 to 46 in the first minutes), with
-controller support. Version 1.2.0, with the GPU held at its top clock, ran a late-game benchmark at **about 39 FPS**
-(36 with v1.1.0).
+Play **Age of Empires IV** and **Age of Empires II: Definitive Edition** on an Android handheld with
+[GameNative](https://github.com/utkarshdalal/GameNative). Both games need the patched CPU emulator (FEX) package
+from this repo: without it AoE IV's copy protection freezes the game within minutes, and AoE II DE does not start at
+all (black screen, it exits after about a second).
 
-![A skirmish with the controller UI, 15 minutes in](docs/img/controller-match-15min-2026-10-07.jpg)
+| | Age of Empires IV | Age of Empires II: DE |
+|---|---|---|
+| Plays | A full 51-minute game against one A.I., to victory | A 3-player skirmish against two Hardest A.I.s, 17 minutes, no crash |
+| Speed | High 20s to low 30s in a full game; 42 to 46 FPS in the first minutes; **about 39 FPS** in the late-game benchmark (v1.2.0) | **60 FPS** in that skirmish (the game stayed at 60); 27 to 30 FPS in the game's heavy 8-player benchmark |
+| Controls | The Thor's controller, with the game's own controller UI | Touch screen as a touchpad, or a mouse (not tried by a player yet) |
+
+![AoE IV: a skirmish with the controller UI, 15 minutes in](docs/img/controller-match-15min-2026-10-07.jpg)
 
 | | |
 |---|---|
-| ![Main menu](docs/img/main-menu-2026-10-07.jpg) | ![The game's controller tutorial](docs/img/controller-tutorial-2026-10-07.jpg) |
+| ![AoE IV main menu](docs/img/main-menu-2026-10-07.jpg) | ![AoE IV's controller tutorial](docs/img/controller-tutorial-2026-10-07.jpg) |
+| ![AoE II DE main menu](docs/img/aoe2-main-menu-2026-10-08.jpg) | ![AoE II DE: an A.I. base in the Imperial Age, 33 minutes in](docs/img/aoe2-skirmish-imperial-2026-10-08.jpg) |
 
 ## Status
 
@@ -18,36 +24,32 @@ controller support. Version 1.2.0, with the GPU held at its top clock, ran a lat
 |---|---|
 | Tested device | AYN Thor (Snapdragon 8 Gen 2, Adreno 740, 16 GB RAM, Android 13) |
 | GameNative | 1.2.1 |
-| Game | Age of Empires IV: Anniversary Edition (Steam), build 16.3.11308 |
-| Works | Main menu, tutorial, skirmish vs the A.I.; a full 51-minute game against one A.I. played to victory |
-| Speed | Full game (51 minutes, one A.I., GameNative's FPS counter): high 20s to low 30s, about 24 in big late-game battles. Benchmark (first minutes of a 1v1, 1280×720, display at 120 Hz): 42 to 46 FPS, frames over 100 ms rare (0 to 2 per 90 s). Late-game benchmark (minutes 46 and 48 of that game's replay, v1.2.0, GPU at 680 MHz): 39.0 / 38.6 FPS |
-| Controls | The Thor's built-in controller, with the game's own controller UI |
-| Not tested | Multiplayer matches, the campaigns, other devices |
-
-Without these patches the game freezes within minutes on GameNative, because its anti-tamper protection reacts to
-things the emulator does differently from Windows. See [How it works](#how-it-works).
+| Age of Empires IV | Anniversary Edition (Steam), build 16.3.11308. Main menu, tutorial, skirmish vs the A.I.; a full 51-minute game played to victory. Full game (one A.I., GameNative's FPS counter): high 20s to low 30s, about 24 in big late-game battles. Benchmark (first minutes of a 1v1, 1280×720, display at 120 Hz): 42 to 46 FPS, frames over 100 ms rare (0 to 2 per 90 s). Late-game benchmark (minutes 46 and 48 of that game's replay, v1.2.0, GPU at 680 MHz): 39.0 / 38.6 FPS |
+| Age of Empires II: DE | Steam, build 101.103.54800.0, three civilization DLCs, no Enhanced Graphics Pack. Main menu, skirmish vs the A.I.; 59.3 to 60.0 FPS in seven 60 s windows over 17 minutes |
+| Not tested | Multiplayer, the campaigns, other devices |
 
 ## What you need
 
 - An Android device with a Snapdragon / Adreno GPU and GameNative 1.2.1. Only the AYN Thor was tested; similar
   Snapdragon 8 Gen 2 devices are the most likely to work.
-- Age of Empires IV on Steam, installed through GameNative.
+- The game on Steam, installed through GameNative.
 - The package `fexcore-aoe4-perf5.wcp` (900 KB) from the
-  [latest release](https://github.com/tarikbc/aoe4-gamenative/releases/latest).
-- The graphics driver **Turnip v26.2.0 R4** (`Turnio_v26.2.0_R4.zip` from
+  [latest release](https://github.com/tarikbc/ageofempires-android/releases/latest). Its name starts with `aoe4`
+  because it was made for AoE IV first; the same package runs both games.
+- For AoE IV: the graphics driver **Turnip v26.2.0 R4** (`Turnio_v26.2.0_R4.zip` from
   [StevenMXZ's release v26.2.0-R4](https://github.com/StevenMXZ/Adreno-Tools-Drivers/releases/tag/v26.2.0-R4)).
 
 ## Setup
 
-### 1. Install the patched emulator and the driver
+### 1. Install the patched emulator (and the AoE IV driver)
 
-1. Download [`fexcore-aoe4-perf5.wcp`](https://github.com/tarikbc/aoe4-gamenative/releases/latest/download/fexcore-aoe4-perf5.wcp)
-   and the driver zip on the device (they land in the Download folder).
+1. Download [`fexcore-aoe4-perf5.wcp`](https://github.com/tarikbc/ageofempires-android/releases/latest/download/fexcore-aoe4-perf5.wcp)
+   (and, for AoE IV, the driver zip) on the device; they land in the Download folder.
 2. In GameNative: **Menu → Settings → Contents Manager → Import .wcp from device**, and pick the `.wcp`.
    It shows up under the FEXCore type as `aoe4-perf5 (23)`.
-3. **Menu → Settings → Driver Manager → Import ZIP from device**, and pick the driver zip.
+3. For AoE IV: **Menu → Settings → Driver Manager → Import ZIP from device**, and pick the driver zip.
 
-### 2. Set up the game's container
+### 2. Age of Empires IV: set up the container
 
 Open the game in GameNative, tap the **cog** next to Play, then **Edit container**. Set:
 
@@ -74,24 +76,44 @@ Then tap **Save** (top right).
 manual import, and research says it is the same build as GameNative's official `proton-11.0-1-arm64ec`
 ([details](docs/guides/WINE-SOURCE.md)). The official one was not run directly here; if you try it, please report back.
 
-### 3. Recommended device settings
+### 3. Age of Empires II: DE: set up the container
+
+GameNative fills in a "known config" for this game. Keep its graphics settings (`Wrapper`, `turnip_v26.0.0_R6`,
+DXVK) and change:
+
+| Tab | Setting | Value |
+|---|---|---|
+| General | Wine Version | `proton-11.0-99-arm64ec-1` |
+| General | Exec Arguments | `SKIPINTRO` |
+| Emulation | FEXCore Version | **`aoe4-perf5-23`** |
+| Environment | add `FEX_TSOENABLED` | `0` (about 30 % more FPS in big battles; remove it if the game crashes) |
+| Environment | add `FEX_EXP_SKIP_CALLRET_RESET` | `1` |
+| Environment | add `WINEDEBUG` | `-all` |
+
+Before the tested setup, the game's own VC++ 2022 runtime was installed into the container (GameNative 1.2.1 skips
+it); whether that is still needed was not tested. Details: [AOE2-DE.md](docs/guides/AOE2-DE.md).
+
+### 4. Recommended device settings
 
 - **Display at 120 Hz** (the Thor's refresh-rate tile). Set it **before** starting the game. At 60 Hz a frame
   that misses a refresh waits a whole extra 16.7 ms; at 120 Hz long frames almost disappear.
-- **Controller:** turn on the game's controller mode: in the game, Settings → Controls → input **Gamepad**. The game
-  closes itself once after that switch; start it again. The Thor's controller works in its standard mode, with no
-  button remapping.
+- **AoE IV controller:** turn on the game's controller mode: in the game, Settings → Controls → input **Gamepad**.
+  The game closes itself once after that switch; start it again. The Thor's controller works in its standard mode,
+  with no button remapping.
 - **Power:** GameNative's Power Control sets the CPU and GPU limits for the game's container at every start. The
-  CPU needs its full clocks: with the cores capped at about 2 GHz the late game ran at 27.8 FPS instead of 36. Hold
-  the GPU at its top level too (in Power Control, GPU minimum and maximum both at the top), which gave about 2 FPS
-  more in the late game. We set these in the container's profile file; [TUNING.md](docs/guides/TUNING.md) has the
-  values and the measurements.
+  CPU needs its full clocks: with the cores capped at about 2 GHz AoE IV's late game ran at 27.8 FPS instead of 36.
+  Hold the GPU at its top level too (in Power Control, GPU minimum and maximum both at the top), which gave about
+  2 FPS more in AoE IV's late game. We set these in the container's profile file; [TUNING.md](docs/guides/TUNING.md)
+  has the values and the measurements.
 
-### 4. Play
+### 5. Play
 
-Tap Play. The first start takes a few minutes. A press of the A button skips each intro film and the title screen.
+Tap Play. The first start takes a few minutes. In AoE IV a press of the A button skips each intro film and the title
+screen.
 
 ## What to expect
+
+### Age of Empires IV
 
 ![Frame times before and after the speed patches](docs/img/frametimes-before-after.png)
 
@@ -125,7 +147,21 @@ own camera, the CPU at full clocks ([TESTING.md](docs/guides/TESTING.md)):
 
 The CPU runs hot in long sessions: the hottest CPU sensor read about 95 °C during the tests (GPU about 77 °C).
 
+### Age of Empires II: DE
+
+| Situation | FPS | frames over 50 ms |
+|---|---|---|
+| 3-player skirmish (two Hardest A.I.s, Fast speed, map visible), 7 × 60 s over 17 minutes | 59.3 to 60.0 | 0 to 2 per window |
+| Same game, camera on an A.I. base in the Imperial Age | 59.9 | 1 |
+| The game's Ranked Benchmark Test (8 players, big battles), battle part | 27 to 30 | many; score 1114.8 |
+
+The game did not go above 60 FPS, although the display ran at 120 Hz and the game's own limit was 120. In the
+benchmark the game's main thread used 95 % of one core: the emulated CPU work limits it, not the GPU. Hottest CPU
+sensor up to 94 °C.
+
 ## Known issues
+
+**Age of Empires IV**
 
 - **Do not stay long in GameNative's Quick Menu during a match.** It pauses the game; after a 24 s pause the game
   exited once (a 9 s pause was fine).
@@ -141,20 +177,21 @@ The CPU runs hot in long sessions: the hottest CPU sensor read about 95 °C duri
 - **GameNative "Save Conflict" dialog:** it asks which save to keep when the local and the cloud save both changed.
   Pick the one from where you played last.
 
-## Also: Age of Empires II: Definitive Edition
+**Age of Empires II: DE**
 
-The same package makes **AoE II DE** start on the Thor: with GameNative's own FEX it shows a black screen and exits
-after about 1 s. In the container pick `proton-11.0-99-arm64ec-1` and FEXCore `aoe4-perf5-23`, add `SKIPINTRO` as
-the exec argument, and the variables `FEX_TSOENABLED=0`, `FEX_EXP_SKIP_CALLRET_RESET=1`, `WINEDEBUG=-all`. Tested
-on 2026-10-08: 60 FPS in a 3-player skirmish against two Hardest A.I.s, 17 minutes without a crash. Details, what was
-wrong and what is still open: [AOE2-DE.md](docs/guides/AOE2-DE.md).
+- **The controller does nothing in the menus**, and GameNative's touch screen moves the cursor like a touchpad.
+- **A window frame:** from the second start on, the game showed in a window with a title bar at 1272 × 694; the
+  first start was full screen. Not resolved.
+- **About every 5 minutes a frame of about 0.8 s**, likely the game's single-player autosave.
 
 ## How it works
 
-The game is a Windows x86-64 program. GameNative runs it with Wine (Windows compatibility) and **FEX**, which
-translates x86 code to ARM on the fly. The game ships with Relic's anti-tamper protection, **Aegis**. On a real PC
-it is invisible, but under the emulator three things went wrong. The patches change only the emulator, so it
-behaves more like Windows; the game and the protection are not modified.
+Both games are Windows x86-64 programs. GameNative runs them with Wine (Windows compatibility) and **FEX**, which
+translates x86 code to ARM on the fly. The patches change only the emulator, so it behaves more like Windows; the
+games and their protections are not modified.
+
+**Age of Empires IV** ships with Relic's anti-tamper protection, **Aegis**. On a real PC it is invisible, but under
+the emulator three things went wrong:
 
 1. **A start-up check failed.** The protection checks that Windows functions are not hooked. Wine's ARM64EC
    build lays out some function stubs (`jmp [addr]`, `FF 25`) in a way that looked like a hook, and the protection
@@ -173,6 +210,10 @@ behaves more like Windows; the game and the protection are not modified.
 Since v1.2.0, **patch 0016** also answers the game's CPU-speed question from a short cache. The game asks for the MHz
 of every core about 45 times per second, and Wine read two files per core for each answer: 11 % of the main thread in
 the late game. ([POWER-INFORMATION.md](docs/how-it-works/POWER-INFORMATION.md))
+
+**Age of Empires II: DE** (protected with Arxan) crashed about 1 s after the start with GameNative's own FEX 2512,
+inside code it decrypts at run time. Every FEX build from this repo that was tried fixes it. The cause is the newer
+FEX base or patch 0004 or 0006; which one was not narrowed down. ([AOE2-DE.md](docs/guides/AOE2-DE.md))
 
 <details>
 <summary>All patches in the package</summary>
@@ -201,7 +242,7 @@ it, so the package hides less. v1.0.0 had 0002, and 0007 only in the game's proc
 <details>
 <summary>For contributors: testing without touching the device</summary>
 
-The speed work was measured from a Mac over adb: [`tools/bench.py`](tools/bench.py) starts the game, skips the
+The speed work was measured from a Mac over adb: [`tools/bench.py`](tools/bench.py) starts AoE IV, skips the
 intros, starts a skirmish with the camera turning (controller input written to the Thor's input device) and records
 frame times from Android's compositor, with temperatures; [`tools/fpsgraph.py`](tools/fpsgraph.py) shows a live
 frame-time graph in a browser; [`tools/agent.py`](tools/agent.py) reads memory and threads inside the game without
@@ -210,21 +251,22 @@ console windows. See [TESTING.md](docs/guides/TESTING.md).
 
 ## The whole story
 
-Getting here took a long investigation: what the protection checks, what was ruled out, and every measurement.
+Getting here took a long investigation: what AoE IV's protection checks, what was ruled out, and every measurement.
 Start at the [docs index](docs/README.md), or read the full [research log](docs/research/RESEARCH-LOG.md) (the
 former README).
 
 | Folder | What is in it |
 |---|---|
 | [`docs/how-it-works/`](docs/how-it-works) | One write-up per problem the patches fix, and the protection itself |
-| [`docs/guides/`](docs/guides) | Tuning, testing over adb, building FEX, driving GameNative |
+| [`docs/guides/`](docs/guides) | Tuning, testing over adb, building FEX, driving GameNative, AoE II DE |
 | [`docs/research/`](docs/research) | The research log, the dead ends, and redacted raw run data |
 | [`patches/fex/`](patches/fex) | The FEX patches in the package |
 | [`patches/experiments/`](patches/experiments) | Earlier Box64, Wine and GameNative patches that are not needed |
 | [`tools/`](tools) | Test, install and build scripts ([list](tools/README.md)); one-off scripts in `tools/research` |
 
-The package is on the [releases page](https://github.com/tarikbc/aoe4-gamenative/releases). Older `.wcp` builds from
-the investigation do not run the game; they are only in the git history.
+The package is on the [releases page](https://github.com/tarikbc/ageofempires-android/releases). Older `.wcp` builds
+from the investigation do not run the game; they are only in the git history. This repo was called `aoe4-gamenative`
+until 2026-10-08; old links redirect here.
 
 ## Credits and license
 
@@ -235,4 +277,4 @@ driver.
 Tools and scripts are MIT (see [LICENSE](LICENSE)). Patches follow their project: FEX MIT, Box64 MIT, Wine
 LGPL-2.1-or-later, GameNative GPL-3.0. You need your own copy of the game.
 
-Age of Empires is a trademark of Microsoft. Not affiliated with Microsoft, Relic, AYN or GameNative.
+Age of Empires is a trademark of Microsoft. Not affiliated with Microsoft, Relic, World's Edge, AYN or GameNative.

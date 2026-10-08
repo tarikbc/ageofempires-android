@@ -17,7 +17,7 @@ Open the game in GameNative, cog, **Edit container**:
 |---|---|---|
 | General | Wine Version | `proton-11.0-99-arm64ec-1` (the same as for AoE IV) |
 | General | Exec Arguments | `SKIPINTRO` |
-| Emulation | FEXCore Version | `aoe4-perf5-23` (this repo's [release v1.2.0](https://github.com/tarikbc/aoe4-gamenative/releases/tag/v1.2.0)) |
+| Emulation | FEXCore Version | `aoe4-perf5-23` (this repo's [release v1.2.0](https://github.com/tarikbc/ageofempires-android/releases/tag/v1.2.0)) |
 | Environment | `FEX_TSOENABLED` | `0` (see Speed) |
 | Environment | `FEX_EXP_SKIP_CALLRET_RESET` | `1` |
 | Environment | `WINEDEBUG` | `-all` |

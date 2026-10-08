@@ -1,6 +1,7 @@
 # Docs
 
-To install and play, start with the [main README](../README.md). This folder has the details behind it.
+To install and play Age of Empires IV or Age of Empires II: DE, start with the [main README](../README.md). This
+folder has the details behind it; most of it is about AoE IV, and [AOE2-DE.md](guides/AOE2-DE.md) covers AoE II DE.
 
 ## How it works
 
