@@ -80,6 +80,18 @@ GameNative's Wine debug setting was on here with the channel `warn` (its `wine_d
 so without the variable Wine would print its warnings. The variable stays. With Wine debug off in GameNative it should
 change nothing (from the code; not tested). The container's config was put back byte for byte afterwards.
 
+## A full game (2026-10-07, 22:30 to 23:24)
+
+The user played a full skirmish to victory with the v1.1.0 package: 51 min 22 s on Danube River against one A.I.
+(Intermediate). GameNative's FPS counter read high 20s to low 30s for most of the game and about 24 in the big
+late-game battles (the user's reading). The benchmark below measures the first minutes of an idle 1v1, so it is far
+lighter than this. The game kept its replay (`playback\temp.rec`, 2.8 MB, overwritten by the next match); a copy
+outside the repo can serve as a repeatable late-game test.
+
+After the match the result panel said "Retrieving..." ("Waiting to retrieve match results from the server") for
+minutes. The game log had no network error and nothing from the server after the match ended; the match then showed
+in Match History.
+
 ## v1.1.0 package: same speed without 0002 (21:54 to 22:17)
 
 The package without patch 0002, with 0007 in every process and with 0015 (`aoe4-perf3-21`, DLL `bc82c565`), against

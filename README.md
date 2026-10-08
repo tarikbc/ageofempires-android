@@ -2,7 +2,8 @@
 
 Play **Age of Empires IV** on an Android handheld with [GameNative](https://github.com/utkarshdalal/GameNative).
 This repo has a patched CPU emulator package that gets the game past its copy protection and runs it at
-**about 42 to 46 FPS** in a skirmish, with controller support.
+**high 20s to low 30s FPS in a full game** (about 24 in big late-game battles, 42 to 46 in the first minutes), with
+controller support.
 
 ![A skirmish with the controller UI, 15 minutes in](docs/img/controller-match-15min-2026-10-07.jpg)
 
@@ -17,8 +18,8 @@ This repo has a patched CPU emulator package that gets the game past its copy pr
 | Tested device | AYN Thor (Snapdragon 8 Gen 2, Adreno 740, 16 GB RAM, Android 13) |
 | GameNative | 1.2.1 |
 | Game | Age of Empires IV: Anniversary Edition (Steam), build 16.3.11308 |
-| Works | Main menu, tutorial, skirmish vs the A.I.; matches tested past 20 minutes |
-| Speed | 42 to 46 FPS in a 1v1 skirmish at 1280×720 with the display at 120 Hz; frames over 100 ms are rare (0 to 2 per 90 s) |
+| Works | Main menu, tutorial, skirmish vs the A.I.; a full 51-minute game against one A.I. played to victory |
+| Speed | Full game (51 minutes, one A.I., GameNative's FPS counter): high 20s to low 30s, about 24 in big late-game battles. Benchmark (first minutes of a 1v1, 1280×720, display at 120 Hz): 42 to 46 FPS, frames over 100 ms rare (0 to 2 per 90 s) |
 | Controls | The Thor's built-in controller, with the game's own controller UI |
 | Not tested | Multiplayer matches, the campaigns, other devices |
 
@@ -106,6 +107,10 @@ compositor):
 These were measured with v1.0.0. v1.1.0 gave the same numbers as v1.0.0 in a back-to-back test
 ([TUNING.md](docs/guides/TUNING.md)).
 
+The benchmark measures the first minutes of a 1v1 in which the player does nothing. A real game is heavier: in a
+full 51-minute game against one A.I. (Intermediate) the FPS counter read high 20s to low 30s, and about 24 in the big
+late-game battles.
+
 The CPU runs hot in long sessions: the hottest CPU sensor read about 95 °C during the tests (GPU about 77 °C).
 
 ## Known issues
@@ -119,6 +124,8 @@ The CPU runs hot in long sessions: the hottest CPU sensor read about 95 °C duri
 - **Other graphics drivers:** Turnip v26.3.0-R6 ran the same; purple-turnip T30 was about 2.5 FPS slower;
   **Balemuni Apex v2 crashes the game** after about two minutes ([TUNING.md](docs/guides/TUNING.md)).
 - **Display mode:** the option stored as `windowmode` 1 gave a black screen; borderless works.
+- **End screen "Retrieving...":** after the 51-minute game the result panel said "Waiting to retrieve match results
+  from the server" for minutes. The game was not frozen, and the match then appeared in Match History.
 - **GameNative "Save Conflict" dialog:** it asks which save to keep when the local and the cloud save both changed.
   Pick the one from where you played last.
 
