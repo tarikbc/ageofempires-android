@@ -169,8 +169,8 @@ sensor up to 94 °C.
   message" choice expires. GameNative's touch input did not reach its button in our tests; the repo's helper
   `tools/probes/dlgclick` clicks it from adb ([RESEARCH-LOG.md](docs/research/RESEARCH-LOG.md), Traps).
 - **The game needs AVX.** FEX provides it; hiding it makes the game refuse to start.
-- **Sometimes it stops while loading** with "Failed to wait for DX12 fence (error 102)" in its log (twice on
-  2026-10-08). Start it again; the next start worked both times.
+- **Sometimes it stops while loading** with "Failed to wait for DX12 fence (error 102)" in its log (three times on
+  2026-10-08). Start it again; the next start worked each time.
 - **Other graphics drivers:** Turnip v26.3.0-R6 ran the same; purple-turnip T30 was about 2.5 FPS slower;
   **Balemuni Apex v2 crashes the game** after about two minutes ([TUNING.md](docs/guides/TUNING.md)).
 - **Display mode:** the option stored as `windowmode` 1 gave a black screen; borderless works.
@@ -214,8 +214,9 @@ of every core about 45 times per second, and Wine read two files per core for ea
 the late game. ([POWER-INFORMATION.md](docs/how-it-works/POWER-INFORMATION.md))
 
 **Age of Empires II: DE** (protected with Arxan) crashed about 1 s after the start with GameNative's own FEX 2512,
-inside code it decrypts at run time. Every FEX build from this repo that was tried fixes it. The cause is the newer
-FEX base or patch 0004 or 0006; which one was not narrowed down. ([AOE2-DE.md](docs/guides/AOE2-DE.md))
+inside code it decrypts at run time. Every FEX build from this repo that was tried fixes it. Plain upstream FEX-2610
+gets past that crash but exits before the menu, so this repo's patches are still needed; which one was not narrowed
+down. ([AOE2-DE.md](docs/guides/AOE2-DE.md))
 
 <details>
 <summary>All patches in the package</summary>

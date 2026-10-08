@@ -53,10 +53,13 @@ Whether the package still needs it was not tested.
    | `aoe4-perf5-23` with `FEX_EXP_FASTCONTINUE=0` (patch 0010 off) | main menu |
    | `aoe4-perf2-20` (v1.0.0; patch 0007 there acts only in AoE IV's process) | main menu |
    | `aoe-fastcontinue2-11` (without patches 0012 to 0014) | main menu |
+   | FEX-2610 upstream (`14c92681f`), no patches (2026-10-08, 10:18) | passes the 1 s crash, loads for about 5 minutes, exits before the main menu |
+   | The same with two `CheckCall` fixes (a FEX pull request draft) | the same (09:39) |
 
-   So neither 0007 nor 0010 nor 0012 to 0014 is the fix (and not 0002, which v1.2.0 does not have). What remains is
-   the FEX base version (`7d3090f`) or patches 0004 and 0006; not narrowed down further. The package was not tried
-   with `proton-9.0-arm64ec`.
+   So neither 0007 nor 0010 nor 0012 to 0014 is the fix (and not 0002, which v1.2.0 does not have). Newer FEX gets
+   past the start-up crash on its own, but plain upstream still exits before the menu, so at least one of this repo's
+   patches (0004, 0006, 0010, 0012 to 0014) is needed for the rest; not narrowed down further. The package was not
+   tried with `proton-9.0-arm64ec`.
 
 ## Speed
 
