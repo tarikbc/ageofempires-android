@@ -114,7 +114,7 @@ button{background:#22272e;color:var(--fg);border:1px solid #3a414b;border-radius
  <div><button id="pause">pause</button> <button id="zoom">scale 100 ms</button></div>
 </div>
 <canvas id="c"></canvas>
-<div id="bar">bar = one frame, height = frame time. green &le; 34 ms, yellow &le; 50 ms, red &gt; 50 ms. Lines at 60/30/20/10 FPS.</div>
+<div id="bar">bar = one frame, height = frame time (at 120 Hz a frame is a whole number of 8.3 ms refreshes, so bars step). Blue line = FPS over the last 30 frames. Green &le; 34 ms, yellow &le; 50 ms, red &gt; 50 ms.</div>
 <script>
 let frames=[],marks=[],paused=false,scale=100,since=0;
 const c=document.getElementById('c'),g=c.getContext('2d');
@@ -144,12 +144,17 @@ function draw(){
  g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,W,H);
  const bw=3,count=Math.floor((W-50)/bw),n=frames.length,y=ms=>H-6-Math.min(ms,scale)/scale*(H-12);
  g.font='11px ui-monospace,Menlo,monospace';
- for(const [ms,lab] of [[16.7,'60'],[33.3,'30'],[50,'20'],[100,'10'],[200,'5']]){if(ms>scale)continue;
+ for(const [ms,lab] of [[8.3,'120'],[11.1,'90'],[16.7,'60'],[22.2,'45'],[33.3,'30'],[50,'20'],[100,'10'],[200,'5']]){if(ms>scale)continue;
   g.strokeStyle='#2a2f36';g.beginPath();g.moveTo(40,y(ms));g.lineTo(W,y(ms));g.stroke();
   g.fillStyle='#8a9099';g.fillText(lab+' fps',2,y(ms)+4)}
  const start=Math.max(1,n-count);
  for(let i=start;i<n;i++){const ms=(frames[i]-frames[i-1])/1e6,x=W-(n-i)*bw;
-  g.fillStyle=ms<=34?'#3fb950':ms<=50?'#d29922':'#f85149';g.fillRect(x,y(ms),bw-1,H-6-y(ms))}
+  g.fillStyle=ms<=34?'#2d7a3a':ms<=50?'#a0741a':'#c23a33';g.fillRect(x,y(ms),bw-1,H-6-y(ms))}
+ // smoothed FPS: mean frame time of the last 30 frames, drawn as a line on the same scale
+ g.strokeStyle='#58a6ff';g.lineWidth=2;g.beginPath();let first=true;
+ for(let i=Math.max(start,31);i<n;i++){const ms=(frames[i]-frames[i-30])/30/1e6,x=W-(n-i)*bw+1;
+  if(first){g.moveTo(x,y(ms));first=false}else g.lineTo(x,y(ms))}
+ g.stroke();g.lineWidth=1;
  if(n>1){for(const [t,label] of marks){let i=n-1;while(i>start&&frames[i]>t)i--;if(i<=start)continue;
   const x=W-(n-i)*bw;g.strokeStyle='#58a6ff';g.beginPath();g.moveTo(x,0);g.lineTo(x,H);g.stroke();
   g.fillStyle='#58a6ff';g.fillText(label,x+3,12)}}
