@@ -13,7 +13,7 @@ The problems the patches fix, one write-up each, and the protection itself.
 | [WATCHDOG.md](how-it-works/WATCHDOG.md) | **Problem 2, patch 0010.** The lateness bucket on the protection's loop, and the wineserver round trip per exception that filled it |
 | [INSTRUCTION-STEPPER.md](how-it-works/INSTRUCTION-STEPPER.md) | **Problem 3, patches 0012 to 0014.** Code run one instruction at a time from a scratch buffer, and how FEX now handles it (26.7 → 43.7 FPS) |
 | [SMC-TRAP.md](how-it-works/SMC-TRAP.md) | Patch 0004. FEX's self-modifying-code trap was visible to the game; hiding it did not stop the kill |
-| [FEX-VENDOR-LEAK.md](how-it-works/FEX-VENDOR-LEAK.md) | Patch 0002. FEX's name in CPUID leaf `0x40000000` |
+| [FEX-VENDOR-LEAK.md](how-it-works/FEX-VENDOR-LEAK.md) | Patch 0002 (not in the package since v1.1.0). FEX's name in CPUID leaf `0x40000000` |
 | [SYSCALL-RETURN.md](how-it-works/SYSCALL-RETURN.md) | Patch 0006. Registers after a raw x64 `syscall` |
 
 The patch files themselves, with a status line each: [patches/fex](../patches/fex).
@@ -56,6 +56,7 @@ README): status history, verified facts, traps, and an index of every write-up b
 | [AEGIS-TRACE.md](research/AEGIS-TRACE.md) | Tracing the game's syscalls inside FEX |
 | [WINEDEBUG-LEFTOVER.md](research/WINEDEBUG-LEFTOVER.md) | Why some runs stalled: leftover Wine debug channels |
 | [UPSTREAM-FEX-ISSUE.md](research/UPSTREAM-FEX-ISSUE.md) | Draft FEX issue: the SMC write trap is visible to the guest |
+| [UPSTREAM-WINE-ISSUE.md](research/UPSTREAM-WINE-ISSUE.md) | Draft Wine bug: where the `FF 25` export stubs come from, and a possible fix in Wine |
 | [samples/](research/samples) | Redacted raw run data behind these write-ups |
 
 Screenshots are in [img/](img).

@@ -19,7 +19,7 @@ past 20 minutes. Speed in a 1v1 skirmish with the camera turning (compositor fra
 |---|---|
 | GameNative | 1.2.1, container variant `bionic` |
 | Wine | `proton-11.0-99-arm64ec-1` |
-| CPU emulator | FEXCore content `aoe4-perf2-20`: [`fexcore-aoe4-perf2.wcp`](https://github.com/tarikbc/aoe4-gamenative/releases/tag/v1.0.0) (release v1.0.0), FEX `7d3090f` + [patches](../../patches/fex) 0002, 0004, 0006, 0007, 0009, 0010, 0012, 0013, 0014 (`libarm64ecfex.dll`, SHA-1 `6990a221`) |
+| CPU emulator | FEXCore content `aoe4-perf3-21`: [`fexcore-aoe4-perf3.wcp`](https://github.com/tarikbc/aoe4-gamenative/releases/tag/v1.1.0) (release v1.1.0), FEX `7d3090f` + [patches](../../patches/fex) 0004, 0006, 0007, 0009, 0010, 0012, 0013, 0014, 0015 (`libarm64ecfex.dll`, SHA-1 `bc82c565`; release v1.0.0 also had 0002 and the game-only 0007, `6990a221`) |
 | Container `envVars` | `WRAPPER_MAX_IMAGE_COUNT=0 ZINK_DESCRIPTORS=lazy ZINK_DEBUG=compact,deck_emu MESA_SHADER_CACHE_DISABLE=false MESA_SHADER_CACHE_MAX_SIZE=512MB mesa_glthread=true WINEESYNC=1 MESA_VK_WSI_PRESENT_MODE=mailbox TU_DEBUG=noconform VKD3D_SHADER_MODEL=6_0 PULSE_LATENCY_MSEC=144 BOX64_AVX=1 VKD3D_DEBUG=warn WINEDEBUG=-all FEX_EXP_SKIP_CALLRET_RESET=1` (read back from both `.container` copies) |
 | GPU driver | Turnip v26.2.0 R4 (v26.3.0-R6, T30 and Balemuni Apex v2 compared in [TUNING.md](../guides/TUNING.md)) |
 | Display | 120 Hz (`peak_refresh_rate` and `min_refresh_rate` 120), set before the game starts |
@@ -75,13 +75,14 @@ recompile that still came every 2 to 3 minutes: no frame over 100 ms after the f
    ([BUILDING-FEX.md](../guides/BUILDING-FEX.md)); 0009 only acts with `FEX_EXP_SKIP_CALLRET_RESET=1`. Without 0012 to
    0014 the game also runs, at about 27 FPS.
 3. That `libarm64ecfex.dll` packaged as a FEXCore content with [`tools/make_fex_wcp.py`](../../tools/make_fex_wcp.py)
-   (the current one is in release v1.0.0: [`fexcore-aoe4-perf2.wcp`](https://github.com/tarikbc/aoe4-gamenative/releases/tag/v1.0.0), versionName `aoe4-perf2`,
-   versionCode 20, DLL `6990a221`),
+   (the current one is in release v1.1.0: [`fexcore-aoe4-perf3.wcp`](https://github.com/tarikbc/aoe4-gamenative/releases/tag/v1.1.0), versionName `aoe4-perf3`,
+   versionCode 21, DLL `bc82c565`),
    imported in GameNative (Settings, Contents Manager, Import .wcp from device) and selected in the container's
    Emulation tab, FEXCore Version (tested 2026-10-07 10:34 with `aoe-fastcontinue-10`: at the next start logcat
    shows GameNative applying `fexcore-aoe-fastcontinue-10`, and the installed DLL hashed `86d6da39`; since 11:17
    `aoe-fastcontinue2-11`, DLL `eca1e25b`; since 14:52 `aoe4-perf-18`, DLL `20fdc47a`, with 0012 and 0013; since
-   15:58 `aoe4-perf2-20`, DLL `6990a221`, with 0014 too). The earlier runs installed the DLL by hand instead
+   15:58 `aoe4-perf2-20`, DLL `6990a221`, with 0014 too; in the evening `aoe4-perf3-21`, DLL `bc82c565`, without
+   0002 and with 0015). The earlier runs installed the DLL by hand instead
    ([GAMENATIVE-UI.md](../guides/GAMENATIVE-UI.md)).
 4. Container `envVars`: `WINEDEBUG=-all FEX_EXP_SKIP_CALLRET_RESET=1`. 0010 is on by default since build
    `eca1e25b` (`FEX_EXP_FASTCONTINUE=0` turns it off; earlier builds needed `FEX_EXP_FASTCONTINUE=1`). 0009
@@ -303,7 +304,7 @@ and [WINE-GAPS.md](WINE-GAPS.md).
 |---|---|
 | Wine | `proton-11.0-99-arm64ec` |
 | CPU emulator | FEXCore; container variant `bionic` |
-| FEX DLL in use | `C:\windows\system32\libarm64ecfex.dll` built from FEX `7d3090f` + patches 0002, 0004, 0006, 0007, 0009, 0010, 0012, 0013, 0014 (SHA-1 `6990a221`), installed by GameNative from the FEXCore content `aoe4-perf2-20`. Before that: without 0014 (`20fdc47a`, `aoe4-perf-18`) and without 0012 to 0014 (`eca1e25b`, `aoe-fastcontinue2-11`) |
+| FEX DLL in use | `C:\windows\system32\libarm64ecfex.dll` built from FEX `7d3090f` + patches 0004, 0006, 0007, 0009, 0010, 0012, 0013, 0014, 0015 (SHA-1 `bc82c565`), installed by GameNative from the FEXCore content `aoe4-perf3-21`. Before that: with 0002 and the game-only 0007 (`6990a221`, `aoe4-perf2-20`), without 0014 (`20fdc47a`, `aoe4-perf-18`) and without 0012 to 0014 (`eca1e25b`, `aoe-fastcontinue2-11`) |
 | FEX switches | none needed with build `eca1e25b` (0010 on by default); the 11:24 run also had `FEX_TSOENABLED=0` |
 | DX wrapper | VKD3D (vkd3d-proton 2.14.1 + DXVK 2.4.1-gplasync) |
 | GPU driver | Turnip v26.2.0 R4 |

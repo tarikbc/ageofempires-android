@@ -129,10 +129,11 @@ In the FEXCore Version list, `ntdll-waitq-fix-1` is the last item and sits at th
 (`(1680, 1055)`).
 
 **Since 2026-10-07 evening** the Thor no longer has `2610-aoe-nofex2-3` or `ntdll-waitq-fix-1` (removed in the
-clean-up). Its FEXCore contents are `aoe4-perf2-20` (in use, DLL `6990a221`), `aoe4-perf-18` (`20fdc47a`, without
+clean-up). Its FEXCore contents are `aoe4-perf3-21` (in use, DLL `bc82c565`, release v1.1.0), `aoe4-perf2-20` (`6990a221`,
+release v1.0.0), `aoe4-perf-18` (`20fdc47a`, without
 patch 0014) and `aoe-fastcontinue2-11` (`eca1e25b`, without 0012 to 0014). GameNative writes the selected content's
 DLL at every start, so after a bad build, selecting one of these in the Emulation tab (`tools/gn_select_fex.py
-aoe4-perf2-20`) is enough; that switch was used many times that day, each time taking effect at the next start.
+aoe4-perf3-21`) is enough; that switch was used many times that day, each time taking effect at the next start.
 
 ## Gotchas
 

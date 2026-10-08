@@ -80,6 +80,19 @@ GameNative's Wine debug setting was on here with the channel `warn` (its `wine_d
 so without the variable Wine would print its warnings. The variable stays. With Wine debug off in GameNative it should
 change nothing (from the code; not tested). The container's config was put back byte for byte afterwards.
 
+## v1.1.0 package: same speed without 0002 (21:54 to 22:17)
+
+The package without patch 0002, with 0007 in every process and with 0015 (`aoe4-perf3-21`, DLL `bc82c565`), against
+the v1.0.0 package (`aoe4-perf2-20`, `6990a221`), back to back on a Thor already hot from earlier runs (120 Hz, R4
+driver, scaling power profile):
+
+| Package | FPS minute 1 / 5 | frames > 50 ms | frames > 100 ms | CPU hottest | GPU hottest |
+|---|---|---|---|---|---|
+| v1.1.0 (21:59, 22:03) | 41.3 / 40.7 | 6 / 5 | 0 / 0 | 96.3 / 95.1 °C | 79.6 / 81.2 °C |
+| v1.0.0 (22:12, 22:16) | 41.0 / 40.8 | 3 / 7 | 0 / 0 | 96.3 / 96.3 °C | 81.2 / 82.0 °C |
+
+The same within the test's spread. Earlier that evening a cooler Thor gave 42.6 FPS at minute 1 (v1.0.0, 21:20).
+
 ## Where the frame time goes (60 Hz, 16:50, `tools/threadcpu.py`)
 
 Main thread 52.6 % of one core, render thread 34.6 %, the protection's loop 21.9 %, `vkd3d_queue` 9.6 %, eight
