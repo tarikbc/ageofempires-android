@@ -91,7 +91,9 @@ recompile that still came every 2 to 3 minutes: no frame over 100 ms after the f
    input set to Gamepad. In the tested run the game then quit by itself (log: `Requesting game quit with reason:
    Contrast Change`), and it had to be started again from GameNative. To swap A/B and X/Y for this game only:
    GameNative's in-game Quick Menu, Controller tab, Edit Physical Controller, binding A to gamepad B, B to A, X to Y
-   and Y to X (confirmed by the user on the Thor).
+   and Y to X (confirmed by the user on the Thor). Later on 2026-10-07 the user reported that the Thor's controller
+   in its standard mode works properly without that swap (the device then shows as "Odin Controller"); the README
+   gives that setup. The test tools still need Xbox style ([TESTING.md](../guides/TESTING.md)).
 6. GameNative's power profile for the container (`.config/.power-profile`, see Speed below) with the CPU allowed up
    to full clock and the GPU at its top levels, and the game's display mode left at (or set back to) borderless.
    Earlier runs held the CPU minimum at full clock too; a later comparison showed no gain from that.
