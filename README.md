@@ -141,6 +141,14 @@ The CPU runs hot in long sessions: the hottest CPU sensor read about 95 °C duri
 - **GameNative "Save Conflict" dialog:** it asks which save to keep when the local and the cloud save both changed.
   Pick the one from where you played last.
 
+## Also: Age of Empires II: Definitive Edition
+
+The same package makes **AoE II DE** start on the Thor: with GameNative's own FEX it shows a black screen and exits
+after about 1 s. In the container pick `proton-11.0-99-arm64ec-1` and FEXCore `aoe4-perf5-23`, add `SKIPINTRO` as
+the exec argument, and the variables `FEX_TSOENABLED=0`, `FEX_EXP_SKIP_CALLRET_RESET=1`, `WINEDEBUG=-all`. Tested
+on 2026-10-08: 60 FPS in a 3-player skirmish against two Hardest A.I.s, 17 minutes without a crash. Details, what was
+wrong and what is still open: [AOE2-DE.md](docs/guides/AOE2-DE.md).
+
 ## How it works
 
 The game is a Windows x86-64 program. GameNative runs it with Wine (Windows compatibility) and **FEX**, which
