@@ -19,6 +19,9 @@ Scripts that run on a Mac with the Thor connected over adb. How they fit togethe
 | [`ab_fex.py`](ab_fex.py) | Runs FEX builds in turn and summarises each run |
 | [`replay.py`](replay.py) | Late-game benchmark from a replay: reads the game clock, sets the replay speed, measures one window |
 | [`wincopy.py`](wincopy.py) | Copies files inside the game's Wine session (for example the replay or the game log) with no console window |
+| [`threadwaits.py`](threadwaits.py) | CPU use, waits per second and preemptions per second of each game thread, from `/proc` |
+| [`excrate.py`](excrate.py) | Handled exceptions per second in the game, from patch 0010's counters |
+| [`thor_fan.py`](thor_fan.py) | Reads the Thor's fan mode or sets it to Smart or Custom (the quick-settings Fan tile) |
 
 ## GameNative and packaging
 

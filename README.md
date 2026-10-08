@@ -3,7 +3,8 @@
 Play **Age of Empires IV** on an Android handheld with [GameNative](https://github.com/utkarshdalal/GameNative).
 This repo has a patched CPU emulator package that gets the game past its copy protection and runs it at
 **high 20s to low 30s FPS in a full game** (about 24 in big late-game battles, 42 to 46 in the first minutes), with
-controller support.
+controller support. Version 1.2.0, with the GPU held at its top clock, ran a late-game benchmark at **about 39 FPS**
+(36 with v1.1.0).
 
 ![A skirmish with the controller UI, 15 minutes in](docs/img/controller-match-15min-2026-10-07.jpg)
 
@@ -19,7 +20,7 @@ controller support.
 | GameNative | 1.2.1 |
 | Game | Age of Empires IV: Anniversary Edition (Steam), build 16.3.11308 |
 | Works | Main menu, tutorial, skirmish vs the A.I.; a full 51-minute game against one A.I. played to victory |
-| Speed | Full game (51 minutes, one A.I., GameNative's FPS counter): high 20s to low 30s, about 24 in big late-game battles. Benchmark (first minutes of a 1v1, 1280×720, display at 120 Hz): 42 to 46 FPS, frames over 100 ms rare (0 to 2 per 90 s) |
+| Speed | Full game (51 minutes, one A.I., GameNative's FPS counter): high 20s to low 30s, about 24 in big late-game battles. Benchmark (first minutes of a 1v1, 1280×720, display at 120 Hz): 42 to 46 FPS, frames over 100 ms rare (0 to 2 per 90 s). Late-game benchmark (minutes 46 and 48 of that game's replay, v1.2.0, GPU at 680 MHz): 39.0 / 38.6 FPS |
 | Controls | The Thor's built-in controller, with the game's own controller UI |
 | Not tested | Multiplayer matches, the campaigns, other devices |
 
@@ -31,7 +32,7 @@ things the emulator does differently from Windows. See [How it works](#how-it-wo
 - An Android device with a Snapdragon / Adreno GPU and GameNative 1.2.1. Only the AYN Thor was tested; similar
   Snapdragon 8 Gen 2 devices are the most likely to work.
 - Age of Empires IV on Steam, installed through GameNative.
-- The package `fexcore-aoe4-perf3.wcp` (900 KB) from the
+- The package `fexcore-aoe4-perf5.wcp` (900 KB) from the
   [latest release](https://github.com/tarikbc/aoe4-gamenative/releases/latest).
 - The graphics driver **Turnip v26.2.0 R4** (`Turnio_v26.2.0_R4.zip` from
   [StevenMXZ's release v26.2.0-R4](https://github.com/StevenMXZ/Adreno-Tools-Drivers/releases/tag/v26.2.0-R4)).
@@ -40,10 +41,10 @@ things the emulator does differently from Windows. See [How it works](#how-it-wo
 
 ### 1. Install the patched emulator and the driver
 
-1. Download [`fexcore-aoe4-perf3.wcp`](https://github.com/tarikbc/aoe4-gamenative/releases/latest/download/fexcore-aoe4-perf3.wcp)
+1. Download [`fexcore-aoe4-perf5.wcp`](https://github.com/tarikbc/aoe4-gamenative/releases/latest/download/fexcore-aoe4-perf5.wcp)
    and the driver zip on the device (they land in the Download folder).
 2. In GameNative: **Menu → Settings → Contents Manager → Import .wcp from device**, and pick the `.wcp`.
-   It shows up under the FEXCore type as `aoe4-perf3 (21)`.
+   It shows up under the FEXCore type as `aoe4-perf5 (23)`.
 3. **Menu → Settings → Driver Manager → Import ZIP from device**, and pick the driver zip.
 
 ### 2. Set up the game's container
@@ -58,7 +59,7 @@ Open the game in GameNative, tap the **cog** next to Play, then **Edit container
 | Graphics | Graphics Driver / Version | `Wrapper` / `Turnip v26.2.0 R4` |
 | Graphics | DX Wrapper | `VKD3D` |
 | Emulation | 64-bit Emulator | `FEXCore` |
-| Emulation | FEXCore Version | **`aoe4-perf3-21`** |
+| Emulation | FEXCore Version | **`aoe4-perf5-23`** |
 | Environment | add `WINEDEBUG` | `-all` (no Wine debug output, even when GameNative's Wine debug setting is on) |
 | Environment | add `FEX_EXP_SKIP_CALLRET_RESET` | `1` (roughly doubles the FPS) |
 
@@ -80,9 +81,11 @@ manual import, and research says it is the same build as GameNative's official `
 - **Controller:** turn on the game's controller mode: in the game, Settings → Controls → input **Gamepad**. The game
   closes itself once after that switch; start it again. The Thor's controller works in its standard mode, with no
   button remapping.
-- **Power:** GameNative's Power Control can cap the CPU (with a cap of about 2 GHz the game ran at about
-  14 FPS). The tested profile let the CPU reach its full 3.19 GHz and kept the GPU at its top two levels; see
-  [TUNING.md](docs/guides/TUNING.md).
+- **Power:** GameNative's Power Control sets the CPU and GPU limits for the game's container at every start. The
+  CPU needs its full clocks: with the cores capped at about 2 GHz the late game ran at 27.8 FPS instead of 36. Hold
+  the GPU at its top level too (in Power Control, GPU minimum and maximum both at the top), which gave about 2 FPS
+  more in the late game. We set these in the container's profile file; [TUNING.md](docs/guides/TUNING.md) has the
+  values and the measurements.
 
 ### 4. Play
 
@@ -109,7 +112,16 @@ These were measured with v1.0.0. v1.1.0 gave the same numbers as v1.0.0 in a bac
 
 The benchmark measures the first minutes of a 1v1 in which the player does nothing. A real game is heavier: in a
 full 51-minute game against one A.I. (Intermediate) the FPS counter read high 20s to low 30s, and about 24 in the big
-late-game battles.
+late-game battles (v1.1.0).
+
+**Late game.** That game's replay is the late-game benchmark: two 90 s windows at minutes 46 and 48, the player's
+own camera, the CPU at full clocks ([TESTING.md](docs/guides/TESTING.md)):
+
+| | FPS (minute 46 / 48) | frames over 50 ms |
+|---|---|---|
+| v1.1.0 | 36.0 / 36.2 | 19 / 15 |
+| v1.2.0 | 36.7 / 36.5 | 10 / 11 |
+| **v1.2.0, GPU held at 680 MHz** | **39.0 / 38.6** | 18 / 22 |
 
 The CPU runs hot in long sessions: the hottest CPU sensor read about 95 °C during the tests (GPU about 77 °C).
 
@@ -150,6 +162,10 @@ behaves more like Windows; the game and the protection are not modified.
    the game's main thread. **Patches 0012 to 0014** recognise that buffer and reuse translations instead of
    recompiling: 26.7 → 43.7 FPS. ([INSTRUCTION-STEPPER.md](docs/how-it-works/INSTRUCTION-STEPPER.md))
 
+Since v1.2.0, **patch 0016** also answers the game's CPU-speed question from a short cache. The game asks for the MHz
+of every core about 45 times per second, and Wine read two files per core for each answer: 11 % of the main thread in
+the late game. ([POWER-INFORMATION.md](docs/how-it-works/POWER-INFORMATION.md))
+
 <details>
 <summary>All patches in the package</summary>
 
@@ -166,10 +182,11 @@ All against FEX `7d3090f`, in this order ([patches/fex](patches/fex)):
 | 0013 | Larger code buffer (512 MB), so FEX clears its whole cache less often |
 | 0014 | Reuses compiled code when the protection decrypts the same code again |
 | 0015 | Fixes a FEX bug: a 32-bit value was loaded as 64 bits (it also broke the build without 0002) |
+| 0016 | Answers the game's per-frame CPU-speed query from a 250 ms cache (v1.2.0) |
 
 Since v1.1.0 the package leaves out patch 0002, which hid FEX's name from the game: the game runs the same without
 it, so the package hides less. v1.0.0 had 0002, and 0007 only in the game's process. The package's DLL is
-`libarm64ecfex.dll`, SHA-1 `bc82c565`. To build it yourself:
+`libarm64ecfex.dll`, SHA-1 `b5e6e357` (v1.2.0; v1.1.0 was `bc82c565`). To build it yourself:
 [BUILDING-FEX.md](docs/guides/BUILDING-FEX.md) and [`tools/make_fex_wcp.py`](tools/make_fex_wcp.py).
 </details>
 

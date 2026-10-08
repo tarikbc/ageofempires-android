@@ -1,0 +1,180 @@
+--- a/Source/Windows/ARM64EC/Module.cpp
++++ b/Source/Windows/ARM64EC/Module.cpp
+@@ -54,6 +54,7 @@
+ #include <cstdio>
+ #include <type_traits>
+ #include <mutex>
++#include <atomic>
+ #include <optional>
+ #include <unordered_map>
+ #include <utility>
+@@ -448,13 +449,140 @@
+     NtProtectVirtualMemoryNative(NtCurrentProcess(), &ProtAddress, &ProtSize, Prot, &Prot);
+     ThunkFixStats.Rewritten++;
+   }
++}
++
++extern "C" BOOLEAN WINAPI RtlIsEcCode(ULONG_PTR Ptr);
++
++// Patch 0016: x64 code that calls powrprof!CallNtPowerInformation(ProcessorInformation) gets a cached answer. Wine
++// answers that query by reading several cpufreq files per CPU (about 230 us per call on the AYN Thor) and some games
++// ask every frame. ExitFunctionEC (Module.S) swaps the call target ECRedirectFrom for ECRedirectTo when x64 code enters
++// native code; no memory the guest can see is changed.
++extern "C" {
++alignas(8) uint64_t ECRedirectFrom = 0;
++alignas(8) uint64_t ECRedirectTo = 0;
+ }
++
++struct {
++  uint64_t Marker; // "PWRCACH1"
++  uint64_t Target;
++  uint64_t Calls;
++  uint64_t Cached;
++  uint64_t To;
++} PowerCacheStats = {0x3148434143525750ULL, 0, 0, 0, 0};
+ 
++namespace PowerCache {
++using CallNtPowerInformationFn = LONG(WINAPI*)(ULONG, PVOID, ULONG, PVOID, ULONG);
++CallNtPowerInformationFn Real;
++std::atomic_flag Lock = ATOMIC_FLAG_INIT;
++alignas(8) uint8_t Data[64 * 24];
++ULONG Size;
++uint64_t Time; // KUSER_SHARED_DATA.InterruptTime of the cached answer, 100 ns units
++
++uint64_t InterruptTime() {
++  // KSYSTEM_TIME at 0x7ffe0008: LowPart, High1Time, High2Time; read until High1 == High2.
++  volatile ULONG* T = reinterpret_cast<volatile ULONG*>(0x7ffe0008);
++  ULONG High, Low;
++  do {
++    High = T[1];
++    Low = T[0];
++  } while (High != T[2]);
++  return (uint64_t(High) << 32) | Low;
++}
++} // namespace PowerCache
++
++extern "C" LONG WINAPI FEXCachedCallNtPowerInformation(ULONG Level, PVOID In, ULONG InLen, PVOID Out, ULONG OutLen) {
++  constexpr ULONG ProcessorInformation = 11;
++  constexpr uint64_t MaxAge = 2500000; // 250 ms
++  __atomic_fetch_add(&PowerCacheStats.Calls, 1, __ATOMIC_RELAXED);
++  if (Level != ProcessorInformation || In || InLen || !Out || !OutLen || OutLen > sizeof(PowerCache::Data)) {
++    return PowerCache::Real(Level, In, InLen, Out, OutLen);
++  }
++  const uint64_t Now = PowerCache::InterruptTime();
++  while (PowerCache::Lock.test_and_set(std::memory_order_acquire)) {
++  }
++  if (PowerCache::Size == OutLen && Now - PowerCache::Time < MaxAge) {
++    memcpy(Out, PowerCache::Data, OutLen);
++    PowerCache::Lock.clear(std::memory_order_release);
++    __atomic_fetch_add(&PowerCacheStats.Cached, 1, __ATOMIC_RELAXED);
++    return 0;
++  }
++  PowerCache::Lock.clear(std::memory_order_release);
++  const LONG Status = PowerCache::Real(Level, In, InLen, Out, OutLen);
++  if (Status == 0) {
++    while (PowerCache::Lock.test_and_set(std::memory_order_acquire)) {
++    }
++    memcpy(PowerCache::Data, Out, OutLen);
++    PowerCache::Size = OutLen;
++    PowerCache::Time = Now;
++    PowerCache::Lock.clear(std::memory_order_release);
++  }
++  return Status;
++}
++
++// Finds powrprof!CallNtPowerInformation in a mapped image and arms the redirect. An ARM64EC export points at an x64
++// fast-forward sequence (48 8b c4 48 89 58 20 55 5d e9 rel32) whose jump target is the native function.
++void ResolvePowerInformationRedirect(uint64_t Address) {
++  if (ECRedirectFrom || !Address || reinterpret_cast<IMAGE_DOS_HEADER*>(Address)->e_magic != IMAGE_DOS_SIGNATURE) {
++    return;
++  }
++  auto* Nt = reinterpret_cast<IMAGE_NT_HEADERS64*>(Address + reinterpret_cast<IMAGE_DOS_HEADER*>(Address)->e_lfanew);
++  if (Nt->Signature != IMAGE_NT_SIGNATURE || Nt->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
++    return;
++  }
++  const auto& Dir = Nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
++  if (!Dir.VirtualAddress || !Dir.Size) {
++    return;
++  }
++  const auto* Exports = reinterpret_cast<IMAGE_EXPORT_DIRECTORY*>(Address + Dir.VirtualAddress);
++  if (_stricmp(reinterpret_cast<const char*>(Address + Exports->Name), "powrprof.dll")) {
++    return;
++  }
++  const auto* Names = reinterpret_cast<const uint32_t*>(Address + Exports->AddressOfNames);
++  const auto* Ordinals = reinterpret_cast<const uint16_t*>(Address + Exports->AddressOfNameOrdinals);
++  const auto* Functions = reinterpret_cast<const uint32_t*>(Address + Exports->AddressOfFunctions);
++  for (uint32_t i = 0; i < Exports->NumberOfNames; i++) {
++    if (strcmp(reinterpret_cast<const char*>(Address + Names[i]), "CallNtPowerInformation")) {
++      continue;
++    }
++    const auto* Code = reinterpret_cast<const uint8_t*>(Address + Functions[Ordinals[i]]);
++    static const uint8_t FastForward[] = {0x48, 0x8b, 0xc4, 0x48, 0x89, 0x58, 0x20, 0x55, 0x5d, 0xe9};
++    uint64_t Target = 0;
++    if (!memcmp(Code, FastForward, sizeof(FastForward))) {
++      int32_t Rel;
++      memcpy(&Rel, Code + sizeof(FastForward), sizeof(Rel));
++      Target = reinterpret_cast<uint64_t>(Code) + sizeof(FastForward) + 4 + Rel;
++    } else if (RtlIsEcCode(reinterpret_cast<ULONG_PTR>(Code))) {
++      Target = reinterpret_cast<uint64_t>(Code);
++    }
++    if (!Target || !RtlIsEcCode(Target)) {
++      return;
++    }
++    // ExitFunctionEC needs the native code; follow a fast-forward stub if the address is one.
++    uint64_t To = reinterpret_cast<uint64_t>(&FEXCachedCallNtPowerInformation);
++    if (!memcmp(reinterpret_cast<const void*>(To), FastForward, sizeof(FastForward))) {
++      int32_t ToRel;
++      memcpy(&ToRel, reinterpret_cast<const uint8_t*>(To) + sizeof(FastForward), sizeof(ToRel));
++      To = To + sizeof(FastForward) + 4 + ToRel;
++    }
++    if (!RtlIsEcCode(To)) {
++      return;
++    }
++    PowerCache::Real = reinterpret_cast<PowerCache::CallNtPowerInformationFn>(Target);
++    PowerCacheStats.Target = Target;
++    PowerCacheStats.To = To;
++    ECRedirectTo = To;
++    __atomic_store_n(&ECRedirectFrom, Target, __ATOMIC_RELEASE);
++    return;
++  }
++}
++
+ void RewriteLoadedExportThunks() {
+   auto* Ldr = reinterpret_cast<__TEB*>(NtCurrentTeb())->Peb->LdrData;
+   auto* Head = &Ldr->InMemoryOrderModuleList;
+   for (auto* Entry = Head->Flink; Entry != Head; Entry = Entry->Flink) {
+-    RewriteExportThunks(reinterpret_cast<uint64_t>(CONTAINING_RECORD(Entry, LDR_DATA_TABLE_ENTRY, InMemoryOrderLinks)->DllBase));
++    const auto Base = reinterpret_cast<uint64_t>(CONTAINING_RECORD(Entry, LDR_DATA_TABLE_ENTRY, InMemoryOrderLinks)->DllBase);
++    RewriteExportThunks(Base);
++    ResolvePowerInformationRedirect(Base);
+   }
+ }
+ 
+@@ -1279,6 +1407,7 @@
+     RewriteLoadedExportThunks();
+   }
+   RewriteExportThunks(reinterpret_cast<uint64_t>(Address));
++  ResolvePowerInformationRedirect(reinterpret_cast<uint64_t>(Address));
+ 
+ 
+   return STATUS_SUCCESS;
+--- a/Source/Windows/ARM64EC/Module.S
++++ b/Source/Windows/ARM64EC/Module.S
+@@ -80,6 +80,17 @@
+   and x23, x23, #-0x4
+   add x17, x17, x23 // Resolve entry thunk address.
+ 
++  // Patch 0016: call the cached copy (ECRedirectTo in Module.cpp) instead of one native function (ECRedirectFrom),
++  // through the original function's entry thunk: same signature, and that thunk returns to x64 code through its own
++  // module's dispatch pointers (FEX's own module has none set).
++  adrp x16, ECRedirectFrom
++  ldr x16, [x16, #:lo12:ECRedirectFrom]
++  cmp x9, x16
++  b.ne 1f
++  adrp x16, ECRedirectTo
++  ldr x9, [x16, #:lo12:ECRedirectTo]
++1:
++
+   mov x4, sp
+   tbz x4, #3, ret_sp_misaligned
+   ldr lr, [x4], #0x8 // Pop the return address into lr.
