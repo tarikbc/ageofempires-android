@@ -331,13 +331,17 @@ static int run(char *line)
         DWORD want_tid = argv[2][0] == '#' ? strtoul(argv[2] + 1, NULL, 16) : 0;  // "#<hex tid>" picks a thread by id
         HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0), th = NULL;
         THREADENTRY32 te = { sizeof(te) };
+        DWORD found_tid = 0;
         for (BOOL ok = Thread32First(snap, &te); ok && !th; ok = Thread32Next(snap, &te)) {
             if (te.th32OwnerProcessID != pid) continue;
             HANDLE t = OpenThread(THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_QUERY_INFORMATION, FALSE, te.th32ThreadID);
             if (!t) continue;
             PWSTR name = NULL;
             if (gtd) gtd(t, &name);
-            if (want_tid ? te.th32ThreadID == want_tid : (name && !wcsncmp(name, prefix, wcslen(prefix)))) th = t;
+            if (want_tid ? te.th32ThreadID == want_tid : (name && !wcsncmp(name, prefix, wcslen(prefix)))) {
+                th = t;
+                found_tid = te.th32ThreadID;  // te moves on once more before the loop ends
+            }
             else CloseHandle(t);
             if (name) LocalFree(name);
         }
@@ -395,7 +399,7 @@ static int run(char *line)
                 }
                 if (!found) other++;
             }
-            fprintf(out, "id=%s ok samples=%d thread=%04lx\n", id, got, te.th32ThreadID);
+            fprintf(out, "id=%s ok samples=%d thread=%04lx\n", id, got, found_tid);
             for (int m = 0; m < nmod; m++)
                 if (mhits[m]) fprintf(out, "module %-28s %5d %5.1f%%\n", mname[m], mhits[m], 100.0 * mhits[m] / got);
             fprintf(out, "module (no module: JIT code, heap) %5d %5.1f%%\n", other, 100.0 * other / (got ? got : 1));
@@ -428,13 +432,17 @@ static int run(char *line)
         DWORD want_tid = argv[2][0] == '#' ? strtoul(argv[2] + 1, NULL, 16) : 0;
         HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0), th = NULL;
         THREADENTRY32 te = { sizeof(te) };
+        DWORD found_tid = 0;
         for (BOOL ok = Thread32First(snap, &te); ok && !th; ok = Thread32Next(snap, &te)) {
             if (te.th32OwnerProcessID != pid) continue;
             HANDLE t = OpenThread(THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_QUERY_INFORMATION, FALSE, te.th32ThreadID);
             if (!t) continue;
             PWSTR name = NULL;
             if (gtd) gtd(t, &name);
-            if (want_tid ? te.th32ThreadID == want_tid : (name && !wcsncmp(name, prefix, wcslen(prefix)))) th = t;
+            if (want_tid ? te.th32ThreadID == want_tid : (name && !wcsncmp(name, prefix, wcslen(prefix)))) {
+                th = t;
+                found_tid = te.th32ThreadID;  // te moves on once more before the loop ends
+            }
             else CloseHandle(t);
             if (name) LocalFree(name);
         }
@@ -472,7 +480,7 @@ static int run(char *line)
                 }
                 Sleep(ms);
             }
-            fprintf(out, "id=%s ok samples=%d in_range=%d\n", id, total, hits);
+            fprintf(out, "id=%s ok samples=%d in_range=%d thread=%04lx\n", id, total, hits, found_tid);
             for (int r = 0; r < 8; r++) {
                 int b = -1;
                 for (int k = 0; k < nargs; k++) if (argn[k] && (b < 0 || argn[k] > argn[b])) b = k;
