@@ -3,13 +3,14 @@
 Play **Age of Empires IV** and **Age of Empires II: Definitive Edition** on an Android handheld with
 [GameNative](https://github.com/utkarshdalal/GameNative). Both games need the patched CPU emulator (FEX) package
 from this repo: without it AoE IV's copy protection freezes the game within minutes, and AoE II DE does not start at
-all (black screen, it exits after about a second).
+all. AoE IV also gets a newer graphics driver and one vkd3d-proton setting from here, together **+43 % FPS** over the
+drivers in circulation.
 
 | | Age of Empires IV | Age of Empires II: DE |
 |---|---|---|
-| Plays | A full 51-minute game against one A.I., to victory | A 3-player skirmish against two Hardest A.I.s, 17 minutes, no crash |
-| Speed | **58 FPS** in the first minutes with the repo's Turnip driver and `VKD3D_CONFIG=no_staggered_submit` (52 without the variable) and **46 FPS** in the late-game benchmark (v1.3.0, measured without the variable); 41 and 39 with the earlier driver. A full game on the earlier driver ran at high 20s to low 30s | **60 FPS** in that skirmish (the game stayed at 60); 27 to 30 FPS in the game's heavy 8-player benchmark |
-| Controls | The Thor's controller, with the game's own controller UI | Touch screen as a touchpad, or a mouse (not tried by a player yet) |
+| Plays | A full 51-minute game against one A.I., to victory | A 3-player skirmish against two Hardest A.I.s, 17 minutes |
+| Speed | **58 FPS** in the first minutes of a 1v1, **46 FPS** in the late-game benchmark | **60 FPS** in that skirmish (the game's own cap) |
+| Controls | The Thor's controller, with the game's own controller UI | Touch screen as a touchpad, or a mouse |
 
 ![AoE IV: a skirmish with the controller UI, 15 minutes in](docs/img/controller-match-15min-2026-10-07.jpg)
 
@@ -22,27 +23,25 @@ all (black screen, it exits after about a second).
 
 | | |
 |---|---|
-| Tested device | AYN Thor (Snapdragon 8 Gen 2, Adreno 740, 16 GB RAM, Android 13) |
-| GameNative | 1.2.1 |
-| Age of Empires IV | Anniversary Edition (Steam), build 16.3.11308. Main menu, tutorial, skirmish vs the A.I.; a full 51-minute game played to victory (on the earlier driver). With the repo's Turnip driver: benchmark 52.3 FPS, 58.6 with `VKD3D_CONFIG=no_staggered_submit`; late-game replay 46.1 FPS (without the variable). Full game on the earlier driver (one A.I., GameNative's FPS counter): high 20s to low 30s, about 24 in big late-game battles. Benchmark (first minutes of a 1v1, 1280×720, display at 120 Hz): 42 to 46 FPS, frames over 100 ms rare (0 to 2 per 90 s). Late-game benchmark (minutes 46 and 48 of that game's replay, v1.2.0, GPU at 680 MHz): 39.0 / 38.6 FPS |
-| Age of Empires II: DE | Steam, build 101.103.54800.0, three civilization DLCs, no Enhanced Graphics Pack. Main menu, skirmish vs the A.I.; 59.3 to 60.0 FPS in seven 60 s windows over 17 minutes |
-| Not tested | Multiplayer, the campaigns, other devices |
+| Tested device | AYN Thor (Snapdragon 8 Gen 2, Adreno 740, 16 GB RAM, Android 13), GameNative 1.2.1 |
+| Age of Empires IV | Anniversary Edition (Steam), build 16.3.11308. Main menu, tutorial, skirmish vs the A.I., a full 51-minute game to victory. The benchmarks below are automated and repeatable |
+| Age of Empires II: DE | Steam, build 101.103.54800.0, three civilization DLCs, no Enhanced Graphics Pack. Main menu, skirmish vs the A.I. |
+| Not tested | Multiplayer, the campaigns, other devices. The full AoE IV game was played before the repo's driver and the vkd3d-proton setting existed |
 
 ## What you need
 
-- An Android device with a Snapdragon / Adreno GPU and GameNative 1.2.1. Only the AYN Thor was tested; similar
+- An Android device with a Snapdragon / Adreno GPU and GameNative 1.2.1. Only the AYN Thor was tested; other
   Snapdragon 8 Gen 2 devices are the most likely to work.
 - The game on Steam, installed through GameNative.
-- The package `fexcore-aoe4-perf5.wcp` (900 KB) from the
-  [latest release](https://github.com/tarikbc/ageofempires-android/releases/latest). Its name starts with `aoe4`
-  because it was made for AoE IV first; the same package runs both games.
-- For AoE IV: the graphics driver `turnip-main-c78a9e9.zip` (2.7 MB) from the same release: Mesa's Turnip built from
-  its 2026-10-08 main branch, **+27 % FPS** over the Turnip v26.2.0 R4 the setup used before
-  ([TURNIP.md](docs/guides/TURNIP.md)). R4 still works if you have it (41 FPS instead of 52).
+- From the [latest release](https://github.com/tarikbc/ageofempires-android/releases/latest):
+  - `fexcore-aoe4-perf5.wcp` (900 KB), the patched FEX. Its name starts with `aoe4` because it was made for AoE IV
+    first; the same package runs both games.
+  - For AoE IV: `turnip-main-c78a9e9.zip` (2.7 MB), Mesa's Turnip driver built from its 2026-10-08 main branch
+    ([TURNIP.md](docs/guides/TURNIP.md)).
 
 ## Setup
 
-### 1. Install the patched emulator (and the AoE IV driver)
+### 1. Install the package and the driver
 
 1. Download [`fexcore-aoe4-perf5.wcp`](https://github.com/tarikbc/ageofempires-android/releases/latest/download/fexcore-aoe4-perf5.wcp)
    and, for AoE IV, [`turnip-main-c78a9e9.zip`](https://github.com/tarikbc/ageofempires-android/releases/latest/download/turnip-main-c78a9e9.zip)
@@ -51,7 +50,7 @@ all (black screen, it exits after about a second).
    It shows up under the FEXCore type as `aoe4-perf5 (23)`.
 3. For AoE IV: **Menu → Settings → Driver Manager → Import ZIP from device**, and pick the driver zip.
 
-### 2. Age of Empires IV: set up the container
+### 2. Age of Empires IV: the container
 
 Open the game in GameNative, tap the **cog** next to Play, then **Edit container**. Set:
 
@@ -60,26 +59,29 @@ Open the game in GameNative, tap the **cog** next to Play, then **Edit container
 | General | Container Variant | `bionic` |
 | General | Wine Version | `proton-11.0-99-arm64ec-1` (see the note below) |
 | General | Executable Path | `RelicCardinal.exe` |
-| Graphics | Graphics Driver / Version | `Wrapper` / **`turnip-main-c78a9e9`** (or `Turnip v26.2.0 R4`, slower) |
+| Graphics | Graphics Driver / Version | `Wrapper` / **`turnip-main-c78a9e9`** |
 | Graphics | DX Wrapper | `VKD3D` |
 | Emulation | 64-bit Emulator | `FEXCore` |
 | Emulation | FEXCore Version | **`aoe4-perf5-23`** |
-| Environment | add `WINEDEBUG` | `-all` (no Wine debug output, even when GameNative's Wine debug setting is on) |
-| Environment | add `FEX_EXP_SKIP_CALLRET_RESET` | `1` (roughly doubles the FPS) |
-| Environment | add `VKD3D_CONFIG` | `no_staggered_submit` (about 12 % more FPS, see below) |
+| Environment | add `WINEDEBUG` | `-all` |
+| Environment | add `FEX_EXP_SKIP_CALLRET_RESET` | `1` |
+| Environment | add `VKD3D_CONFIG` | `no_staggered_submit` |
 
-Then tap **Save** (top right).
+Then tap **Save** (top right). What the three variables do: `WINEDEBUG=-all` stops Wine's debug output even when
+GameNative's Wine debug setting is on; `FEX_EXP_SKIP_CALLRET_RESET=1` turns on one of the package's patches (about
+twice the FPS); `VKD3D_CONFIG=no_staggered_submit` stops vkd3d-proton from holding each GPU submission until the
+previous one finished (+12 % FPS, [TURNIP.md](docs/guides/TURNIP.md)).
 
 | | |
 |---|---|
 | ![General tab](docs/img/setup-general.jpg) | ![Emulation tab](docs/img/setup-emulation.jpg) |
-| ![Graphics tab](docs/img/setup-graphics.jpg) | ![Environment tab, the two variables at the bottom](docs/img/setup-environment.jpg) |
+| ![Graphics tab](docs/img/setup-graphics.jpg) | ![Environment tab, the three variables at the bottom](docs/img/setup-environment.jpg) |
 
 **About the Wine version:** the tested one is listed on the Thor as `proton-11.0-99-arm64ec-1`. It came from a
 manual import, and research says it is the same build as GameNative's official `proton-11.0-1-arm64ec`
-([details](docs/guides/WINE-SOURCE.md)). The official one was not run directly here; if you try it, please report back.
+([WINE-SOURCE.md](docs/guides/WINE-SOURCE.md)). The official one was not run here; if you try it, please report back.
 
-### 3. Age of Empires II: DE: set up the container
+### 3. Age of Empires II: DE: the container
 
 GameNative fills in a "known config" for this game. Keep its graphics settings (`Wrapper`, `turnip_v26.0.0_R6`,
 DXVK) and change:
@@ -96,18 +98,15 @@ DXVK) and change:
 Before the tested setup, the game's own VC++ 2022 runtime was installed into the container (GameNative 1.2.1 skips
 it); whether that is still needed was not tested. Details: [AOE2-DE.md](docs/guides/AOE2-DE.md).
 
-### 4. Recommended device settings
+### 4. Device settings
 
-- **Display at 120 Hz** (the Thor's refresh-rate tile). Set it **before** starting the game. At 60 Hz a frame
-  that misses a refresh waits a whole extra 16.7 ms; at 120 Hz long frames almost disappear.
-- **AoE IV controller:** turn on the game's controller mode: in the game, Settings → Controls → input **Gamepad**.
-  The game closes itself once after that switch; start it again. The Thor's controller works in its standard mode,
-  with no button remapping.
-- **Power:** GameNative's Power Control sets the CPU and GPU limits for the game's container at every start. The
-  CPU needs its full clocks: with the cores capped at about 2 GHz AoE IV's late game ran at 27.8 FPS instead of 36.
-  Hold the GPU at its top level too (in Power Control, GPU minimum and maximum both at the top), which gave about
-  2 FPS more in AoE IV's late game. We set these in the container's profile file; [TUNING.md](docs/guides/TUNING.md)
-  has the values and the measurements.
+- **Display at 120 Hz** (the Thor's refresh-rate tile), set **before** the game starts. At 60 Hz a frame that misses
+  a refresh waits a whole extra 16.7 ms.
+- **AoE IV controller:** in the game, Settings → Controls → input **Gamepad**. The game closes itself once after
+  that switch; start it again. The Thor's controller works in its standard mode, with no remapping.
+- **Power:** GameNative's Power Control sets the CPU and GPU limits for the container at every start. The CPU needs
+  its full clocks (capped at about 2 GHz the late game ran at 27.8 FPS instead of 36), and the GPU held at its top
+  level gave about 2 FPS more in the late game. [TUNING.md](docs/guides/TUNING.md) has the values.
 
 ### 5. Play
 
@@ -118,40 +117,34 @@ screen.
 
 ### Age of Empires IV
 
-![Frame times before and after the speed patches](docs/img/frametimes-before-after.png)
+![Frame times of the automated skirmish, one panel per step of the work](docs/img/frametimes-progress.png)
 
-*One bar per frame (higher is slower). Top: the earlier package, about 27 FPS with frequent stutters. Bottom: this
-package, about 43 FPS and almost no long frames.*
+*One bar per frame (higher is slower), the same 60 s of the automated skirmish at each step: the protection fixes
+alone, the speed patches with the Turnip v26.2.0 R4 driver, the repo's Turnip driver, and the vkd3d-proton setting.*
 
-Measured with an automated 1v1 skirmish (camera turning, 90 s windows, the game's frame times from Android's
-compositor):
+The benchmark is an automated 1v1 skirmish in which the player does nothing and the camera turns: 90 s windows at
+minutes 1 and 3, the game's frame times read from Android's compositor, display at 120 Hz
+([TESTING.md](docs/guides/TESTING.md)).
 
-| | FPS | median frame | frames over 100 ms |
+| Setup | FPS (minutes 1 / 3) | median frame | frames over 50 ms |
 |---|---|---|---|
-| Earlier package (protection fixes only), 60 Hz | 26.0 to 26.7 | 33.4 ms | 71 to 83 per 90 s |
-| **This package**, display at 60 Hz | 42.0 to 43.7 | 16.7 ms | 0 to 2 |
-| **This package**, display at 120 Hz | 42 to 46 | 25.3 ms | 0 to 2 |
-| **This package + the repo's Turnip driver** (v1.3.0) | 52.3 | 16.9 ms | 0 to 2 |
-| **The same + `VKD3D_CONFIG=no_staggered_submit`** | 58.6 / 58.1 (minutes 1 / 3) | 16.9 ms | 0 to 2 |
+| Protection fixes only (2026-10-07, 60 Hz display) | 26.7 / 26.6 | 33.4 ms | 721 / 734 |
+| The package, Turnip v26.2.0 R4 (v1.1.0 to v1.2.0) | 42.1 / 42.1 | 25.3 ms | 2 / 2 |
+| + the repo's Turnip driver (v1.3.0) | 52.3 / 52.3 | 16.9 ms | 4 / 5 |
+| **+ `VKD3D_CONFIG=no_staggered_submit`** (the setup above) | **58.6 / 58.1** | 16.9 ms | 9 / 16 |
 
-These were measured with v1.0.0. v1.1.0 gave the same numbers as v1.0.0 in a back-to-back test
-([TUNING.md](docs/guides/TUNING.md)).
+A real game is heavier than the idle benchmark. The **late-game benchmark** is the replay of a full 51-minute game
+against one A.I., a 90 s window at minute 48 with the player's own camera, the CPU at full clocks:
 
-The benchmark measures the first minutes of a 1v1 in which the player does nothing. A real game is heavier: in a
-full 51-minute game against one A.I. (Intermediate) the FPS counter read high 20s to low 30s, and about 24 in the big
-late-game battles (v1.1.0).
+| Setup | FPS at minute 48 |
+|---|---|
+| v1.2.0, Turnip v26.2.0 R4, GPU held at 680 MHz | 38.6 |
+| v1.3.0, the repo's Turnip driver | 46.1 |
+| + `VKD3D_CONFIG=no_staggered_submit` | not measured yet |
 
-**Late game.** That game's replay is the late-game benchmark: two 90 s windows at minutes 46 and 48, the player's
-own camera, the CPU at full clocks ([TESTING.md](docs/guides/TESTING.md)):
-
-| | FPS (minute 46 / 48) | frames over 50 ms |
-|---|---|---|
-| v1.1.0 | 36.0 / 36.2 | 19 / 15 |
-| v1.2.0 | 36.7 / 36.5 | 10 / 11 |
-| **v1.2.0, GPU held at 680 MHz** | **39.0 / 38.6** | 18 / 22 |
-| **v1.3.0: the same + the repo's Turnip driver** | **46.1** (48:23 only) | 15 |
-
-The CPU runs hot in long sessions: the hottest CPU sensor read about 95 °C during the tests (GPU about 77 °C).
+During that game, played before the repo's driver existed, GameNative's FPS counter read high 20s to low 30s, and
+about 24 in the big late-game battles. The CPU runs hot in long sessions: the hottest CPU sensor read about 95 °C
+during the tests, the GPU about 80 °C.
 
 ### Age of Empires II: DE
 
@@ -162,29 +155,28 @@ The CPU runs hot in long sessions: the hottest CPU sensor read about 95 °C duri
 | The game's Ranked Benchmark Test (8 players, big battles), battle part | 27 to 30 | many; score 1114.8 |
 
 The game did not go above 60 FPS, although the display ran at 120 Hz and the game's own limit was 120. In the
-benchmark the game's main thread used 95 % of one core: the emulated CPU work limits it, not the GPU. Hottest CPU
-sensor up to 94 °C.
+benchmark the game's main thread used 95 % of one core: the emulated CPU work limits it, not the GPU.
 
 ## Known issues
 
 **Age of Empires IV**
 
+- **Sometimes it stops while loading** with "Failed to wait for DX12 fence (error 102)" in its log (several times on
+  2026-10-08, on every driver). Start it again; the next start worked each time.
 - **Do not stay long in GameNative's Quick Menu during a match.** It pauses the game; after a 24 s pause the game
   exited once (a 9 s pause was fine).
 - **A "video card's installed driver version" dialog** can block loading after its one-day "Don't show this
   message" choice expires. GameNative's touch input did not reach its button in our tests; the repo's helper
   `tools/probes/dlgclick` clicks it from adb ([RESEARCH-LOG.md](docs/research/RESEARCH-LOG.md), Traps).
+- **GameNative's "Save Conflict" dialog** asks which save to keep when the local and the cloud save both changed.
+  Pick the one from where you played last.
+- **Other graphics drivers:** StevenMXZ's Turnip v26.2.0 R4 and v26.3.0-R6 run the game at 41 FPS, purple-turnip
+  T30 about 2.5 FPS slower; **Balemuni Apex v2 crashes the game** after about two minutes
+  ([TUNING.md](docs/guides/TUNING.md)).
 - **The game needs AVX.** FEX provides it; hiding it makes the game refuse to start.
-- **Sometimes it stops while loading** with "Failed to wait for DX12 fence (error 102)" in its log (three times on
-  2026-10-08). Start it again; the next start worked each time.
-- **Other graphics drivers:** StevenMXZ's Turnip v26.2.0 R4 and v26.3.0-R6 ran the same (41 FPS); purple-turnip T30
-  was about 2.5 FPS slower; **Balemuni Apex v2 crashes the game** after about two minutes
-  ([TUNING.md](docs/guides/TUNING.md)). A full game on the repo's driver has not been played yet.
 - **Display mode:** the option stored as `windowmode` 1 gave a black screen; borderless works.
 - **End screen "Retrieving...":** after the 51-minute game the result panel said "Waiting to retrieve match results
   from the server" for minutes. The game was not frozen, and the match then appeared in Match History.
-- **GameNative "Save Conflict" dialog:** it asks which save to keep when the local and the cloud save both changed.
-  Pick the one from where you played last.
 
 **Age of Empires II: DE**
 
@@ -195,9 +187,10 @@ sensor up to 94 °C.
 
 ## How it works
 
-Both games are Windows x86-64 programs. GameNative runs them with Wine (Windows compatibility) and **FEX**, which
-translates x86 code to ARM on the fly. The patches change only the emulator, so it behaves more like Windows; the
-games and their protections are not modified.
+Both games are Windows x86-64 programs. GameNative runs them with Wine (Windows compatibility), **FEX** (translates
+x86 code to ARM on the fly), **vkd3d-proton** or DXVK (Direct3D on Vulkan) and a **Turnip** Vulkan driver for the
+Adreno GPU. The patches change only the emulator, so it behaves more like Windows; the games and their protections
+are not modified.
 
 **Age of Empires IV** ships with Relic's anti-tamper protection, **Aegis**. On a real PC it is invisible, but under
 the emulator three things went wrong:
@@ -205,29 +198,33 @@ the emulator three things went wrong:
 1. **A start-up check failed.** The protection checks that Windows functions are not hooked. Wine's ARM64EC
    build lays out some function stubs (`jmp [addr]`, `FF 25`) in a way that looked like a hook, and the protection
    stopped the game 2 to 3 minutes after the start. **Patch 0007** rewrites those stubs into a form the check
-   accepts, in every process that runs x64 code. ([HOOK-CHECK.md](docs/how-it-works/HOOK-CHECK.md); the stubs come
-   from Wine's build tools, see [UPSTREAM-WINE-ISSUE.md](docs/research/UPSTREAM-WINE-ISSUE.md))
+   accepts. ([HOOK-CHECK.md](docs/how-it-works/HOOK-CHECK.md))
 2. **A watchdog fired.** One protection thread runs a loop that must keep up with a time budget, and it raises
    thousands of exceptions per second. Each exception cost about 230 µs under Wine (a round trip to the
    wineserver), the loop fell behind, and 8 to 13 minutes in the protection froze the game. **Patch 0010** lets
    FEX resume from an exception directly: 2.5 µs. ([WATCHDOG.md](docs/how-it-works/WATCHDOG.md))
 3. **It was slow.** The protection runs some code one instruction at a time from a 16 MB scratch buffer. For FEX
-   every step was new code: a fault, a cache flush and a recompile, about 16,000 times per second, eating 44 % of
-   the game's main thread. **Patches 0012 to 0014** recognise that buffer and reuse translations instead of
+   every step was new code: a fault, a cache flush and a recompile, about 16,000 times per second, 44 % of the
+   game's main thread. **Patches 0012 to 0014** recognise that buffer and reuse translations instead of
    recompiling: 26.7 → 43.7 FPS. ([INSTRUCTION-STEPPER.md](docs/how-it-works/INSTRUCTION-STEPPER.md))
 
-Since v1.2.0, **patch 0016** also answers the game's CPU-speed question from a short cache. The game asks for the MHz
-of every core about 45 times per second, and Wine read two files per core for each answer: 11 % of the main thread in
-the late game. ([POWER-INFORMATION.md](docs/how-it-works/POWER-INFORMATION.md))
+**Patch 0016** (v1.2.0) answers the game's CPU-speed question from a short cache. The game asks for the MHz of every
+core about 45 times per second, and Wine read two files per core for each answer: 11 % of the main thread in the
+late game. ([POWER-INFORMATION.md](docs/how-it-works/POWER-INFORMATION.md))
 
 **The graphics driver** (v1.3.0) is Mesa's Turnip built from its 2026-10-08 main branch. The Turnip builds in
-circulation waited for the GPU on every submit because of a kernel-driver quirk (fixed in Mesa that day), so the game's
-render thread spent about 10 ms per frame waiting. ([TURNIP.md](docs/guides/TURNIP.md))
+circulation waited for the GPU on every submit because of a kernel-driver quirk (fixed in Mesa that day), so the
+game's render thread spent about 10 ms per frame waiting: 41 → 52 FPS. ([TURNIP.md](docs/guides/TURNIP.md))
+
+**The vkd3d-proton setting.** GPU traces then showed the GPU working only 37 % of the time. Turnip offers one Vulkan
+queue, so the game's graphics, compute and copy queues all share it, and vkd3d-proton 2.14.1 then resolves fence
+waits on the CPU and keeps one command buffer in flight per queue. `VKD3D_CONFIG=no_staggered_submit` turns that
+off: 52 → 58 FPS. ([TURNIP.md](docs/guides/TURNIP.md), "What the GPU waits for")
 
 **Age of Empires II: DE** (protected with Arxan) crashed about 1 s after the start with GameNative's own FEX 2512,
-inside code it decrypts at run time. Every FEX build from this repo that was tried fixes it. Plain upstream FEX-2610
-gets past that crash but exits before the menu, so this repo's patches are still needed; which one was not narrowed
-down. ([AOE2-DE.md](docs/guides/AOE2-DE.md))
+inside code it decrypts at run time. Every FEX build from this repo fixes it. Plain upstream FEX-2610 gets past that
+crash but exits before the menu, so this repo's patches are still needed; which one was not narrowed down.
+([AOE2-DE.md](docs/guides/AOE2-DE.md))
 
 <details>
 <summary>All patches in the package</summary>
@@ -244,13 +241,13 @@ All against FEX `7d3090f`, in this order ([patches/fex](patches/fex)):
 | 0012 | Handles the protection's one-instruction-at-a-time buffer without faults and recompiles |
 | 0013 | Larger code buffer (512 MB), so FEX clears its whole cache less often |
 | 0014 | Reuses compiled code when the protection decrypts the same code again |
-| 0015 | Fixes a FEX bug: a 32-bit value was loaded as 64 bits (it also broke the build without 0002) |
+| 0015 | Fixes a FEX bug: a 32-bit value was loaded as 64 bits |
 | 0016 | Answers the game's per-frame CPU-speed query from a 250 ms cache (v1.2.0) |
 
-Since v1.1.0 the package leaves out patch 0002, which hid FEX's name from the game: the game runs the same without
-it, so the package hides less. v1.0.0 had 0002, and 0007 only in the game's process. The package's DLL is
-`libarm64ecfex.dll`, SHA-1 `b5e6e357` (v1.2.0; v1.1.0 was `bc82c565`). To build it yourself:
-[BUILDING-FEX.md](docs/guides/BUILDING-FEX.md) and [`tools/make_fex_wcp.py`](tools/make_fex_wcp.py).
+The package's DLL is `libarm64ecfex.dll`, SHA-1 `b5e6e357`. Since v1.1.0 the package leaves out patch 0002, which hid
+FEX's name from the game: the game runs the same without it. To build it yourself:
+[BUILDING-FEX.md](docs/guides/BUILDING-FEX.md) and [`tools/make_fex_wcp.py`](tools/make_fex_wcp.py). The driver:
+[`tools/build_turnip.sh`](tools/build_turnip.sh).
 </details>
 
 <details>
@@ -258,9 +255,10 @@ it, so the package hides less. v1.0.0 had 0002, and 0007 only in the game's proc
 
 The speed work was measured from a Mac over adb: [`tools/bench.py`](tools/bench.py) starts AoE IV, skips the
 intros, starts a skirmish with the camera turning (controller input written to the Thor's input device) and records
-frame times from Android's compositor, with temperatures; [`tools/fpsgraph.py`](tools/fpsgraph.py) shows a live
-frame-time graph in a browser; [`tools/agent.py`](tools/agent.py) reads memory and threads inside the game without
-console windows. See [TESTING.md](docs/guides/TESTING.md).
+frame times from Android's compositor, with temperatures; [`tools/replay.py`](tools/replay.py) does the late-game
+window on a replay; [`tools/fpsgraph.py`](tools/fpsgraph.py) shows a live frame-time graph in a browser;
+[`tools/agent.py`](tools/agent.py) reads memory and threads inside the game without console windows; the
+`tools/research/turnip_*.py` scripts read the GPU traces. See [TESTING.md](docs/guides/TESTING.md).
 </details>
 
 ## Upstream
@@ -269,32 +267,31 @@ The fixes that belong in FEX or Wine were reported there on 2026-10-08: FEX pull
 [#6021](https://github.com/FEX-Emu/FEX/pull/6021) and issues [#6022](https://github.com/FEX-Emu/FEX/issues/6022) and
 [#6023](https://github.com/FEX-Emu/FEX/issues/6023); Wine bugs [60461](https://bugs.winehq.org/show_bug.cgi?id=60461),
 [60462](https://bugs.winehq.org/show_bug.cgi?id=60462) and [60463](https://bugs.winehq.org/show_bug.cgi?id=60463).
-Which patch is which: [patches/fex](patches/fex#upstream-2026-10-08).
+Which patch is which: [patches/fex](patches/fex#upstream-2026-10-08). The driver's gain comes from Mesa merge request
+[!44838](https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/44838), already upstream.
 
 ## The whole story
 
 Getting here took a long investigation: what AoE IV's protection checks, what was ruled out, and every measurement.
-Start at the [docs index](docs/README.md), or read the full [research log](docs/research/RESEARCH-LOG.md) (the
-former README).
+Start at the [docs index](docs/README.md), or read the full [research log](docs/research/RESEARCH-LOG.md).
 
 | Folder | What is in it |
 |---|---|
 | [`docs/how-it-works/`](docs/how-it-works) | One write-up per problem the patches fix, and the protection itself |
-| [`docs/guides/`](docs/guides) | Tuning, testing over adb, building FEX, driving GameNative, AoE II DE |
+| [`docs/guides/`](docs/guides) | The driver, tuning, testing over adb, building FEX, driving GameNative, AoE II DE |
 | [`docs/research/`](docs/research) | The research log, the dead ends, and redacted raw run data |
 | [`patches/fex/`](patches/fex) | The FEX patches in the package |
 | [`patches/experiments/`](patches/experiments) | Earlier Box64, Wine and GameNative patches that are not needed |
 | [`tools/`](tools) | Test, install and build scripts ([list](tools/README.md)); one-off scripts in `tools/research` |
 
-The package is on the [releases page](https://github.com/tarikbc/ageofempires-android/releases). Older `.wcp` builds
-from the investigation do not run the game; they are only in the git history. This repo was called `aoe4-gamenative`
-until 2026-10-08; old links redirect here.
+The package and the driver are on the [releases page](https://github.com/tarikbc/ageofempires-android/releases).
+This repo was called `aoe4-gamenative` until 2026-10-08; old links redirect here.
 
 ## Credits and license
 
 Built on [GameNative](https://github.com/utkarshdalal/GameNative), [FEX-Emu](https://github.com/FEX-Emu/FEX),
-Wine and Valve's Proton (via [GameNative/proton-wine](https://github.com/GameNative/proton-wine)), and Mesa's Turnip
-driver.
+Wine and Valve's Proton (via [GameNative/proton-wine](https://github.com/GameNative/proton-wine)),
+[vkd3d-proton](https://github.com/HansKristian-Work/vkd3d-proton) and Mesa's Turnip driver.
 
 Tools and scripts are MIT (see [LICENSE](LICENSE)). Patches follow their project: FEX MIT, Box64 MIT, Wine
 LGPL-2.1-or-later, GameNative GPL-3.0. You need your own copy of the game.

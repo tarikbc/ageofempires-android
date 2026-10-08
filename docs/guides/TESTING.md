@@ -127,6 +127,29 @@ clocks". A fresh game start applies the container's power profile again; check t
 players' names and IDs, so it stays out of the repo. `probes/lsgame.exe` lists the game's `My Games` folder into
 `D:\aoe\ls.txt`, also without a window.
 
+## Lining long frames up with a scheduler trace
+
+The compositor's present times (`frametimes.py`) are on `CLOCK_MONOTONIC`; ftrace runs on the boot clock by default,
+and the shell user may switch it: start `atrace --async_start -b 65536 sched freq idle gfx`, write `mono` to
+`/sys/kernel/tracing/trace_clock`, and stop with `atrace --async_stop -o FILE` after the window. A 40 s capture is
+about 1.1 GB of text; `grep -E "sched_switch|sched_waking|cpu_frequency"` cuts it to what the scripts read.
+
+- [`tools/research/stutter_align.py FRAMES.csv TRACE.txt [MS]`](../../tools/research/stutter_align.py): for every
+  frame longer than MS, the run / runnable / sleep time of the main, render, vkd3d and swapchain threads, their
+  longest sleep and who ended it, the cores they ran on, other tasks on the big cores, clock changes; then every
+  game thread's run time per frame, long frames against normal ones. Give it the game's own presents as the frames
+  file (one row per `QueueSubmit` pair of the `vkd3d_queue` thread) to measure in game time instead of display time.
+- [`present_chain.py FRAMES.csv GFX.txt [PRES.txt]`](../../tools/research/present_chain.py): the game's present
+  cadence, GameNative's `queueBuffer` cadence, the latency between them, and for each long display frame which of the
+  two had the gap. `GFX.txt` is the trace's `tracing_mark_write` lines for `queueBuffer`, `dequeueBuffer`, `present`,
+  `QueueSubmit` and `GPU completion`; `PRES.txt` the compositor thread's full B/E marks for durations.
+- [`pipeline_timeline.py`](../../tools/research/pipeline_timeline.py): the same events as a timeline inside each long
+  frame. [`freq_in_frames.py`](../../tools/research/freq_in_frames.py): time-weighted CPU clocks inside long against
+  normal frames. [`fexstats_align.py`](../../tools/research/fexstats_align.py): FEX's per-thread counters (a build
+  with the `THRSTAT1` table, read through the agent's `peek`) per sample bin against the longest frame in the bin.
+
+Results: [TUNING.md](TUNING.md), "The hitches at 58 FPS".
+
 ## Where the game spends its time
 
 The commands behind patch 0016 and the late-game tuning ([POWER-INFORMATION.md](../how-it-works/POWER-INFORMATION.md)),
