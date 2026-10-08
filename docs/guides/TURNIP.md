@@ -53,10 +53,46 @@ Driver Version. From adb: `tools/gn_driver.py import turnip-main-c78a9e9.zip tur
 `tools/gn_driver.py select turnip-main`. GameNative's log shows the load:
 `hook_android_dlopen_ext: loading custom driver: .../adrenotools/turnip-main-c78a9e9/libvulkan_freedreno.so`.
 
+## GPU render-stage profile (2026-10-08, 15:00 to 15:30)
+
+A Turnip built with `-Dperfetto=true -Dallow-fallback-for=perfetto` (the same build script plus those two options)
+sends GPU timestamps of every command buffer, render pass, blit, clear and compute dispatch to Android's Perfetto
+service. In the container: `MESA_GPU_TRACES=perfetto`. Record with
+`perfetto --txt -c tools/research/turnip_renderstages.cfg -o /data/misc/perfetto-traces/x.pftrace` from `adb shell`
+while the game runs (on Android the data source is `gpu.renderstages`, not `gpu.renderstages.msm`). The trace
+processor rejects the GPU clock of this driver (`clock_sync_failure_unknown_source_clock`, 89,045 packets), so
+[`tools/research/turnip_stages.py`](../../tools/research/turnip_stages.py) and
+[`turnip_lrz_reasons.py`](../../tools/research/turnip_lrz_reasons.py) decode the events from the file instead.
+The tracing driver itself costs about 15 % FPS (43.7 against 52.3 in the skirmish benchmark), so its numbers are
+shares, not absolute times.
+
+Skirmish benchmark, camera spinning, 11 s (spin2.pftrace):
+
+| Stage | GPU ms per second | per second |
+|---|---|---|
+| Command Buffer (all GPU work) | 370 | 1,155 |
+| Render Pass | 299 | 2,598 |
+| Bypass (render passes in system memory) | 230 | 2,598 |
+| Compute | 58 | 430 |
+| Clear Sysmem | 8 | 833 |
+
+About 50 render passes per frame, all in system-memory mode (the driver's built-in config picks
+`tu_autotune_algorithm=prefer_sysmem` for vkd3d), and every pass ends with `lrzStatus = DISABLED`. The heaviest
+passes are the full-screen depth passes (85 and 57 GPU ms per second, bandwidth 13 to 14 per sample, up to 1,700
+draws), and in all of them LRZ writes are disabled at draw 1 with the reason "Depth write + blending": the first
+draw of each pass writes depth with blending on, and the driver then stops LRZ writes for the whole pass
+(`tu_lrz.cc`, conservative rule). The driver's switch for that rule, `disable_conservative_lrz=true` as a container
+variable, changed nothing in the benchmark (51.0 / 50.8 FPS against 52.3), so either the rule is not the limit or
+another reason disables LRZ too; not resolved. Per-draw stages (shader hashes) are off by default in the driver and
+were not recorded.
+
+The CPU side of the same trace: 1,100 `vkQueueSubmit` per second from `vkd3d_queue` (about 25 per frame) and
+24,000 semaphore waits per second.
+
 ## Not tested yet
 
 - A full game played by a person on the new driver (the benchmark skirmish and the replay ran without a crash).
 - AoE II DE on the new driver (its container uses `turnip_v26.0.0_R6`).
-- Turnip run-time options: for engines named `DXVK|vkd3d` the driver's built-in config selects
-  `tu_autotune_algorithm=prefer_sysmem`; `TU_AUTOTUNE_ALGO=bandwidth|prefer_gmem`, `TU_DEBUG=gmem` and
-  `disable_conservative_lrz` are the candidates for a later A/B.
+- Run-time options tried in the skirmish benchmark on this driver (52.3 FPS as released): `TU_AUTOTUNE_ALGO=bandwidth`
+  50.5 / 50.7, a build with Mesa MR !43714 52.5 / 52.6, `disable_conservative_lrz=true` 51.0 / 50.8. `TU_DEBUG=gmem`
+  got no clean run (two starts stopped with the DX12 fence error). Nothing beats the default.

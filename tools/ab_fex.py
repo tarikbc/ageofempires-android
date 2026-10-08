@@ -55,6 +55,7 @@ def ensure_session():
         g.tap(*bounds_center(hits[0]))
         for _ in range(30):
             time.sleep(3)
+            rw.keep_local_on_save_conflict()  # the Save Conflict dialog holds the session until answered
             if "winhandler.exe" in rw.sh("ps -A -o NAME"):
                 time.sleep(5)
                 return True
