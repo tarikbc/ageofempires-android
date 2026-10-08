@@ -13,9 +13,10 @@
                                         appended to DIR/results.tsv (default ./bench_out); --attach starts from a
                                         game that already shows its main PLAY page
 
-The menu path was tested on 2026-10-07 with GameNative's A/B and X/Y swap (physical B = the game's A):
-title B; main page RIGHT RIGHT B (Single Player); RIGHT B (Skirmish); RIGHT B (lobby "Solo Battle vs A.I.", 1v1,
-Standard, Danube River); START (load screen); when the yellow Play button shows, B. The game then starts at 00:00.
+Button names are the game's buttons (the Thor's controller in its standard mode, no remapping; tools/thor_pad.py).
+The menu path: title A; main page RIGHT RIGHT A (Single Player); RIGHT A (Skirmish); RIGHT A (lobby "Solo Battle vs
+A.I.", 1v1, Standard, Danube River); START (load screen); when the yellow Play button shows, A. The game then starts
+at 00:00.
 Screenshots are taken only while waiting for the Play button, never while recording.
 """
 import os
@@ -65,23 +66,23 @@ def main_menu_visible():
 
 
 def boot(timeout=300):
-    """Press physical A (the game's B with the A/B swap) until the main PLAY page shows. It skips the intro films and
-    the title screen, and closes notices shown over the menu (e.g. "Server Maintenance", whose game-A button opens a
-    browser). The screen is checked before every press, so the main menu itself never gets a B (back)."""
+    """Press B until the main PLAY page shows. It skips the intro films and the title screen, and closes notices shown
+    over the menu (e.g. "Server Maintenance", whose A button opens a browser). The screen is checked before every
+    press, so the main menu itself never gets a B (back)."""
     dev = thor_pad.node()
     end = time.time() + timeout
     while time.time() < end:
         if main_menu_visible():
             print("main menu")
             return
-        press(dev, "A", settle=6)
+        press(dev, "B", settle=6)
     sys.exit("the main menu did not appear")
 
 
 def skirmish(from_menu=False):
     dev = thor_pad.node()
-    steps = [] if from_menu else [("B", 3)]
-    steps += [("RIGHT", 0), ("RIGHT", 0), ("B", 3), ("RIGHT", 0), ("B", 4), ("RIGHT", 0), ("B", 4),
+    steps = [] if from_menu else [("A", 3)]
+    steps += [("RIGHT", 0), ("RIGHT", 0), ("A", 3), ("RIGHT", 0), ("A", 4), ("RIGHT", 0), ("A", 4),
              ("START", 5)]
     for name, wait in steps:
         press(dev, name)
@@ -92,7 +93,7 @@ def skirmish(from_menu=False):
         time.sleep(5)
     else:
         sys.exit("the Play button did not appear")
-    press(dev, "B")
+    press(dev, "A")
     time.sleep(12)
     spin(True)
     print("skirmish running, camera spinning")

@@ -26,7 +26,7 @@ The parts, which also work alone:
 | Step | Tool | What it does |
 |---|---|---|
 | Launch | `tools/run_watch.py --launch --quiet` | Restarts GameNative, opens the AoE IV page (waits for the suggested-game card, checks the title), taps Play, answers GameNative's **Save Conflict** dialog with **Keep local**, then only watches the process over adb. |
-| Intros | `tools/bench.py boot` | Presses physical A (the game's B) until the main PLAY page shows (the purple "The Crucible" tile). It skips each intro film and the title screen, and closes notices shown over the menu, such as the "Server Maintenance" notice of 2026-10-07, whose game-A button would open a browser. The screen is checked before every press. |
+| Intros | `tools/bench.py boot` | Presses B until the main PLAY page shows (the purple "The Crucible" tile). It skips each intro film and the title screen, and closes notices shown over the menu, such as the "Server Maintenance" notice of 2026-10-07, whose A button would open a browser. The screen is checked before every press. |
 | Skirmish | `tools/bench.py skirmish [--from-menu]` | Single Player, Skirmish, "Solo Battle vs A.I." (1v1, Standard, Danube River), Start, waits for the load screen's Play button, starts the match, holds the right stick. |
 | Camera | `tools/bench.py spin on/off` | Holds the right stick fully right (camera keeps turning) or centres it. |
 | Frames | `tools/bench.py record SECONDS`, `tools/frametimes.py` | Frame times from Android's compositor, as a summary line. |
@@ -45,16 +45,16 @@ running match; later ones may measure the end screen.
 `tools/thor_pad.py` writes evdev events into the Thor's built-in controller, so the game (and GameNative) see them as
 real input:
 
-- **The tools need the Thor's controller in Xbox style.** They were written and tested in that mode, and
-  `thor_pad.py` stops if it finds the standard-mode device ("Odin Controller") instead: the same button codes act
-  differently in the game there (for example, `boot` presses physical A because in Xbox style it is the game's B,
-  which closes notices; the game's A on the maintenance notice opens a browser). For playing, standard mode works.
-- The controller (Xbox style in the Thor's settings) is "Xbox Wireless Controller", `/dev/input/event9` on the
-  tested unit (found by name). The node is writable by adb's shell user, so `sendevent` works without root.
+- **The tools need the Thor's controller in its standard mode**, the same mode that is used to play. The device is
+  then "Odin Controller", `/dev/input/event9` on the tested unit (found by name). `thor_pad.py` stops if it finds
+  the Xbox-style device ("Xbox Wireless Controller") instead. The node is writable by adb's shell user, so
+  `sendevent` works without root.
 - Buttons: A 304, B 305, X 307, Y 308, LB 310, RB 311, SELECT 314, START 315; D-pad on `ABS_HAT0X`/`ABS_HAT0Y`;
-  right stick `ABS_Z`/`ABS_RZ` (-32767 to 32767).
-- With GameNative's Edit Physical Controller A/B and X/Y swap, **physical B is the game's A** (confirm). START
-  starts the match in the skirmish lobby.
+  right stick `ABS_Z`/`ABS_RZ` (-32767 to 32767); triggers `ABS_BRAKE`/`ABS_GAS` (0 to 32767).
+- With no remapping in GameNative, **A is the game's A and B the game's B** (the user's check on the Thor, and the
+  2026-10-07 21:14 `bench.py run`: B skipped the intro films and the title screen and reached the main PLAY page, A went through Single Player, Skirmish and the lobby and started the match, and the minute-1 window gave 42.6 FPS with 0 frames over 100 ms). START starts the match in the skirmish lobby.
+- Until 2026-10-07 the tools ran in Xbox style with GameNative's Edit Physical Controller A/B and X/Y swap, where
+  physical B was the game's A; the menu paths in older notes use those names.
 - **One stick write stays held.** After `thor_pad.py stick R 1 0` the camera kept turning, and `getevent -lp`
   still read `ABS_Z` 32767 more than 10 minutes later. There is no need to repeat the event (or to wedge the stick).
 
