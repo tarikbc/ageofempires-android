@@ -13,7 +13,7 @@ Scripts that run on a Mac with the Thor connected over adb. How they fit togethe
 | [`frameplot.py`](frameplot.py) | Draws frame-time recordings as a chart |
 | [`thermals.py`](thermals.py) | Temperatures, GPU load and CPU clocks of the Thor |
 | [`threadcpu.py`](threadcpu.py) | CPU use of each thread of the running game |
-| [`thor_pad.py`](thor_pad.py) | Presses the Thor's controller buttons from adb (evdev events) |
+| [`thor_pad.py`](thor_pad.py) | Presses the Thor's controller buttons from adb (evdev events; the controller in its standard mode) |
 | [`agent.py`](agent.py) | Reads memory and threads inside the game without console windows (host side of [`probes/aoeagent.c`](probes/aoeagent.c)) |
 | [`run_watch.py`](run_watch.py) | Starts a run and watches it: the game process, its log, Windows suspend counts; answers GameNative's Save Conflict dialog |
 | [`ab_fex.py`](ab_fex.py) | Runs FEX builds in turn and summarises each run |

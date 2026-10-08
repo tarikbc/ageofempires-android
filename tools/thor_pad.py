@@ -5,10 +5,11 @@
     thor_pad.py stick L|R X Y            (each -1.0..1.0; 0 0 recentres)
     thor_pad.py trigger LT|RT VALUE      (0.0..1.0)
 
-The Thor's controller (Xbox style in Thor settings) is "Xbox Wireless Controller", /dev/input/event9 on the tested
-unit; the node is found by name. adb's shell user is in the `input` group, and the node is writable, so the events
-reach Android (and GameNative) as if the real controller sent them. Names here are the physical buttons: with
-GameNative's Edit Physical Controller A/B and X/Y swap, physical B acts as the game's A.
+Needs the Thor's controller in its standard mode, where it is "Odin Controller" (/dev/input/event9 on the tested
+unit; the node is found by name). adb's shell user is in the `input` group, and the node is writable, so the events
+reach Android (and GameNative) as if the real controller sent them. With no button remapping in GameNative, A
+(BTN_SOUTH, 304) is the game's A and B (BTN_EAST, 305) the game's B. In Xbox style ("Xbox Wireless Controller") the
+tool stops: it was used there only together with GameNative's A/B and X/Y swap, where the meanings differ.
 """
 import subprocess
 import sys
@@ -29,11 +30,11 @@ def node():
     for line in out.splitlines():
         if line.startswith("add device"):
             dev = line.split(":", 1)[1].strip()
-        if "Xbox Wireless Controller" in line and dev:
-            return dev
         if "Odin Controller" in line and dev:
-            sys.exit("the Thor's controller is in standard mode; set it to Xbox style in the Thor's settings "
-                     "(these tools were tested only in Xbox style, see docs/guides/TESTING.md)")
+            return dev
+        if "Xbox Wireless Controller" in line:
+            sys.exit("the Thor's controller is in Xbox style; set it back to its standard mode in the Thor's settings "
+                     "(see docs/guides/TESTING.md)")
     sys.exit("controller node not found")
 
 
