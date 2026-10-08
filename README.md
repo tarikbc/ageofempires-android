@@ -76,10 +76,9 @@ manual import, and research says it is the same build as GameNative's official `
 
 - **Display at 120 Hz** (the Thor's refresh-rate tile). Set it **before** starting the game. At 60 Hz a frame
   that misses a refresh waits a whole extra 16.7 ms; at 120 Hz long frames almost disappear.
-- **Controller:** the Thor's controller in **Xbox style** (Thor settings). In the game: Settings → Controls →
-  input **Gamepad**. The game closes itself once after that switch; start it again.
-- **A/B and X/Y feel swapped?** GameNative's in-game Quick Menu → Controller → **Edit Physical Controller**:
-  bind A to B, B to A, X to Y and Y to X.
+- **Controller:** turn on the game's controller mode: in the game, Settings → Controls → input **Gamepad**. The game
+  closes itself once after that switch; start it again. The Thor's controller works in its standard mode, with no
+  button remapping.
 - **Power:** GameNative's Power Control can cap the CPU (with a cap of about 2 GHz the game ran at about
   14 FPS). The tested profile let the CPU reach its full 3.19 GHz and kept the GPU at its top two levels; see
   [TUNING.md](docs/guides/TUNING.md).

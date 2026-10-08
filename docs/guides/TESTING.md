@@ -45,6 +45,10 @@ running match; later ones may measure the end screen.
 `tools/thor_pad.py` writes evdev events into the Thor's built-in controller, so the game (and GameNative) see them as
 real input:
 
+- **The tools need the Thor's controller in Xbox style.** They were written and tested in that mode, and
+  `thor_pad.py` stops if it finds the standard-mode device ("Odin Controller") instead: the same button codes act
+  differently in the game there (for example, `boot` presses physical A because in Xbox style it is the game's B,
+  which closes notices; the game's A on the maintenance notice opens a browser). For playing, standard mode works.
 - The controller (Xbox style in the Thor's settings) is "Xbox Wireless Controller", `/dev/input/event9` on the
   tested unit (found by name). The node is writable by adb's shell user, so `sendevent` works without root.
 - Buttons: A 304, B 305, X 307, Y 308, LB 310, RB 311, SELECT 314, START 315; D-pad on `ABS_HAT0X`/`ABS_HAT0Y`;
