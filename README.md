@@ -3,13 +3,13 @@
 Play **Age of Empires IV** and **Age of Empires II: Definitive Edition** on an Android handheld with
 [GameNative](https://github.com/utkarshdalal/GameNative). Both games need the patched CPU emulator (FEX) package
 from this repo: without it AoE IV's copy protection freezes the game within minutes, and AoE II DE does not start at
-all. AoE IV also gets a newer graphics driver and one vkd3d-proton setting from here, together **+43 % FPS** over the
-drivers in circulation.
+all. AoE IV also gets a patched graphics driver and three settings from here, together more than **+40 % FPS** over
+the drivers in circulation.
 
 | | Age of Empires IV | Age of Empires II: DE |
 |---|---|---|
 | Plays | A full 51-minute game against one A.I., to victory | A 3-player skirmish against two Hardest A.I.s, 17 minutes |
-| Speed | **58 FPS** in the first minutes of a 1v1, **about 47 FPS** in the late-game benchmark | **60 FPS** in that skirmish (the game's own cap) |
+| Speed | **58 to 60 FPS** in the first minutes of a 1v1, **about 47 FPS** in the late-game benchmark | **60 FPS** in that skirmish (the game's own cap) |
 | Controls | The Thor's controller, with the game's own controller UI | Touch screen as a touchpad, or a mouse |
 
 ![AoE IV: a skirmish with the controller UI, 15 minutes in](docs/img/controller-match-15min-2026-10-07.jpg)
@@ -36,8 +36,8 @@ drivers in circulation.
 - From the [latest release](https://github.com/tarikbc/ageofempires-android/releases/latest):
   - `fexcore-aoe4-perf6.wcp` (900 KB), the patched FEX for AoE IV (v1.4.0, with patch 0017). For AoE II DE use
     `fexcore-aoe4-perf5.wcp` from the same release: that is the package tested with AoE II.
-  - For AoE IV: `turnip-main-c78a9e9.zip` (2.7 MB), Mesa's Turnip driver built from its 2026-10-08 main branch
-    ([GPU-DRIVER.md](docs/how-it-works/GPU-DRIVER.md)).
+  - For AoE IV: `turnip-main-c78a9e9-ubwc.zip` (2.7 MB), Mesa's Turnip driver built from its 2026-10-08 main branch
+    with one patch (v1.5.0; [GPU-DRIVER.md](docs/how-it-works/GPU-DRIVER.md), [UBWC.md](docs/how-it-works/UBWC.md)).
 
 ## Setup
 
@@ -45,7 +45,7 @@ drivers in circulation.
 
 1. Download [`fexcore-aoe4-perf6.wcp`](https://github.com/tarikbc/ageofempires-android/releases/latest/download/fexcore-aoe4-perf6.wcp)
    (AoE IV), [`fexcore-aoe4-perf5.wcp`](https://github.com/tarikbc/ageofempires-android/releases/latest/download/fexcore-aoe4-perf5.wcp)
-   (AoE II DE) and, for AoE IV, [`turnip-main-c78a9e9.zip`](https://github.com/tarikbc/ageofempires-android/releases/latest/download/turnip-main-c78a9e9.zip)
+   (AoE II DE) and, for AoE IV, [`turnip-main-c78a9e9-ubwc.zip`](https://github.com/tarikbc/ageofempires-android/releases/latest/download/turnip-main-c78a9e9-ubwc.zip)
    on the device; they land in the Download folder.
 2. In GameNative: **Menu → Settings → Contents Manager → Import .wcp from device**, and pick the `.wcp`.
    They show up under the FEXCore type as `aoe4-perf6 (30)` and `aoe4-perf5 (23)`.
@@ -60,26 +60,31 @@ Open the game in GameNative, tap the **cog** next to Play, then **Edit container
 | General | Container Variant | `bionic` |
 | General | Wine Version | `proton-11.0-99-arm64ec-1` (see the note below) |
 | General | Executable Path | `RelicCardinal.exe` |
-| Graphics | Graphics Driver / Version | `Wrapper` / **`turnip-main-c78a9e9`** |
+| Graphics | Graphics Driver / Version | `Wrapper` / **`turnip-main-c78a9e9-ubwc`** |
 | Graphics | DX Wrapper | `VKD3D` |
 | Emulation | 64-bit Emulator | `FEXCore` |
 | Emulation | FEXCore Version | **`aoe4-perf6-30`** |
 | Environment | add `WINEDEBUG` | `-all` |
 | Environment | add `FEX_EXP_SKIP_CALLRET_RESET` | `1` |
 | Environment | add `VKD3D_CONFIG` | `no_staggered_submit` |
+| Environment | add `TU_UBWC_RGBA8_IGNORE_R32` | `1` |
+| Environment | add `TU_UBWC_RGBA16F_INT` | `1` |
 
-Then tap **Save** (top right). What the three variables do: `WINEDEBUG=-all` stops Wine's debug output even when
+Then tap **Save** (top right). What the variables do: `WINEDEBUG=-all` stops Wine's debug output even when
 GameNative's Wine debug setting is on; `FEX_EXP_SKIP_CALLRET_RESET=1` turns on patch 0009 (on 2026-10-07, before the
 later speed patches, it took a match from 8 to 23 to 30 FPS); `VKD3D_CONFIG=no_staggered_submit` stops vkd3d-proton
 from holding each GPU submission until the previous one finished (+12 % FPS,
-[VKD3D-SUBMIT.md](docs/how-it-works/VKD3D-SUBMIT.md)). Why each setting: [TUNING.md](docs/guides/TUNING.md).
+[VKD3D-SUBMIT.md](docs/how-it-works/VKD3D-SUBMIT.md)); the two `TU_UBWC_` variables let the patched driver keep its
+framebuffer compression on the game's largest colour images (+1.5 FPS (+2.6 %), [UBWC.md](docs/how-it-works/UBWC.md)).
+Why each setting: [TUNING.md](docs/guides/TUNING.md).
 
 | | |
 |---|---|
 | ![General tab](docs/img/setup-general.jpg) | ![Emulation tab](docs/img/setup-emulation.jpg) |
-| ![Graphics tab](docs/img/setup-graphics.jpg) | ![Environment tab, the three variables at the bottom](docs/img/setup-environment.jpg) |
+| ![Graphics tab](docs/img/setup-graphics.jpg) | ![Environment tab, the variables at the bottom](docs/img/setup-environment.jpg) |
 
-The Emulation screenshot was taken with the v1.2.0 package (`aoe4-perf5-23`); select `aoe4-perf6-30`.
+The screenshots are from v1.2.0 to v1.4.0: select `aoe4-perf6-30`, the driver `turnip-main-c78a9e9-ubwc` and add the two
+`TU_UBWC_` variables.
 
 **About the Wine version:** the tested one is listed on the Thor as `proton-11.0-99-arm64ec-1`. It came from a
 manual import, and research says it is the same build as GameNative's official `proton-11.0-1-arm64ec`
@@ -143,6 +148,10 @@ the benchmark's thermal sampler: 58.3 / 57.8 FPS against 56.4 / 56.3 before and 
 fifth fewer frames of 25 ms (813 / 825 against 999 to 1,039 per window). Frames over 40 ms stayed within their spread.
 The previous setup read 58.6 the day before and 56.4 in that session, so compare these numbers only with each other
 ([TRAPLESS-FAULTS.md](docs/how-it-works/TRAPLESS-FAULTS.md)).
+
+The v1.5.0 driver with its two `TU_UBWC_` variables, against the v1.3.0 driver, run alternately on 2026-10-09
+(GameNative 1.3.0 test release, minute 1): 58.1 / 58.6 FPS without them, 60.1 / 59.6 with them, +1.5 FPS (+2.6 %)
+([UBWC.md](docs/how-it-works/UBWC.md)).
 
 A real game is heavier than the idle benchmark. The **late-game benchmark** is the replay of a full 51-minute game
 against one A.I., a 90 s window at minute 48 with the player's own camera, the CPU at full clocks:
@@ -241,6 +250,11 @@ game's render thread spent about 10 ms per frame waiting: 41 → 52 FPS. ([GPU-D
 queue, so the game's graphics, compute and copy queues all share it, and vkd3d-proton 2.14.1 then resolves fence
 waits on the CPU and keeps one command buffer in flight per queue. `VKD3D_CONFIG=no_staggered_submit` turns that
 off: 52 → 58 FPS. ([VKD3D-SUBMIT.md](docs/how-it-works/VKD3D-SUBMIT.md))
+
+**Colour compression** (v1.5.0). The GPU is now the limit, and memory traffic is a large part of its work.
+vkd3d-proton gives the game's typeless render targets a format list that the A740 driver cannot compress, so they had
+no UBWC. A driver patch keeps UBWC for the two cases the game uses safely, behind two variables: +1.5 FPS (+2.6 %).
+([UBWC.md](docs/how-it-works/UBWC.md))
 
 **Age of Empires II: DE** (protected with Arxan) crashed about 1 s after the start with GameNative's own FEX 2512,
 inside code it decrypts at run time. Every FEX build from this repo fixes it. Plain upstream FEX-2610 gets past that

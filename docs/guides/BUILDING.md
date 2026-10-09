@@ -88,7 +88,8 @@ git clone --depth 1 https://gitlab.freedesktop.org/mesa/mesa.git
 PATH=~/.venvs/mesa/bin:$PATH tools/build_turnip.sh mesa turnip-main-$(git -C mesa log --format=%h -1)
 ```
 
-The released driver is Mesa main `c78a9e9` (2026-10-08). Meson options: release build (Mesa refuses LTO),
+The released driver is Mesa main `c78a9e9` (2026-10-08); since v1.5.0 with the patches in
+[patches/turnip](../../patches/turnip) applied (`git apply`) before the build. Meson options: release build (Mesa refuses LTO),
 `platforms=android`, `platform-sdk-version=36`, `android-stub=true`, `vulkan-drivers=freedreno`,
 `freedreno-kmds=kgsl`, `vulkan-beta=true`, API 33 clang. The zip holds `libvulkan_freedreno.so` (stripped, 14.4 MB)
 and `meta.json`; GameNative reads `name`, `libraryName` and `driverVersion` from it and refuses a `name` that is

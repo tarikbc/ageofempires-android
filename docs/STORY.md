@@ -27,6 +27,7 @@ setting, and patch 0017 (measured after a change to the benchmark's thermal samp
 | 2026-10-08 13:27 | **v1.3.0**: Turnip built from Mesa main | **52.3 / 52.3** | **46.1** |
 | 2026-10-08 16:30 | + `VKD3D_CONFIG=no_staggered_submit` | **58.6 / 58.1** | 47.3 and 48.5, less even |
 | 2026-10-09 02:49 | **v1.4.0**: + 0017 | 58.3 / 57.8 against 56.4 / 56.3 for v1.3.0 + vkd3d in the same session | not measured |
+| 2026-10-09 15:45 | **v1.5.0**: driver patch for colour compression, two variables | 60.1 / 59.6 against 58.1 / 58.6, alternating (GameNative 1.3.0) | not measured |
 
 Skirmish: an automated 1v1 with the camera turning, FPS from Android's compositor in 90 s windows at two match
 minutes ([TESTING.md](guides/TESTING.md)). Late game: the replay of a full 51-minute game, minutes 46 and 48. Numbers
@@ -143,6 +144,19 @@ passes through the exception dispatcher. **Patch 0017** raises them directly: ab
 frames, released as **v1.4.0** at 02:49 ([TRAPLESS-FAULTS.md](how-it-works/TRAPLESS-FAULTS.md)). The rarer long
 frames stayed within their spread.
 
+## 7. The GPU's memory traffic (2026-10-09)
+
+With the GPU the limit, the driver became the place to look. A code reading of Turnip and of the GPU traces ranked the
+leads; the device then answered them one by one ([PERFORMANCE.md](research/PERFORMANCE.md), "driver tests on
+GameNative 1.3.0"). LRZ (early depth culling), anisotropic filtering and a slow software-float path cost nothing in
+this frame. Compression did: turning UBWC off everywhere cost 5 %, and Turnip's own log showed that the game's
+largest colour images had none, because vkd3d-proton lists formats for them that the A740 cannot share compressed
+data with. A driver build that logged every incompatible view showed which of those formats the game really uses;
+the two cases it never uses now keep UBWC behind two variables: +1.5 FPS (+2.6 %), released as **v1.5.0**
+([UBWC.md](how-it-works/UBWC.md)).
+
+That day the Thor also moved to GameNative's 1.3.0 test release, for GTA V, and AoE IV ran on it as before.
+
 ## The FEX packages
 
 The main FEX builds along the way, with the DLL's SHA-1. Released packages are in bold.
@@ -173,10 +187,10 @@ game with patch 0017; AoE II DE on `aoe4-perf6-30` or on the repo's driver; patc
 AoE IV on GameNative 1.3.0, which the Thor runs since 2026-10-09 ([LOG.md](research/LOG.md), "2026-10-09").
 
 **Open leads for more FPS.** In the skirmish the GPU is the likely limit: the kernel reports it busy about 95 % of the
-time at its top clock (clock-on time, not work), and the CPU-side tests changed nothing. A reading of the driver code
-and the GPU traces on 2026-10-09, not yet tested on the device, points at colour render targets without UBWC
-compression, and suggests that the tracing build itself made most of the GPU idle time in the 2026-10-08 traces
-([LOG.md](research/LOG.md), "2026-10-09"). In the late game the main and render threads sometimes wait on the small
+time at its top clock (clock-on time, not work), and the CPU-side tests changed nothing. Still open on the GPU side: a
+GPU trace without the tracing build's own stalls (`one_time_submit`) to find the most expensive shaders, fewer render
+passes for the main scene (vkd3d-proton splits it into about six passes that each load and store the same images),
+and the clean fix for the compression case in vkd3d-proton ([UBWC.md](how-it-works/UBWC.md)). In the late game the main and render threads sometimes wait on the small
 cores; keeping them on the big cores was not tested with the vkd3d-proton setting.
 
 **Upstream:** the fixes that belong in FEX or Wine were reported on 2026-10-08; patch 0017 is not reported yet. The

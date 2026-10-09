@@ -11,7 +11,8 @@ kept. The setup itself (where to click) is in the [README](../../README.md#setup
 |---|---|---|---|
 | Display refresh rate | Thor quick settings, before the game starts | 120 Hz | Frames wait for the next 8.3 ms step instead of 16.7 ms; long frames almost disappear (below) |
 | FEX package | container, Emulation | `aoe4-perf6-30` | The protection fixes and the speed patches ([patches/fex](../../patches/fex)) |
-| Graphics driver | container, Graphics | `turnip-main-c78a9e9` | +27 % FPS ([GPU-DRIVER.md](../how-it-works/GPU-DRIVER.md)) |
+| Graphics driver | container, Graphics | `turnip-main-c78a9e9-ubwc` | +27 % FPS ([GPU-DRIVER.md](../how-it-works/GPU-DRIVER.md)); the v1.5.0 build adds one patch |
+| `TU_UBWC_RGBA8_IGNORE_R32`, `TU_UBWC_RGBA16F_INT` | container, Environment | `1` each | The patched driver keeps UBWC on the game's largest colour images: +1.5 FPS (+2.6 %) ([UBWC.md](../how-it-works/UBWC.md)) |
 | `VKD3D_CONFIG` | container, Environment | `no_staggered_submit` | +12 % FPS in the skirmish, a less even late game ([VKD3D-SUBMIT.md](../how-it-works/VKD3D-SUBMIT.md)) |
 | `FEX_EXP_SKIP_CALLRET_RESET` | container, Environment | `1` | Turns on patch 0009. On 2026-10-07, before patches 0012 to 0014, the match HUD read 8.0 FPS without it and 22.8 to 29.5 with it, both with TSO off ([LOG.md](../research/LOG.md), "Speed before 0012/0013"). Not re-measured on the current package |
 | `WINEDEBUG` | container, Environment | `-all` | Keeps Wine's debug output off even when GameNative's Wine debug setting is on (below) |
@@ -135,6 +136,11 @@ driver options in [GPU-DRIVER.md](../how-it-works/GPU-DRIVER.md).
 | `disable_conservative_lrz=true` | skirmish, 2026-10-08 | 51.0 / 50.8 | 52.3 / 52.3 |
 | Turnip with Mesa MR !43714 | skirmish, 2026-10-08 | 52.5 / 52.6 | 52.3 / 52.3 |
 | Turnip without the same-context timestamp wait before each submit | skirmish, 2026-10-08 | 56.4 / 56.6 | 58.6 / 58.1 |
+| `TU_DEBUG=nolrz` (LRZ off) | skirmish, 2026-10-09 | 58.9 / 59.1 | 58.5 to 59.2 that day |
+| LRZ writes kept in sysmem passes (a Turnip patch, `TU_DEBUG=sysmem` and `disable_conservative_lrz=true`) | skirmish, 2026-10-09 | 58.4 / 58.8 | 58.5 to 59.2 |
+| Anisotropic filtering capped at 1 (a Turnip patch, `TU_MAX_ANISO=1`) | skirmish, 2026-10-09 | 58.5 / 58.6 | 58.5 to 59.2 |
+| UBWC off everywhere (`TU_DEBUG=noubwc`) | skirmish, 2026-10-09 | 56.1 / 55.5 | 58.8 / 58.9 |
+| UBWC forced on every format list (a Turnip patch) | skirmish, 2026-10-09 | 60.4 / 60.3, but the game views two of those images in incompatible formats: unsafe ([UBWC.md](../how-it-works/UBWC.md)) | 58.5 to 59.2 |
 | Turnip `tu_emulate_second_queue=true` | skirmish, 2026-10-08 | 57.7 / 57.7, 269 frames over 33 ms per window | 124 to 152 frames over 33 ms |
 | vkd3d-proton 3.0.1-4559a01d (R4 driver) | skirmish, 2026-10-08 | 40.3 / 40.2 | 41.0 / 41.1 |
 | `VKD3D_FRAME_RATE=60` | skirmish, 2026-10-09 | 55.6 / 55.8, 39 / 40 frames over 40 ms | that hour's baseline, not recorded in the docs; the session's release-FEX runs read 56.4 to 56.6 FPS, 23 to 37 frames over 40 ms |

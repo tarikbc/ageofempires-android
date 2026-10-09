@@ -317,3 +317,39 @@ Two findings that closed other leads:
 - **LRZ.** A Turnip build that names the cause showed every "Depth write + blending" case as a color write mask of RGB
   without alpha (`a0:mask7/f`), no blending; the passes it affects are mostly 2 to 4 draws, so early depth rejection
   would save little there.
+
+## 2026-10-09, 11:14 to 15:45: driver tests on GameNative 1.3.0
+
+The Thor now runs the GameNative 1.3.0 test release ([LOG.md](LOG.md), "2026-10-09"). Setup as v1.4.0 (FEX
+`aoe4-perf6-30`, `VKD3D_CONFIG=no_staggered_submit`), skirmish benchmark; until 14:30 windows at minutes 1 and 3, then
+at minute 1 only (the two windows had agreed within about 0.4 FPS all day). The leads came from a reading of the Turnip
+source and of the 2026-10-08 GPU traces.
+
+| Run | Driver, variables | FPS |
+|---|---|---|
+| 11:14 | release `turnip-main-c78a9e9` | 58.8 / 58.9 |
+| 11:29 | diagnostic build, `TU_DEBUG=perf` (log only) | 57.8 |
+| 11:54 | release, `TU_DEBUG=noubwc` | 56.1 / 55.5 |
+| 12:07 | UBWC forced on every format list | 60.4 / 60.3 |
+| 12:22 | release | 59.2 / 58.8 |
+| 12:37 | forced, with a log of incompatible views | 60.2 / 60.0 |
+| 12:59 | `TU_UBWC_RGBA8_IGNORE_R32=1` | 59.8 / 59.9 |
+| 13:12 | release, `TU_DEBUG=nolrz` | 58.9 / 59.1 |
+| 13:23 | `TU_MAX_ANISO=1` | 58.5 / 58.6 |
+| 13:35 | LRZ in sysmem passes, `TU_DEBUG=sysmem`, `disable_conservative_lrz=true` | 58.4 / 58.8 |
+| 13:46 | release | 58.6 / 58.5 |
+| 14:05 | both `TU_UBWC_` rules | 60.8 / 60.6 |
+| 14:16 | `TU_UBWC_RGBA8_IGNORE_R32=1` | 59.0 / 58.9 |
+| 14:28 | release | 59.0 / 58.3 |
+| 14:42 | both rules | 58.5 |
+| 14:52 | `TU_UBWC_RGBA16F_INT=1` | 58.0 |
+| 15:02 | release | 57.8 |
+| 15:12 / 15:21 / then | release, both rules, release, both rules | 58.1, 60.1, 58.6, 59.6 |
+
+What the logs showed: no shader takes Turnip's software-float path; Turnip's performance log names the colour targets
+without UBWC and the reason ("mutable formats"); a build that printed the format lists and a build that logged every
+incompatible view are the basis of [UBWC.md](../how-it-works/UBWC.md). The FPS drifted down by about 1 over the
+afternoon, so only runs close in time are compared. FEX's disk code cache was not retested: it was tried on
+2026-10-07 ([WATCHDOG.md](../how-it-works/WATCHDOG.md)), and the source shows it conflicts with patches 0012 and 0014.
+The Mesa shader cache (8 MB of its 512 MB) and vkd3d-proton's pipeline cache were both active.
+

@@ -392,6 +392,12 @@ note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch
   every scene pass, and compute takes about 3 ms per frame. Next on the device: `TU_DEBUG=perf` to see why the
   colour targets lose UBWC, a trace with `one_time_submit`, and `TU_DEBUG=noubwc` / `nolrz` as calibration runs.
 
+- **AoE IV on GameNative 1.3.0.** The v1.4.0 setup ran at 58.8 / 58.9 FPS in the skirmish benchmark (11:14), as on
+  1.2.1. The Thor's controller had been switched to Xbox style for GTA V; `tools/thor_pad.py` refuses that mode, and
+  the benchmark needs the standard mode ("Odin Controller" in `getevent -lp`).
+- **Driver work** (11:14 to 15:45): [PERFORMANCE.md](PERFORMANCE.md), "driver tests on GameNative 1.3.0", and
+  [UBWC.md](../how-it-works/UBWC.md); release v1.5.0.
+
 ## Elsewhere
 
 The patches: [patches/fex](../../patches/fex). Every doc: [docs/README.md](../README.md). License: [README](../../README.md#credits-and-license).
