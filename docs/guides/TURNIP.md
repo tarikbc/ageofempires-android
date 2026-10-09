@@ -98,6 +98,16 @@ reported 95 % busy instead of 85 %. In the late-game replay (two runs, 21:14 and
 against 15: the frame-time distribution widens (584 to 604 frames of one refresh and 165 to 200 of five per window,
 against 151 and 60), so the late game feels less even with it.
 
+A 60 s scheduler trace inside a late-game window with the variable (the tracing itself cost: 42.0 FPS and 191 frames
+over 50 ms in that window, so its numbers are indicative) showed a mechanism the early game does not have: in the long
+frames the main and render threads were runnable but not running for 17 to 45 ms, queued on the small cores 0 to 2,
+while the big cores were busy. Measured over the game's own frames, the threads that add the most time in a long
+frame are the protection's thread (+13 ms), the main thread (+11), the simulation thread (+8), each of the 8 job
+workers (+4 to 6) and wineserver (+5). Without the variable, vkd3d-proton's CPU waits throttle the whole pipeline
+and this contention does not show. Thread placement (the main thread on the prime core, the render thread on a big
+core, the rest on the others; [TUNING.md](TUNING.md), "Thread placement") is the untested candidate; the late-game
+replay runs were stopped at this point in favour of the quicker skirmish benchmark.
+
 How it was found, from the render-stage traces above
 ([`turnip_gpu_timeline.py`](../../tools/research/turnip_gpu_timeline.py),
 [`turnip_submit_latency.py`](../../tools/research/turnip_submit_latency.py),
