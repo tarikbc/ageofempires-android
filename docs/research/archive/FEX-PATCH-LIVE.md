@@ -1,5 +1,7 @@
 # The FEX patch is live — and the game still dies
 
+> **Archived.** The CPUID patch (0002) worked live, and the kill came anyway (2026-10-06). 0002 left the package in v1.1.0 at the same speed. The game loaded `xtajit64.dll` here because of the content in use that day; with this repo's packages it loads `libarm64ecfex.dll` ([GAMENATIVE.md](../../guides/GAMENATIVE.md)). "The README" is the first README (git `7e7ae2a`). The story: [STORY.md](../../STORY.md).
+
 ## What was fixed
 
 For the first time the emulator the game actually loads carries the patch. A fresh process in the
@@ -15,7 +17,7 @@ Before the patch it reported `eax=0x40000001 vendor='FEXIFEXIEMU'`. **FEX no lon
 Getting there needed two things:
 
 1. Patching the ARM64 function that builds the vendor string (see
-   [FEX-VENDOR-LEAK.md](../how-it-works/FEX-VENDOR-LEAK.md)).
+   [FEX-VENDOR-LEAK.md](FEX-VENDOR-LEAK.md)).
 2. Installing the patched DLL under the name GameNative actually loads. The `.wcp` manifest chooses
    the target path, and `xtajit64.dll` is **not** in GameNative's trusted set — it warns
    *"Untrusted Files Detected … includes files outside the trusted set"* and lists

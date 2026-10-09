@@ -1,15 +1,21 @@
-# Research log: Age of Empires IV on the AYN Thor (GameNative 1.2.1)
+# Research log, 2026-10-06 to 2026-10-09
 
-> This was the project README until 2026-10-07. It keeps the full investigation: the status history, verified facts, hypotheses, traps, tools and the index of every write-up. The player-facing summary is now the [README](../../README.md).
+> The project's working log, kept as it grew: the status history, how the stops were found, verified facts,
+> hypotheses and traps. It was the README until 2026-10-07; its main sections stop at v1.2.0 (2026-10-08), and a short 2026-10-09 entry is at
+> the end. The same
+> history told forward, with every version, is [STORY.md](../STORY.md); the current setup is in the
+> [README](../../README.md); later measurements are in [PERFORMANCE.md](PERFORMANCE.md).
 
-Running AoE IV on an Android handheld with [GameNative](https://github.com/utkarshdalal/GameNative).
-Device: AYN Thor (Snapdragon 8 Gen 2, Adreno 740, 16 GB, Android 13). Game build 16.3.11308.
+Device: AYN Thor (Snapdragon 8 Gen 2, Adreno 740, 16 GB, Android 13), GameNative 1.2.1. Game build 16.3.11308
+(24231237).
 
-**Goal:** the game's copy protection, **Aegis** (Relic's in-house virtualization/anti-tamper), stopped the
-game 2–4.5 minutes in (until 2026-10-07, see the status below). The user owns the game, so the aim is to make the protection *accept* this
-environment — not to strip it out.
+**Goal:** the game's copy protection, **Aegis** (Relic's in-house virtualization/anti-tamper), stopped the game 2 to
+3.5 minutes in on a clean baseline ("2 to 4.5 minutes" in the first README). The user owns the game, so the aim was to
+make the protection *accept* this environment, not to strip it out.
 
-## Current state (2026-10-08)
+## The setup on 2026-10-08 (v1.2.0)
+
+> A snapshot. Since then: package `aoe4-perf6-30` (v1.4.0), driver `turnip-main-c78a9e9`, `VKD3D_CONFIG=no_staggered_submit` and about 58 FPS; the Thor's controller in its standard mode with no swap. The current setup is in the [README](../../README.md).
 
 AoE IV runs on the Thor and can be played with the Thor's controls (the game's controller UI). Tested matches ran
 past 20 minutes. Speed in a 1v1 skirmish with the camera turning (compositor frame times, `tools/bench.py`):
@@ -74,7 +80,7 @@ recompile that still came every 2 to 3 minutes: no frame over 100 ms after the f
 
 1. GameNative 1.2.1 container: Wine `proton-11.0-99-arm64ec-1`, variant `bionic`, 64-bit emulator FEXCore.
 2. FEX `7d3090f` with [patches](../../patches/fex) 0002, 0004, 0006, 0007, 0009, 0010, 0012, 0013 and 0014
-   ([BUILDING-FEX.md](../guides/BUILDING-FEX.md)); 0009 only acts with `FEX_EXP_SKIP_CALLRET_RESET=1`. Without 0012 to
+   ([BUILDING.md](../guides/BUILDING.md)); 0009 only acts with `FEX_EXP_SKIP_CALLRET_RESET=1`. Without 0012 to
    0014 the game also runs, at about 27 FPS.
 3. That `libarm64ecfex.dll` packaged as a FEXCore content with [`tools/make_fex_wcp.py`](../../tools/make_fex_wcp.py)
    (the current one is in release v1.2.0: [`fexcore-aoe4-perf5.wcp`](https://github.com/tarikbc/ageofempires-android/releases/tag/v1.2.0), versionName `aoe4-perf5`,
@@ -85,7 +91,7 @@ recompile that still came every 2 to 3 minutes: no frame over 100 ms after the f
    `aoe-fastcontinue2-11`, DLL `eca1e25b`; since 14:52 `aoe4-perf-18`, DLL `20fdc47a`, with 0012 and 0013; since
    15:58 `aoe4-perf2-20`, DLL `6990a221`, with 0014 too; in the evening `aoe4-perf3-21`, DLL `bc82c565`, without
    0002 and with 0015; on 2026-10-08 `aoe4-perf5-23`, DLL `b5e6e357`, with 0016). The earlier runs installed the DLL by hand instead
-   ([GAMENATIVE-UI.md](../guides/GAMENATIVE-UI.md)).
+   ([GAMENATIVE.md](../guides/GAMENATIVE.md)).
 4. Container `envVars`: `WINEDEBUG=-all FEX_EXP_SKIP_CALLRET_RESET=1`. 0010 is on by default since build
    `eca1e25b` (`FEX_EXP_FASTCONTINUE=0` turns it off; earlier builds needed `FEX_EXP_FASTCONTINUE=1`). 0009
    (`FEX_EXP_SKIP_CALLRET_RESET=1`) is not needed against the watchdog (11:24 run), but it roughly doubles the
@@ -132,7 +138,7 @@ recompile that still came every 2 to 3 minutes: no frame over 100 ms after the f
   every game start. Here it had `"enablePowerControl":true` with `"maxCpuFreq":2016000`, which GameNative applies
   to every core group as min(value, group maximum). Turning Power Control off in the Quick Menu did not last to the
   next start, and with it off the caps it had written stayed in place. A profile with `"maxCpuFreq":3187200`
-  should give every group its full clock; not tested yet.
+  should give every group its full clock; tested since: [TUNING.md](../guides/TUNING.md), "Power profile".
 - Measured speed: with those caps, 2.05 GHz (cores 3 to 6) and 1.98 GHz (core 7), GameNative's Performance HUD showed 13.7 FPS in a
   Skirmish (game time 04:36, 10:43) with the GPU 28 % busy, so the CPU side limited it. After the user turned it
   off in a match (logcat 10:54:55: `PowerControl: Clean restore executed`), the caps were 2.71 and 3.19 GHz and the
@@ -154,11 +160,11 @@ recompile that still came every 2 to 3 minutes: no frame over 100 ms after the f
   three minutes. Then, 2 min 3 s to 3 min 2 s after start, every thread but one goes to Windows suspend
   count 1 and the log never grows again. That happened in 8 of the 9 runs that got past start-up today; the
   ninth (a control build) exited instead. The thread that does it starts at `RelicCardinal.exe+0x3e69304`.
-  See [KILL-REMEASURED.md](KILL-REMEASURED.md) and [`SMC-TRAP.md`, part 3](../how-it-works/SMC-TRAP.md#part-3-hiding-fexs-smc-trap-does-not-stop-the-aegis-kill).
+  See [KILL-REMEASURED.md](archive/KILL-REMEASURED.md) and [`SMC-TRAP.md`, part 3](../how-it-works/SMC-TRAP.md#part-3-hiding-fexs-smc-trap-does-not-stop-the-aegis-kill).
 - **The evening runs (19:52 to 20:29) were slowed by leftover debug channels.** The container still had
   `WINEDEBUG=+thread,+sync,+virtual,+timestamp,+tid` from round 17. With it, a run stopped in
   `Property Bag Manager`; without it, the same step took 22 s. The "MapGen wall" was a misreading: that
-  message appears in every run that gets further. See [WINEDEBUG-LEFTOVER.md](WINEDEBUG-LEFTOVER.md).
+  message appears in every run that gets further. See [WINEDEBUG-LEFTOVER.md](archive/WINEDEBUG-LEFTOVER.md).
 - **The SMC trap is not the trigger.** FEX does leak its write trap to the guest
   ([`SMC-TRAP.md`, part 2](../how-it-works/SMC-TRAP.md#part-2-confirmed-fex-leaks-its-smc-write-trap-to-the-guest)), but a FEX build that hides it (patch 0004, verified with
   `smctest2`) was still killed in 5 of 5 runs. Inside the game, 732,206 memory queries passed the filter
@@ -166,9 +172,9 @@ recompile that still came every 2 to 3 minutes: no frame over 100 ms after the f
 - **The session drop is not the trigger either.** Two runs had no `errno=10038` and were killed on time.
 - **The kill is a timed job (2026-10-07).** Traced with `WINEDEBUG=+seh`: the kill thread's wait ends by timeout
   (`STATUS_TIMEOUT`) after 200.7 s, and its job then enters the suspend-all function. Two sibling threads run
-  other jobs after 8.9 s and 98 s. See [KILL-TIMER.md](KILL-TIMER.md).
+  other jobs after 8.9 s and 98 s. See [KILL-TIMER.md](archive/KILL-TIMER.md).
 - **x86-64 Wine under Box64 now gets through start-up (2026-10-07)** with two new Box64 patches, and stops in
-  `Config File` after the protection's hook check reports a mismatch. See [BOX64-ROUTE.md](BOX64-ROUTE.md).
+  `Config File` after the protection's hook check reports a mismatch. See [BOX64-ROUTE.md](archive/BOX64-ROUTE.md).
 - **Fixing the raw-syscall return registers does not stop the kill (2026-10-07).** On the Thor a raw x64 `syscall` returns
   `rcx` = status instead of the return address. FEX patch 0006 fixes that (verified with `syscallregs`), and
   the game still stopped in 3 of 3 runs. See [SYSCALL-RETURN.md](../how-it-works/SYSCALL-RETURN.md).
@@ -190,7 +196,7 @@ recompile that still came every 2 to 3 minutes: no frame over 100 ms after the f
   Accessibility Settings screen on the Thor. The watchdog bucket still overflowed at about 793 s and the game froze
   about 13 minutes in. See [`WATCHDOG.md`, part 1](../how-it-works/WATCHDOG.md#part-1-the-later-stop-a-lateness-bucket-on-the-protections-own-loop-2026-10-07).
 
-Read [docs/research/EXPERIMENTS.md](EXPERIMENTS.md) first: it is the ledger of what was tried and what
+Read [LEDGER.md](LEDGER.md) first: it is the ledger of what was tried and what
 happened, including the traps that produced wrong conclusions.
 
 ## The only success criterion
@@ -223,6 +229,8 @@ hung, so `ps` keeps showing it and the log goes silent. Verified repeatedly.
 
 ## Open hypotheses, best first
 
+> Not needed since 2026-10-07: the stops were the start-up hook check and the watchdog ([HOOK-CHECK.md](../how-it-works/HOOK-CHECK.md), [WATCHDOG.md](../how-it-works/WATCHDOG.md)). Kept as they were written.
+
 **Superseded (2026-10-07):** the two decisions that stopped the game were found and fixed: the start-up hook check
 ([HOOK-CHECK.md](../how-it-works/HOOK-CHECK.md), patch 0007) and the watchdog on the protection's loop
 ([`WATCHDOG.md`, part 1](../how-it-works/WATCHDOG.md#part-1-the-later-stop-a-lateness-bucket-on-the-protections-own-loop-2026-10-07), [`WATCHDOG.md`, part 2](../how-it-works/WATCHDOG.md#part-2-fast-continue-the-watchdogs-real-cost-was-a-wineserver-round-trip-per-exception-2026-10-07), patch 0010). None of the hypotheses
@@ -234,7 +242,7 @@ below was needed to run the game; they stay as notes and were not tested further
    `0x3e42d34` (plus siblings `0x3e563cc`, `0x3e681cc`, …), each with exactly one caller — and
    `0x3e681cc` is called from `0x3e68e3f`, ~1.2 KB before the kill thread entry `0x3e69304`. The calls
    pass a fixed 192-byte high-entropy blob at RVA `0x56fbf40`. See
-   [KILL-ANALYSIS.md](KILL-ANALYSIS.md).
+   [KILL-ANALYSIS.md](archive/KILL-ANALYSIS.md).
    *Test:* resolve the parameter flow (Ghidra) to recover the hashed range and the expected hash.
 2. **~~FEX leaks its self-modifying-code trap to the guest, and Aegis checks for exactly that.~~ Ruled
    out 2026-10-06** ([`SMC-TRAP.md`, part 3](../how-it-works/SMC-TRAP.md#part-3-hiding-fexs-smc-trap-does-not-stop-the-aegis-kill)): with the trap hidden the kill still
@@ -246,7 +254,7 @@ below was needed to run the game; they stay as notes and were not tested further
    read-write. Aegis calls `NtQueryVirtualMemory` **35,248 times per run**. This explains the kill's
    indifference to everything environmental, the exact `SMCChecks` sensitivity (`none` → no trap but no
    invalidation → exits at 2 min; `full` → stops at start-up with the trap still armed, re-measured in
-   [KILL-REMEASURED.md](KILL-REMEASURED.md)), why the Mac passes, and why
+   [KILL-REMEASURED.md](archive/KILL-REMEASURED.md)), why the Mac passes, and why
    byte-comparing probes saw a stable image (it is a *protection* change). **Fix:** intercept
    `NtQueryVirtualMemory` and report the untrapped protection. See
    [`SMC-TRAP.md`, part 1](../how-it-works/SMC-TRAP.md#part-1-fex-leaks-its-self-modifying-code-trap-to-the-guest--and-aegis-is-watching-for-it).
@@ -255,7 +263,10 @@ below was needed to run the game; they stay as notes and were not tested further
    a plausible dependency of Aegis's "Stealth-Startup". *Test:* fix it in Wine's unix-side `ntdll.so`
    (the PE export is a bare syscall stub).
 
-## Next actions
+## Next actions as of 2026-10-07 (done since)
+
+> The leads of item 1 (290 blocks/s outside 0012's pattern, the code buffer's growth) were not pursued; the later
+> speed work came from main-thread sampling (patch 0016) and the GPU side ([STORY.md](../STORY.md)). Item 2: TSO off gave no gain in AoE IV ([TUNING.md](../guides/TUNING.md)) and about 30 % more FPS in AoE II's big battles ([AOE2-DE.md](../guides/AOE2-DE.md)). Item 3 stands.
 
 1. **Speed, what is left after 0012 to 0014:** about 290 blocks/s in the protection's slot buffer do not fit
    0012's pattern and are compiled on each visit, and the code buffer still grows (and so recompiles everything) a
@@ -271,8 +282,8 @@ below was needed to run the game; they stay as notes and were not tested further
 
 Earlier open questions (x86-64 Wine under Box64, the kill job's 150 ms call, the xxHash callers,
 `ThreadHideFromDebugger`, the waitq ntdll) are no longer needed to run the game; see
-[BOX64-ROUTE.md](BOX64-ROUTE.md), [KILL-TIMER.md](KILL-TIMER.md), [KILL-ANALYSIS.md](KILL-ANALYSIS.md)
-and [WINE-GAPS.md](WINE-GAPS.md).
+[BOX64-ROUTE.md](archive/BOX64-ROUTE.md), [KILL-TIMER.md](archive/KILL-TIMER.md), [KILL-ANALYSIS.md](archive/KILL-ANALYSIS.md)
+and [WINE-GAPS.md](archive/WINE-GAPS.md).
 
 ## Traps (each cost real time)
 
@@ -290,7 +301,7 @@ and [WINE-GAPS.md](WINE-GAPS.md).
   in the editor's Environment tab when the editor is used, and read `.container` back before a judged run.
 - **Debug channels left in the container config slow every later run.** Check
   `findstr /c:"WINEDEBUG" "Z:\home\xuser\.container"` before any judged run
-  ([WINEDEBUG-LEFTOVER.md](WINEDEBUG-LEFTOVER.md)).
+  ([WINEDEBUG-LEFTOVER.md](archive/WINEDEBUG-LEFTOVER.md)).
 - **Find the game by process NAME.** `explorer.exe` and `winhandler.exe` carry the game's path in their
   arguments, and a match on arguments picks `explorer` first.
 - **A modal "unable to determine your video card's installed driver version" dialog** stops loading at
@@ -300,7 +311,9 @@ and [WINE-GAPS.md](WINE-GAPS.md).
 - **`tctx` suspends the thread it reads**, and it can hang there, leaving the thread at suspend count 1.
   Use `suspinfo` (no suspend) to judge a kill.
 
-## Setup that works
+## Setup that worked on 2026-10-08 (v1.2.0)
+
+> A snapshot; the current setup is in the [README](../../README.md).
 
 | Part | Value |
 |---|---|
@@ -359,62 +372,26 @@ note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch
 - **Syscall numbers:** [`tools/research/ntdll_syscall_table.py`](../../tools/research/ntdll_syscall_table.py) decodes them from an
   ntdll's own stubs; the device's differ from upstream Wine ([WINE-SOURCE.md](../guides/WINE-SOURCE.md)).
 
-## Patches in this repo
+## 2026-10-09
 
-| Path | What it is |
-|---|---|
-| [`patches/fex/`](../../patches/fex) | 0002 hides the CPUID vendor; 0004 hides the SMC trap from guest queries (works; does not stop the kill); 0006 makes a raw x64 `syscall` return registers like hardware (works; does not stop the kill); 0007 rewrites exported `FF 25` thunks so the game's hook check passes (moves the stop from ~3 to ~9 minutes); 0008 dumps the decoded code of the protection's range (analysis tool); 0009 skips the per-thread call-ret discard on each SMC fault (unsafe experiment; with 0007 it reached the first menu); 0010 resumes x64 code after an exception without Wine's wineserver round trip, on by default (with 0007 the game is playable past 15 minutes; one run without 0009, with TSO off, also passed 15 minutes); 0012 stops the protection's one-instruction-at-a-time code buffer from costing a fault and a compile per instruction, 0013 raises FEX's code buffer cap to 512 MB (together 26.7 to 43.7 FPS in a skirmish); 0014 reuses translations when the protection decrypts the same code again (no periodic full recompile). 0001/0003 stop the game at start-up. |
-| [`patches/experiments/box64/`](../../patches/experiments/box64) | Against GameNative's Box64 (`Pipetto-crypto` `eb6fb21f`), in order: 0001 decode SSE/AVX stores so write faults reach Wine as writes; 0002 keep the guest's execute permission on `noexec` storage; 0003 send raw Windows syscalls to Wine's dispatcher when Wine installed no seccomp handler (39-bit address space). With all three, `proton-11.0-1-x86_64` runs the game to `Config File` ([BOX64-ROUTE.md](BOX64-ROUTE.md)). |
-| [`patches/experiments/proton-arm64ec-ntdll/`](../../patches/experiments/proton-arm64ec-ntdll) | Two binary patches for the ARM64EC `ntdll.dll` (`invoke_arm64ec_syscall` register fix; `--waitq` spinlock fix). |
-| [`patches/experiments/gamenative/`](../../patches/experiments/gamenative) | Fresh Steam ticket per launch. Not built or tested. |
+- **The Thor's GameNative is now the 1.3.0 test release.** At 09:17 `gamenative-v1.3.0-prerelease.apk` (GitHub,
+  2026-10-04, SHA-256 `90cb39b8…`) was installed over 1.2.1, to run GTA V: under 1.2.1 the Rockstar launcher's
+  installer stopped at "Installing Service..." because `RockstarService.exe` crashed inside Wine's `rpcrt4`. The
+  APK has the same signing certificate and the same version code (23) as 1.2.1, and still names itself "1.2.1".
+  The library, the Steam login and the containers were kept. AoE IV has not been started on it yet. On a game page
+  of 1.3.0, the button right of the Options cog uninstalls the game and asks for a confirmation first.
+- **Steam log-offs (2026-10-08, about 14:45).** After about 20 game starts that day, Steam logged the account off
+  right after each logon ("Logged off of Steam: Fail" about 2 s after "Connected to Steam"), and GameNative 1.2.1
+  then crashed on every game page. The game ran again at 15:11 (the first GPU trace).
+- **A reading of the Turnip code and the 2026-10-08 GPU traces (analysis, not tested on the device).** Without
+  `VKD3D_CONFIG=one_time_submit`, vkd3d-proton's command buffers are not one-time-submit, and a Turnip tracing build
+  then adds a timestamp copy that drains the GPU after every command buffer of a submit (`tu_queue.cc`), and another
+  after every render pass (`tu_cmd_buffer.cc`). Most of the idle time in the traces lies inside single submissions,
+  which fits these drains, so the "GPU worked 37 %" figure does not describe the game without tracing. In the same
+  traces about 82 % of render-pass time writes colour targets without UBWC compression (depth has it), LRZ is off in
+  every scene pass, and compute takes about 3 ms per frame. Next on the device: `TU_DEBUG=perf` to see why the
+  colour targets lose UBWC, a trace with `one_time_submit`, and `TU_DEBUG=noubwc` / `nolrz` as calibration runs.
 
-## Docs
+## Elsewhere
 
-Start with **[docs/research/EXPERIMENTS.md](EXPERIMENTS.md)** — the ledger of what was tried, what worked
-and what did not. Then:
-
-| Doc | Covers |
-|---|---|
-| [`AEGIS.md`](../how-it-works/AEGIS.md) | The protection: identity, build log, blocklist, timing constants |
-| [`INSTRUCTION-STEPPER.md`](../how-it-works/INSTRUCTION-STEPPER.md) | **Why it was slow**: the protection runs code one instruction at a time through 32-byte slots of a 16 MB buffer; under FEX each step was a write fault, an invalidation and a compile. Patch 0012 serves those slots by content, 0013 raises the code buffer cap, 0014 reuses translations of code the protection decrypts again. 26.7 to 43.7 FPS, and no periodic full recompile |
-| [`TUNING.md`](../guides/TUNING.md) | After the FEX fixes: 120 Hz display (kept), and what was measured and reverted (GPU clock, core pinning, TSO off, settings, Turnip GMEM, AVX off, present wait off, BCn cache) |
-| [`TESTING.md`](../guides/TESTING.md) | The automated test: launch, intros, skirmish, camera turn and frame times from adb; the in-game agent without cmd windows; what the HUD costs |
-| [`WATCHDOG.md`, part 2](../how-it-works/WATCHDOG.md#part-2-fast-continue-the-watchdogs-real-cost-was-a-wineserver-round-trip-per-exception-2026-10-07) | **The fix for the watchdog**: every handled exception waited for one wineserver request in Wine's ARM64EC `NtContinue`; patch 0010 skips it. Exception cost 230 to 2.5 us, loop cycle about 1.1 s, game playable past 15 minutes |
-| [`WATCHDOG.md`, part 1](../how-it-works/WATCHDOG.md#part-1-the-later-stop-a-lateness-bucket-on-the-protections-own-loop-2026-10-07) | **The later stop is a lateness bucket** on the protection's loop (2 s per cycle allowed, 256 s total), the measured cycle times, and FEX's per-thread JIT/SMC/exception costs that make the cycles slow. |
-| [`HOOK-CHECK.md`](../how-it-works/HOOK-CHECK.md) | **The start-up decision is an API hook check**: the decrypted code (via a FEX block dump), the 63-record table, why Wine's ARM64EC `FF 25` export thunks fail it, patch 0007 and its runs, and the later stop at ~9 minutes. |
-| [`KILL-TIMER.md`](KILL-TIMER.md) | **The kill thread is a timed job** (wakes by timeout after ~200 s, then calls the suspend-all function with `0x0e00000000000000`), and the protection's hook-check loop, both read from `WINEDEBUG=+seh` exception traces. |
-| [`SYSCALL-RETURN.md`](../how-it-works/SYSCALL-RETURN.md) | **A raw x64 `syscall` returns `rcx` = status on the Thor, not the return address as on hardware.** Measured with `syscallregs`; patch 0006 fixes it; its runs. |
-| [`AEGIS-TRACE.md`](AEGIS-TRACE.md) | Tracing the game's syscalls inside FEX: how, what broke, and the first findings: most raw syscalls pass one gateway in private memory, a second gateway in the exe allocates and protects memory from 0.3 s, and one thread walks the module list through `NtReadVirtualMemory`. |
-| [`WINE-SOURCE.md`](../guides/WINE-SOURCE.md) | The device's Wine is GameNative's Proton 11.0-1 ARM64EC (commit `7c98acd6`); its syscall numbers; the ARM64EC suspend fixes it lacks; the newer 11.0-2 build. |
-| [`KILL-ANALYSIS.md`](KILL-ANALYSIS.md) | The captured kill and the hash hypothesis (with next step) |
-| [`NTDLL-NEVER-LOADED.md`](NTDLL-NEVER-LOADED.md) | Why both ntdll patches are void, and where Wine really loads ntdll from |
-| [`ANALYSIS-GOTCHAS.md`](../guides/ANALYSIS-GOTCHAS.md) | Read before any offline analysis (`text.bin` indexing, packed vs unpacked, Mac tooling) |
-| [`CONTAINER-CONFIG.md`](../guides/CONTAINER-CONFIG.md) | Editing the container config from Wine; `Open container` |
-| [`WINE-GAPS.md`](WINE-GAPS.md) | Wine behaviours Aegis could notice (`ThreadHideFromDebugger`) |
-| [`SMC-TRAP.md`, part 1](../how-it-works/SMC-TRAP.md#part-1-fex-leaks-its-self-modifying-code-trap-to-the-guest--and-aegis-is-watching-for-it) | **Aegis self-modifies its code and FEX's SMC handling is the suspect** — the first explanation that accounts for the `SMCChecks` sensitivity, the Mac passing, and nothing environmental helping. |
-| [`SMC-TRAP.md`, part 2](../how-it-works/SMC-TRAP.md#part-2-confirmed-fex-leaks-its-smc-write-trap-to-the-guest) | **CONFIRMED on hardware:** FEX removes write permission from a guest page the moment it translates code in it — `RWX` becomes `RX` with no request from the guest. |
-| [`CONTAINER-WONT-START.md`](CONTAINER-WONT-START.md) | **How the container was fixed**, and the two things that were NOT the cause (a locked device, and the MapGen message). Also the rename-a-mapped-DLL trick. |
-| [`KILL-STILL-OPEN.md`](KILL-STILL-OPEN.md) | Historical: the pre-SMC state of the kill question. **Superseded** by [`SMC-TRAP.md`, part 2](../how-it-works/SMC-TRAP.md#part-2-confirmed-fex-leaks-its-smc-write-trap-to-the-guest) and [`FIX-VERIFIED.md`](FIX-VERIFIED.md). |
-| [`BOX64-ROUTE.md`](BOX64-ROUTE.md) | x86-64 Wine under Box64: both Protons die within seconds (an execute fault at the game's `ucrtbase.dll` entry; a flood of illegal-instruction exceptions inside Aegis's region). Blocked before the kill window. |
-| [`SMC-TRAP.md`, part 3](../how-it-works/SMC-TRAP.md#part-3-hiding-fexs-smc-trap-does-not-stop-the-aegis-kill) | **The SMC trap is not the trigger.** Patch 0004 hides it (verified), and the kill still fires in 5 of 5 runs; in-game counters show no query ever touched a trapped page. Fix vs control table. |
-| [`KILL-REMEASURED.md`](KILL-REMEASURED.md) | **The kill on the clean baseline**, measured with `suspinfo`: timeline, suspend counts, timing after `errno=10038`. Also why the no-trap build and `SMCChecks=full` both stop at start-up (shared factor: full-SMC validation). |
-| [`WINEDEBUG-LEFTOVER.md`](WINEDEBUG-LEFTOVER.md) | **Why the evening runs stalled**: leftover debug channels. The A/B, the corrected claims (MapGen, "stock" FEX), and the FEX setup as measured. |
-| [`FIX-VERIFIED.md`](FIX-VERIFIED.md) | Historical. The `smctest` result for the no-trap build stands; its run results were measured with the debug channels on. Read WINEDEBUG-LEFTOVER.md first. |
-| [`DEATH-IS-NOT-THE-KILL.md`](DEATH-IS-NOT-THE-KILL.md) | **Retracted** — the thread-state method it is based on cannot detect Wine's `SuspendThread` at all, so it proves nothing either way. Kept for the correction and for the correct instrument (`tools/probes/suspinfo.c`). |
-| [`BUILDING-FEX.md`](../guides/BUILDING-FEX.md) | Building ARM64EC FEX on macOS: toolchain, the three macOS problems that abort configure, and the artifact. The patched `libarm64ecfex.dll` builds successfully. |
-| [`UPSTREAM-FEX-ISSUE.md`](UPSTREAM-FEX-ISSUE.md) | Draft FEX issue: the SMC write trap is observable by the guest through `NtQueryVirtualMemory`, with a game-independent reproducer and a suggested fix. |
-| [`MODULE-LIST.md`](MODULE-LIST.md) | The loaded module names that do not exist on Windows |
-| [`FEX-VENDOR-LEAK.md`](../how-it-works/FEX-VENDOR-LEAK.md) | The CPUID `0x40000000` leak and its patch |
-| [`FEX-PATCH-LIVE.md`](FEX-PATCH-LIVE.md) | The patch verified live — and the kill surviving it |
-| [`NETWORK.md`, part 2](NETWORK.md#part-2-the-kill-is-downstream-of-losing-the-backend-session) | The `errno=10038` → `1006` → kill-73 s-later chain |
-| [`NETWORK.md`, part 3](NETWORK.md#part-3-wines-tls-to-the-age-backend-costs-519-s-and-certificaterevocation0-fixes-it) | Wine TLS timing to the backend |
-| [`NETWORK.md`, part 1](NETWORK.md#part-1-the-games-backend-session-is-broken) | End-to-end network measurements |
-| [`GAMENATIVE-UI.md`](../guides/GAMENATIVE-UI.md) | Driving the GameNative UI over adb |
-| [`AUTOMATION-PATHS.md`](../guides/AUTOMATION-PATHS.md) | GameNative's intents, and what did not work |
-
-## License
-
-Tools and scripts are MIT (see [LICENSE](../../LICENSE)). Patches follow their project: Box64 MIT, Wine
-LGPL-2.1-or-later, GameNative GPL-3.0.
-
-Age of Empires is a trademark of Microsoft. Not affiliated with Microsoft, Relic, AYN or GameNative.
+The patches: [patches/fex](../../patches/fex). Every doc: [docs/README.md](../README.md). License: [README](../../README.md#credits-and-license).

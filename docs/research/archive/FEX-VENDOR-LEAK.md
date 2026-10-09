@@ -1,5 +1,7 @@
 # FEX leaks its identity to the guest: CPUID leaf 0x40000000
 
+> **Archived.** Patch 0002 hid FEX's name in CPUID leaf `0x40000000` (2026-10-06). Tested live, the kill came anyway ([FEX-PATCH-LIVE.md](FEX-PATCH-LIVE.md)); the package dropped 0002 in v1.1.0 at the same speed. The "Next steps" below were done; `dbgprobe_cpuid_report.txt` is not in the repo. The story: [STORY.md](../../STORY.md).
+
 The environment hands the game an unambiguous "you are running under FEX" signature, and FEX's
 `HideHypervisorBit` option does **not** hide it.
 
@@ -71,7 +73,7 @@ Checked all CPUID/hypervisor-related FEX options present in the shipped DLL:
 - On the Mac, the same game runs under **Rosetta**, which is not an x86 hypervisor and does not present
   an x86 hypervisor vendor leaf. On the Thor, guest code asking the same question gets
   `FEXIFEXIEMU`.
-- Aegis is an active anti-tamper (see [AEGIS.md](AEGIS.md)) whose whole job is to notice that its
+- Aegis is an active anti-tamper (see [AEGIS.md](../../how-it-works/AEGIS.md)) whose whole job is to notice that its
   environment is not the one it shipped for. An unmasked, self-identifying emulator signature is
   exactly the class of signal such a system acts on — and it is a *clean* difference between the two
   environments where the behaviour differs.

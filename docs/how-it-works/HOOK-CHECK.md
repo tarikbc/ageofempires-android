@@ -49,7 +49,7 @@ or ntdll syscall stubs (`4C 8B D1 B8 ...`), which the detector does not flag.
 prolog, `48 8D A4 24 00 00 00 00`, before `jmp *__imp_x(%rip)`. That branch only runs for `CPU_i386` and
 `CPU_x86_64`. The ARM64EC kernel32 has bare `FF 25` thunks instead: its `.text` holds 933 `FF 25 disp32` sequences
 followed by padding. Where they come from (lld's x64 import thunk), and a possible fix in Wine:
-[UPSTREAM-WINE-ISSUE.md](../research/UPSTREAM-WINE-ISSUE.md).
+[UPSTREAM.md](../research/UPSTREAM.md#appendix-b-wine-bug-60463-arm64ec--import-exports-start-with-a-bare-x64-jmp-ripx).
 
 ## Patch 0007: rewrite exported `FF 25` thunks
 
@@ -81,7 +81,7 @@ test used 0007 without the bounds check.
 - `WINEDEBUG=+seh`, 60 s (no bounds check): after `+0x3ebb5f8` the next trap is `+0x3ebb98c`, the branch Box64
   takes. No trap at `+0x3e69428` (the start-up job creation) in those 60 s. Without 0007 the next trap is
   `+0x3e69428`, with the settings `rax=10000 rbx=2000`, `60000/80000`, `90000/120000`
-  ([KILL-TIMER.md](../research/KILL-TIMER.md)).
+  ([KILL-TIMER.md](../research/archive/KILL-TIMER.md)).
 - Judged run (04:27, `WINEDEBUG=-all`): the log still grew at 479 s, and no thread had suspend count 1 up to then.
   The old kill came 123 to 182 s in. Loading was slow: `CPU AI` took from 04:32:09 to 04:35:03.
 - The same run, watched on: by 04:37:26 (about 10 minutes in) 65 threads had suspend count 1, and the log had

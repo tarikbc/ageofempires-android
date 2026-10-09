@@ -1,13 +1,16 @@
 # Testing on the Thor without touching it
 
-How a performance test runs from the Mac, start to end, and what each tool does. Everything here was tested on
-2026-10-07 (GameNative 1.2.1, AoE IV 16.3.11308, the user's Thor).
+How a performance test runs from the Mac, start to end, and what each tool does. Tested from 2026-10-07 to 2026-10-09
+(GameNative 1.2.1, AoE IV 16.3.11308, the user's Thor); each section gives its date where it matters.
 
 ## One command
 
 ```sh
-python3 tools/bench.py run LABEL --at 1,5,10 --out bench_out
+python3 tools/bench.py run LABEL --at 1,3 --out bench_out
 ```
+
+`--at` lists the match minutes of the 90 s windows. The script's default is `1,5,10`; since 2026-10-08 the A/B
+tests use `--at 1,3`, and the results in the docs say which windows they used.
 
 It starts the game, gets through the intro films, starts a 1v1 skirmish, holds the camera turning, and records 90 s
 of frame times at each listed match minute. One line per window goes to `bench_out/results.tsv`, for example:
@@ -66,7 +69,8 @@ runs inside Wine or the game, and the Thor's only extra work is one `dumpsys` pe
 
 - In a 24 s check it gave 26.7 FPS while GameNative's HUD showed between 15.8 and 35.5 in the same seconds; the
   compositor values are per frame, the HUD's are 1 s averages.
-- Frames are 16.7 ms or 33.4 ms or longer: presentation follows the 60 Hz display.
+- Frames are whole multiples of the display's refresh: 16.7 ms steps at 60 Hz (this check), 8.3 ms steps at 120 Hz
+  (the setup since 2026-10-07 17:06).
 
 `tools/fpsgraph.py` keeps one `adb shell` loop running that prints the window once a second, merges the windows on the
 Mac and serves a live graph (one bar per frame, like Minecraft's frame graph) at `http://127.0.0.1:8790`, with FPS,
@@ -123,8 +127,8 @@ player's own camera:
 4. **Measure** at 1X: `tools/replay.py window LABEL` (90 s of frame times with temperatures, then 20 s of per-thread
    CPU), once per condition, while the replay runs on.
 
-Results so far: [TUNING.md](TUNING.md), "The late game, measured on that game's replay" and "The late game at full
-clocks". A fresh game start applies the container's power profile again; check the clocks before a window
+Results so far: [PERFORMANCE.md](../research/PERFORMANCE.md), "the late game on that game's replay" and "the late
+game at full clocks". A fresh game start applies the container's power profile again; check the clocks before a window
 (`tools/thermals.py`). The replay file holds the
 players' names and IDs, so it stays out of the repo. `probes/lsgame.exe` lists the game's `My Games` folder into
 `D:\aoe\ls.txt`, also without a window.
@@ -150,7 +154,7 @@ about 1.1 GB of text; `grep -E "sched_switch|sched_waking|cpu_frequency"` cuts i
   normal frames. [`fexstats_align.py`](../../tools/research/fexstats_align.py): FEX's per-thread counters (a build
   with the `THRSTAT1` table, read through the agent's `peek`) per sample bin against the longest frame in the bin.
 
-Results: [TUNING.md](TUNING.md), "The hitches at 58 FPS".
+Results: [PERFORMANCE.md](../research/PERFORMANCE.md), "the hitches at 58 FPS".
 
 ## Where the game spends its time
 

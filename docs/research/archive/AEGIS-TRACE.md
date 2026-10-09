@@ -1,12 +1,14 @@
 # Tracing the syscalls made inside the game
 
+> **Archived.** A FEX build that logs the game's syscalls (2026-10-06). Not finished: the trace builds broke the game. The syscall result that mattered is in [SYSCALL-RETURN.md](../../how-it-works/SYSCALL-RETURN.md). The story: [STORY.md](../../STORY.md).
+
 Work in progress, 2026-10-06/07. The goal: record what the game, and Aegis in particular, asks the OS, up to the
 kill, so the first point where it behaves differently from a working machine can be found.
 
 ## How the trace works
 
 FEX patch 0004 already replaces Wine's `__wine_syscall_dispatcher` pointer with a filter that every syscall in
-the process passes ([`SMC-TRAP.md`, part 3](../how-it-works/SMC-TRAP.md#part-3-hiding-fexs-smc-trap-does-not-stop-the-aegis-kill)). The trace build adds, behind
+the process passes ([`SMC-TRAP.md`, part 3](../../how-it-works/SMC-TRAP.md#part-3-hiding-fexs-smc-trap-does-not-stop-the-aegis-kill)). The trace build adds, behind
 `AEGIS_TRACE=1` in the container's `envVars` and only for `RelicCardinal.exe`:
 
 - a logger called from that filter, which writes 64-byte entries (time, thread, syscall number, three
@@ -16,9 +18,9 @@ the process passes ([`SMC-TRAP.md`, part 3](../how-it-works/SMC-TRAP.md#part-3-h
 - a watch list of thread/process calls (`NtSuspendThread`, `NtGetNextThread`, `NtGetContextThread`, ...),
   logged whatever the caller, with their numbers decoded from the device's own ntdll stubs at start-up.
 
-[`tools/probes/aegistrace.c`](../../tools/probes/aegistrace.c) copies the buffer out of the running game;
-[`tools/research/parse_aegistrace.py`](../../tools/research/parse_aegistrace.py) decodes it with the device's syscall table
-([`tools/research/ntdll_syscall_table.py`](../../tools/research/ntdll_syscall_table.py), see [WINE-SOURCE.md](../guides/WINE-SOURCE.md): the
+[`tools/probes/aegistrace.c`](../../../tools/probes/aegistrace.c) copies the buffer out of the running game;
+[`tools/research/parse_aegistrace.py`](../../../tools/research/parse_aegistrace.py) decodes it with the device's syscall table
+([`tools/research/ntdll_syscall_table.py`](../../../tools/research/ntdll_syscall_table.py), see [WINE-SOURCE.md](../../guides/WINE-SOURCE.md): the
 numbers differ from upstream Wine).
 
 "Direct" turned out to be broad: under FEX's ARM64EC setup, an x64 call to an ntdll function runs ntdll's x64
@@ -69,4 +71,4 @@ memory at the same moment, and it avoids plain memory reads, which fits Aegis's 
 and its module blocklist (AEGIS.md). It is **not proven** to be Aegis.
 
 Why it matters for patch 0006: every one of these syscalls returns through Wine's `invoke_arm64ec_syscall`,
-so all of them saw `rcx` = status on the stock setup ([SYSCALL-RETURN.md](../how-it-works/SYSCALL-RETURN.md)).
+so all of them saw `rcx` = status on the stock setup ([SYSCALL-RETURN.md](../../how-it-works/SYSCALL-RETURN.md)).

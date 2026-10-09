@@ -1,5 +1,7 @@
 # Two things to check before trusting an offline analysis
 
+> **Archived.** Checks for offline analysis of the game binary (2026-10-06): three sections, although the title says two. The delay constants and the `SDC` loop quoted in [AEGIS.md](../../how-it-works/AEGIS.md) are at RVA + 0x1000 per this note. `ghidra_scripts/DecompileTargets.py` is not in the repo. The story: [STORY.md](../../STORY.md).
+
 Both of these cost real time this session. Neither is obvious from the files themselves.
 
 ## 1. `text.bin` is indexed by `RVA - 0x1000`, not by RVA
@@ -26,7 +28,7 @@ The 5-byte agreement is what identifies it: same location, different (restored) 
 
 **Consequence:** the *content* findings from the offline analysis stand, but any address quoted from it
 was one page too low. The delay constants and the `"SDC"` decrypt loop in
-[AEGIS.md](../how-it-works/AEGIS.md) are really at RVA + 0x1000. The region sweeps are unaffected in substance, since
+[AEGIS.md](../../how-it-works/AEGIS.md) are really at RVA + 0x1000. The region sweeps are unaffected in substance, since
 the Aegis region is 1.4 MB wide.
 
 ## 2. `RelicCardinal.unpacked.exe` is the analysable binary
@@ -38,7 +40,7 @@ the Aegis region is 1.4 MB wide.
 
 ## 3. The Mac already had the tooling, and it is the right place for this work
 
-[KILL-ANALYSIS.md](../research/KILL-ANALYSIS.md) already sets the next step: *"trace the callers of the
+[KILL-ANALYSIS.md](KILL-ANALYSIS.md) already sets the next step: *"trace the callers of the
 `+0x563cc` / `+0x56bc0` xxHash64 routines to learn the hashed address range and the expected hash."*
 Doing that by hand with a disassembler is the wrong tool, and the Mac has the right one:
 

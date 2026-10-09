@@ -1,5 +1,7 @@
 # The kill is a timed job: what `WINEDEBUG=+seh` shows
 
+> **Archived.** The kill thread is a timed job (2026-10-07, runs at 01:39 and 02:22). The job's settings come from the start-up hook check found a few hours later ([HOOK-CHECK.md](../../how-it-works/HOOK-CHECK.md)). The story: [STORY.md](../../STORY.md).
+
 2026-10-07. Measured on the clean FEX baseline (`460568b8`, `proton-11.0-99-arm64ec-1`) with only
 `WINEDEBUG=+seh` added, and compared with the Box64 runs in [BOX64-ROUTE.md](BOX64-ROUTE.md).
 

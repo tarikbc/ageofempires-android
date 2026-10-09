@@ -1,6 +1,6 @@
 #!/bin/sh
 # Build Mesa's Turnip (freedreno Vulkan, KGSL) for Android arm64 on a Mac and package it as a GameNative /
-# adrenotools driver zip (meta.json + libvulkan_freedreno.so). See docs/guides/TURNIP.md.
+# adrenotools driver zip (meta.json + libvulkan_freedreno.so). See docs/guides/BUILDING.md.
 #
 #   tools/build_turnip.sh MESA_SRC NAME [OUT_DIR]      -> OUT_DIR/NAME.zip (default OUT_DIR = ./turnip_out)
 #

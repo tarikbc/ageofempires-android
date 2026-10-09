@@ -21,7 +21,8 @@ instruction, FEX emits its `Print` IR op for a marker and the 16 guest registers
 the frontend routes `PrintValue` into the dump buffer. Only `cmp`/`test` instructions and plain stores were watched,
 and FEX spills NZCV around the call, so the guest flags are kept. A second experiment gives every game thread a FEX
 `ThreadStats` slot in an in-memory table, so FEX's own JIT-time, signal-time and SMC counters run without the
-shared-memory unix helper. These two experiments are not yet in `patches/`.
+shared-memory unix helper. These two experiments are not in `patches/`, nor are the later counter builds
+(`THRSTAT1`, `FASTTRP1`) used in the speed work.
 
 ### The loop and the bucket
 
@@ -60,7 +61,7 @@ FEX per-thread counters, 42 s window during loading (about 1 to 1.7 minutes into
 | `013c` (main) | 0.155 s/s | 0.114 s/s | 1,960/s | 1,114/s |
 
 So the loop thread spends about 40 % of its time compiling code and handling exceptions. The protection keeps its
-functions encrypted and decrypts one when it is called (the `c000001d` traps of [KILL-TIMER.md](../research/KILL-TIMER.md)), so
+functions encrypted and decrypts one when it is called (the `c000001d` traps of [KILL-TIMER.md](../research/archive/KILL-TIMER.md)), so
 under FEX each call means a self-modifying-code event, a recompile, and an exception.
 
 `tools/probes/exccost.c` measured a handled illegal-instruction exception (vectored handler, `ud2`) at 111 us
@@ -178,7 +179,8 @@ container was restarted.
 ### The patch
 
 [`0010-fast-continue-to-x64.patch`](../../patches/fex/0010-fast-continue-to-x64.patch), on top of 0004 (it uses
-0004's `__wine_syscall_dispatcher` hook), off unless `FEX_EXP_FASTCONTINUE=1`. For an `NtContinue` with
+0004's `__wine_syscall_dispatcher` hook), off unless `FEX_EXP_FASTCONTINUE=1` in the first builds (on by default since
+build `eca1e25b`; `FEX_EXP_FASTCONTINUE=0` turns it off). For an `NtContinue` with
 `alertable == FALSE`, a full context (control, integer and floating point) and a target that `RtlIsEcCode` does
 not report as ARM64EC code, the hook does what Wine does after the round trip: it copies the context near the top
 of the emulator stack and jumps to ntdll's `KiUserEmulationDispatcher` there. `KiUserEmulationDispatcher` converts

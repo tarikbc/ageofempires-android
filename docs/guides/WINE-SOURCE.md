@@ -6,7 +6,7 @@ Valve's and upstream Wine (marked "research" below where I did not re-check each
 ## The device's Wine is GameNative's Proton 11.0-1 ARM64EC
 
 - The container's Wine Version is shown as `proton-11.0-99-arm64ec-1`. Its `ntdll.dll` (SHA-256 `606d0a2f…`,
-  the "pristine" ntdll in [NTDLL-NEVER-LOADED.md](../research/NTDLL-NEVER-LOADED.md)) is byte-identical to the one in
+  the "pristine" ntdll in [NTDLL-NEVER-LOADED.md](../research/archive/NTDLL-NEVER-LOADED.md)) is byte-identical to the one in
   GameNative's official download `proton-11.0-1-arm64ec.wcp` (research). The "-99" name comes from an
   earlier manual import, not from a different build.
 - The DLL carries the build path `/home/runner/work/proton-wine/proton-wine`: it was built by GitHub Actions in
@@ -43,7 +43,7 @@ among others. According to the research none of them is in `7c98acd6`. It does c
 `NtGetContextThread` on another thread suspends and resumes that thread internally.
 
 Why this matters here: the Aegis kill is a mass `SuspendThread`, and in run 1 the suspended main thread
-reported `rip=6578653414`, an address outside every module ([KILL-REMEASURED.md](../research/KILL-REMEASURED.md) samples).
+reported `rip=6578653414`, an address outside every module ([KILL-REMEASURED.md](../research/archive/KILL-REMEASURED.md) samples).
 If Aegis inspects suspended threads, a wrong context could be what it reacts to. **That is a hypothesis.**
 
 ## A newer build exists
@@ -53,8 +53,9 @@ If Aegis inspects suspended threads, a wrong context could be what it reacts to.
 research it adds the cooperative-suspend fixes b8d8f34f, 211e7a3d and 6e8bf984, but not the context fixes. Its
 profile says "Needs a fresh arm64ec container"; it also switches synchronisation to ntsync. GameNative's own
 content list stops at 11.0-1 for ARM64EC, so it has to be imported as a `.wcp`
-(`/sdcard/Download/proton-11.0-2-arm64ec.wcp`, SHA-256 `fffa467241bdae3e…`, pushed 2026-10-06). **Not tested
-yet.**
+(`/sdcard/Download/proton-11.0-2-arm64ec.wcp`, SHA-256 `fffa467241bdae3e…`, pushed 2026-10-06). **Tested on
+2026-10-07 (12:27 to 12:40):** no FPS gain, some stutters, and its exception resume path still about 60 times slower
+than patch 0010's, so the setup stays on 11.0-99 ([`WATCHDOG.md`, part 2](../how-it-works/WATCHDOG.md#part-2-fast-continue-the-watchdogs-real-cost-was-a-wineserver-round-trip-per-exception-2026-10-07)).
 
 ## The device's FEX already has FEX's own suspend fixes (research)
 

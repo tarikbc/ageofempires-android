@@ -1,5 +1,7 @@
 # x86-64 Wine under Box64: blocked long before the Aegis kill
 
+> **Archived.** x86-64 Wine under Box64 as a control route (2026-10-06 and 07): blocked before the kill window, and not needed once the ARM64EC fixes worked. The story: [STORY.md](../../STORY.md).
+
 Tested on the AYN Thor, 2026-10-06, 22:39 to 23:08. The question was whether Aegis also kills the game
 when it runs through x86-64 Wine under Box64 instead of ARM64EC Wine + FEX, which would tell whether the
 trigger is specific to ARM64EC. **It cannot answer that yet: both x86-64 builds die within seconds of
@@ -81,7 +83,7 @@ first. The trace of Aegis's syscalls under FEX is the next step instead.
 ## 2026-10-07: both Proton 11 blockers fixed in Box64; the game now stops in `Config File`
 
 Setup: container Wine `proton-11.0-1-x86_64-1`, Box64 built from GameNative's fork (`Pipetto-crypto/box64`
-`eb6fb21f`) with this repo's [`patches/experiments/box64/`](../../patches/experiments/box64) 0001 to 0003, NDK r26b, API 31, imported as
+`eb6fb21f`) with this repo's [`patches/experiments/box64/`](../../../patches/experiments/box64) 0001 to 0003, NDK r26b, API 31, imported as
 `.wcp`; preset Compatibility; `WINEDEBUG=+seh BOX64_SHOWSEGV=1` for the diagnostic launches. Settings folder
 and both container configs backed up first.
 

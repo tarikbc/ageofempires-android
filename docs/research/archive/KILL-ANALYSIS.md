@@ -1,5 +1,7 @@
 # Kill analysis — 2026-10-06 run (caught the suspending thread)
 
+> **Archived.** The first captured kill (2026-10-06). The cause was found the next day: the protection's start-up hook check failed on Wine's ARM64EC export stubs ([HOOK-CHECK.md](../../how-it-works/HOOK-CHECK.md)) and its watchdog fired on slow exceptions ([WATCHDOG.md](../../how-it-works/WATCHDOG.md)). The ntdll wait-queue lead below was void ([NTDLL-NEVER-LOADED.md](NTDLL-NEVER-LOADED.md)). "The README" here is the first README (git `7e7ae2a`). The raw files are in [samples/kill-2026-10-06](../samples/kill-2026-10-06) (`si_1.txt`, `si_2.txt`, `tctx_1.txt`, `tstack_kill.txt` and `watch.txt`; the other `si_*` files were not kept). The story: [STORY.md](../../STORY.md).
+
 This run reproduced the freeze and, for the first time, captured the **exact moment** the
 protection suspends the process's threads. It identifies the protection thread and localizes the
 protection code region in `RelicCardinal.exe`.
@@ -130,7 +132,7 @@ dumps are exactly that.
 ## Import map (1298 imports resolved)
 
 Parsed the import descriptors from a `.rdata` dump so IAT slots can be named
-([`tools/research/impmap.py`](../../tools/research/impmap.py)). Thread/memory APIs actually used by the game:
+([`tools/research/impmap.py`](../../../tools/research/impmap.py)). Thread/memory APIs actually used by the game:
 
 | API | IAT slot | Call sites in `.text` |
 |---|---|---|
@@ -154,14 +156,14 @@ protection's suspend-all path is not visible as a plain call graph.
 
 ## Files
 
-- `docs/research/samples/si_1.txt` — kill-moment suspend snapshot (the smoking gun).
-- `docs/research/samples/si_2.txt … si_22.txt` — post-kill state (4 threads).
-- `docs/research/samples/tctx_1.txt` — tctx, truncated where it hangs on `tid 0174`.
-- `docs/research/samples/watch.txt` — the game's warnings.log at capture time (trigger at line 559).
+- `docs/research/samples/kill-2026-10-06/si_1.txt` — kill-moment suspend snapshot (the smoking gun).
+- `docs/research/samples/kill-2026-10-06/si_2.txt` — post-kill state (4 threads; `si_3` to `si_22` were not kept).
+- `docs/research/samples/kill-2026-10-06/tctx_1.txt` — tctx, truncated where it hangs on `tid 0174`.
+- `docs/research/samples/kill-2026-10-06/watch.txt` — the game's warnings.log at capture time (trigger at line 559).
 
 ## Reverse engineering (same run) — the protection is readable and uses xxHash64
 
-Dumped the localized region from a live run with the new [`tools/research/dumprange.c`](../../tools/research/dumprange.c)
+Dumped the localized region from a live run with the new [`tools/research/dumprange.c`](../../../tools/research/dumprange.c)
 probe: `RelicCardinal.exe +0x3e00000..+0x4000000` (2 MB) and `+0x7540000..+0x7560000` (128 KB).
 Disassembling the thread entry and its call-chain addresses shows the protection is **ordinary MSVC
 x86-64 with `/GS` stack canaries** (`__security_check_cookie` at `+0x44fb0d50`) — **not** a

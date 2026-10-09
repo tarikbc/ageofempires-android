@@ -1,5 +1,7 @@
 # Status: the trap fix works but regresses the game; the wall is now a MapGen asset error
 
+> **Archived.** The no-trap build (patches 0001 and 0003) stops the game at start-up ([KILL-REMEASURED.md](KILL-REMEASURED.md), run 2). Section 1 stands; sections 2 and 3 were corrected inside. The story: [STORY.md](../../STORY.md).
+
 > **Correction (2026-10-06, 21:10).** Every run in this document was launched with leftover debug channels
 > (`WINEDEBUG=+thread,+sync,+virtual,+timestamp,+tid`), which slowed the game badly
 > ([WINEDEBUG-LEFTOVER.md](WINEDEBUG-LEFTOVER.md)). What still stands and what does not:
@@ -26,7 +28,7 @@ Corrected twice, both times after being wrong.
 | `VirtualProtect` reports previous | `0x20` | **`0x40`** |
 
 FEX no longer silently removes write permission from the guest's own pages. That defect was real
-([`SMC-TRAP.md`, part 2](../how-it-works/SMC-TRAP.md#part-2-confirmed-fex-leaks-its-smc-write-trap-to-the-guest)) and is fixed. This part stands.
+([`SMC-TRAP.md`, part 2](../../how-it-works/SMC-TRAP.md#part-2-confirmed-fex-leaks-its-smc-write-trap-to-the-guest)) and is fixed. This part stands.
 
 ## 2. But that patch regresses the game — and my first claim about it was wrong
 

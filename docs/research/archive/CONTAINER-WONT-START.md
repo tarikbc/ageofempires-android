@@ -1,5 +1,7 @@
 # Why the container stalls: Box64 cannot find `wine`
 
+> **Archived.** Resolved (2026-10-06): the container's Wine Version named a missing tree. The earlier sections are wrong diagnoses kept for the record. The how-to parts are in [GAMENATIVE.md](../../guides/GAMENATIVE.md). The story: [STORY.md](../../STORY.md).
+
 GameNative keeps its own logs under `/sdcard/Android/data/app.gamenative/files/` — readable over adb,
 unlike everything in `/data/user/0/app.gamenative/` (which is app-private and denied).
 
@@ -223,7 +225,7 @@ Immediately afterwards the container booted and everything downstream worked:
 - `wineserver`, `services.exe`, `winedevice`, `plugplay`, `explorer`, `winhandler` all started
 - the game launched and wrote a real `warnings.log`
 - `smctest` could finally be run — which is what confirmed the SMC trap
-  ([`SMC-TRAP.md`, part 2](../how-it-works/SMC-TRAP.md#part-2-confirmed-fex-leaks-its-smc-write-trap-to-the-guest))
+  ([`SMC-TRAP.md`, part 2](../../how-it-works/SMC-TRAP.md#part-2-confirmed-fex-leaks-its-smc-write-trap-to-the-guest))
 
 Selection is what matters, not importing: `proton-11.0-99-arm64ec-1` was **already installed** (it is the
 original `proton-11.0-99-arm64ec.wcp` still on the device, the `-1` being its versionCode). Re-importing

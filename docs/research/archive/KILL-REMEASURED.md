@@ -1,5 +1,7 @@
 # The Aegis kill, measured on a clean baseline with the right instrument
 
+> **Archived.** The kill on a clean baseline (2026-10-06). The SMC question it leaves open was closed by patch 0004: hiding the trap did not stop the kill, 5 of 5 runs ([SMC-TRAP.md](../../how-it-works/SMC-TRAP.md), part 3). Raw data: [samples/clean-baseline-2026-10-06](../samples/clean-baseline-2026-10-06). The story: [STORY.md](../../STORY.md).
+
 2026-10-06. Three runs, both launched by `tools/run_watch.py --launch` (force-stop GameNative, start it,
 open AoE IV, tap Play) with `WINEDEBUG=-all` ([WINEDEBUG-LEFTOVER.md](WINEDEBUG-LEFTOVER.md)).
 
@@ -69,7 +71,7 @@ whenever a compiled block first covers a page, in every mode, and only `SMCCheck
 Result, for two minutes: 5 Linux threads, 0 % CPU, one Windows thread (the main thread, user 1,700 ms),
 no new log. The same signature as run 2.
 
-This reproduces the earlier "`SMCChecks=full` hangs at launch from Play" ([EXPERIMENTS.md](EXPERIMENTS.md)),
+This reproduces the earlier "`SMCChecks=full` hangs at launch from Play" ([LEDGER.md](../LEDGER.md)),
 whose config (`fexcfg6.txt`) dates from 00:12, before the round-17 debug channels.
 
 ## What the two hangs have in common
@@ -99,7 +101,7 @@ not be read either.
 
 ## Where this leaves the SMC question
 
-Open. The trap leak is real ([`SMC-TRAP.md`, part 2](../how-it-works/SMC-TRAP.md#part-2-confirmed-fex-leaks-its-smc-write-trap-to-the-guest)) and the kill is real on the clean
+Open. The trap leak is real ([`SMC-TRAP.md`, part 2](../../how-it-works/SMC-TRAP.md#part-2-confirmed-fex-leaks-its-smc-write-trap-to-the-guest)) and the kill is real on the clean
 baseline. No build that removes the trap has yet run the game far enough to show whether the kill still
 fires. The only trap-removing build so far relies on full-SMC validation, and full-SMC validation with the
 trap still armed also stops the game at start-up (run 3). A test of the trap needs a way to hide it that keeps the

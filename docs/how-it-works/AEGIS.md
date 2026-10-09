@@ -111,6 +111,8 @@ protected code is replaced by virtualized data, and at runtime it is restored/in
 
 ## Why this matters for the freeze
 
+> Written on 2026-10-06, before the cause was known. The stops turned out to be the start-up hook check and the watchdog ([HOOK-CHECK.md](HOOK-CHECK.md), [WATCHDOG.md](WATCHDOG.md)); the socket timing was not causal ([archive/NETWORK.md](../research/archive/NETWORK.md)). The block-list numbers are the log's own two lines: 464 unique items added from `BlockList.json`, and "Aegis block list contains 386 items".
+
 Aegis is an **active anti-tamper**: it carries permit/block/report lists, injects fake instructions, patches
 RTTI and runs a stealth startup before `main`. The freeze — a thread that suspends every other thread ~1 min
 after the socket closes — is consistent with Aegis's runtime response to a check it does not like. The
@@ -155,6 +157,8 @@ direct evidence that Aegis's kill is an integrity response.
 
 ## Timing constants inside the protection region (round 12 analysis)
 
+> The addresses in this section were read from `text.bin`, which is indexed by RVA − 0x1000: the real RVAs are 0x1000 higher ([archive/ANALYSIS-GOTCHAS.md](../research/archive/ANALYSIS-GOTCHAS.md)).
+
 With the `.wcp` import blocked, I analysed the restored `.text` dump (`text.bin`, 91 MB) directly,
 looking for the millisecond constants a delayed kill would need.
 
@@ -190,17 +194,19 @@ the memscan result above) and calls a function with `(3, string, 90000)`.
 
 **Reading, not proof:** a 3-character string with a 90,000 ms timeout is what an HTTP request with a
 90-second timeout looks like, and the kill lands roughly a minute after its triggering event. That
-would fit the server-side hypothesis in [MODULE-LIST.md](../research/MODULE-LIST.md). But three characters could be
+would fit the server-side hypothesis in [MODULE-LIST.md](../research/archive/MODULE-LIST.md). But three characters could be
 many things, and the callee's own references did not resolve — scanning `0x3e88850..0x3e8a68b` for
 RIP-relative operands into the IAT or the known Aegis data blocks found **none**, so its calls are
 obfuscated the same way its strings are. Establishing what it actually does needs either a breakpoint
 (Aegis is anti-debug) or a proper de-obfuscation pass.
 
-Worth keeping in perspective: [KILL-STILL-OPEN.md](../research/KILL-STILL-OPEN.md) already shows the kill fires
+Worth keeping in perspective: [KILL-STILL-OPEN.md](../research/archive/KILL-STILL-OPEN.md) already shows the kill fires
 with a healthy backend session for the whole run, so whatever this 90 s path is, the network is not the
 whole story.
 
 ## The 3-byte runtime string: "SDC"
+
+> The addresses in this section were read from `text.bin`, which is indexed by RVA − 0x1000: the real RVAs are 0x1000 higher ([archive/ANALYSIS-GOTCHAS.md](../research/archive/ANALYSIS-GOTCHAS.md)).
 
 The string at `0x3e41ae6` is built by an inline decrypt loop, so it can be recovered statically:
 
@@ -233,5 +239,5 @@ this is a one-off, not a recurring string-decrypt helper, and no vocabulary can 
 
 So the earlier question — what does Aegis call with a 90-second timeout — is still open. `"SDC"` could be
 a subsystem tag (the backend's own error codes use 4-character tags like `"Matc"` and `"Reli"`, see
-[`NETWORK.md`, part 2](../research/NETWORK.md#part-2-the-kill-is-downstream-of-losing-the-backend-session)), an HTTP-ish token, or a binary value that merely happens to be
+[`NETWORK.md`, part 2](../research/archive/NETWORK.md#part-2-the-kill-is-downstream-of-losing-the-backend-session)), an HTTP-ish token, or a binary value that merely happens to be
 printable. It is not enough to identify the call.

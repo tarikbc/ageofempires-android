@@ -1,5 +1,7 @@
 # Measured: the run does not end with the kill's signature
 
+> **Archived.** Retracted (2026-10-06): the thread-state method could not see Wine's suspends; the kill was re-measured with `suspinfo` ([KILL-REMEASURED.md](KILL-REMEASURED.md)). The story: [STORY.md](../../STORY.md).
+
 > **Note (2026-10-06, 21:10).** The run described here (20:29) was launched with leftover debug channels
 > (`WINEDEBUG=+thread,+sync,+virtual,+timestamp,+tid`), so its timeline describes a slowed run
 > ([WINEDEBUG-LEFTOVER.md](WINEDEBUG-LEFTOVER.md)). The kill measured properly, with `suspinfo` on a clean
@@ -10,7 +12,7 @@ First trustworthy run in this session with thread-state sampling. It changes the
 ## The run
 
 Launched through **Play** after a clean app restart. Verified as a real run by the guard recorded in
-[EXPERIMENTS.md](EXPERIMENTS.md): the process began at 5 threads and **grew to 18–22**.
+[LEDGER.md](../LEDGER.md): the process began at 5 threads and **grew to 18–22**.
 
 Sampled every 5 seconds with `/proc/<pid>/task/*/stat`, state parsed after the last `)` so a comm
 containing spaces cannot shift the field.

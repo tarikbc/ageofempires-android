@@ -1,5 +1,7 @@
 # Concrete gaps between Wine and Windows that Aegis could notice
 
+> **Archived.** Two Wine gaps the protection could notice (2026-10-06). Neither was tested further; neither was needed for the fixes. The story: [STORY.md](../../STORY.md).
+
 Both were measured from inside the game's own session, and both are things a "stealth" anti-tamper
 plausibly depends on.
 
@@ -19,7 +21,7 @@ Windows returns `STATUS_SUCCESS` and marks the thread so debuggers cannot see it
 
 **Why this is worth attention:** Aegis's own build log says `Pre-Main Stealth Startup: Enabled` and
 `** Installed Stealth-Startup`
-([AEGIS.md](../how-it-works/AEGIS.md)). Hiding its threads from debuggers is exactly what that feature would do, and a
+([AEGIS.md](../../how-it-works/AEGIS.md)). Hiding its threads from debuggers is exactly what that feature would do, and a
 protection that hides its watchdog thread and then finds the hiding silently failed has a good reason
 to treat the environment as hostile. It is also the kind of check that would fire on a *timer* rather
 than immediately, which matches the kill's behaviour.
