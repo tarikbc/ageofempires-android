@@ -115,7 +115,9 @@ player's own camera:
    `probes/gcopy.exe`, no console window), for example to `D:\aoe\m51.rec`.
 2. **Start it in the game:** profile (LS on the main menu), Match History, select the match, X "View Replay". In the
    replay, X locks the camera to the player's recorded view (a lock shows next to the name), and the D-pad sets the
-   speed (`tools/replay.py speed up|down N`; steps 1/2X, 1X, 2X, 4X, 8X).
+   speed (`tools/replay.py speed up|down N`; steps 1/2X, 1X, 2X, 4X, 8X). Check the match's length in its details
+   (51 m 22 s for the benchmark game): a benchmark skirmish that ran to its end (the A.I. won) is also in Match
+   History, as the newest row, and its replay is the idle base with the camera turning.
 3. **Run to the late game** at 8X and read the clock with `tools/replay.py clock` (a small crop of the game clock and
    the speed). Reaching 42 minutes took about 15 minutes on the Thor.
 4. **Measure** at 1X: `tools/replay.py window LABEL` (90 s of frame times with temperatures, then 20 s of per-thread

@@ -136,11 +136,14 @@ minutes 1 and 3, the game's frame times read from Android's compositor, display 
 A real game is heavier than the idle benchmark. The **late-game benchmark** is the replay of a full 51-minute game
 against one A.I., a 90 s window at minute 48 with the player's own camera, the CPU at full clocks:
 
-| Setup | FPS at minute 48 |
-|---|---|
-| v1.2.0, Turnip v26.2.0 R4, GPU held at 680 MHz | 38.6 |
-| v1.3.0, the repo's Turnip driver | 46.1 |
-| + `VKD3D_CONFIG=no_staggered_submit` | not measured yet |
+| Setup | FPS at minute 48 | frames over 50 ms |
+|---|---|---|
+| v1.2.0, Turnip v26.2.0 R4, GPU held at 680 MHz | 38.6 | 22 |
+| v1.3.0, the repo's Turnip driver | 46.1 | 15 |
+| + `VKD3D_CONFIG=no_staggered_submit` (two runs) | 47.3 and 48.5 (47.0 at minute 46) | 86 and 57 (79 at minute 46) |
+
+In the late game the variable gains little and makes the frame times uneven: about 60 to 90 frames of 50 ms or more
+per 90 s window against 15 without it ([TURNIP.md](docs/guides/TURNIP.md)).
 
 During that game, played before the repo's driver existed, GameNative's FPS counter read high 20s to low 30s, and
 about 24 in the big late-game battles. The CPU runs hot in long sessions: the hottest CPU sensor read about 95 °C
