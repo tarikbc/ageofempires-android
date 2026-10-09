@@ -34,8 +34,8 @@ drivers in circulation.
   Snapdragon 8 Gen 2 devices are the most likely to work.
 - The game on Steam, installed through GameNative.
 - From the [latest release](https://github.com/tarikbc/ageofempires-android/releases/latest):
-  - `fexcore-aoe4-perf5.wcp` (900 KB), the patched FEX. Its name starts with `aoe4` because it was made for AoE IV
-    first; the same package runs both games.
+  - `fexcore-aoe4-perf6.wcp` (900 KB), the patched FEX for AoE IV (v1.4.0, with patch 0017). For AoE II DE use
+    `fexcore-aoe4-perf5.wcp` from the same release: that is the package tested with AoE II.
   - For AoE IV: `turnip-main-c78a9e9.zip` (2.7 MB), Mesa's Turnip driver built from its 2026-10-08 main branch
     ([TURNIP.md](docs/guides/TURNIP.md)).
 
@@ -43,11 +43,12 @@ drivers in circulation.
 
 ### 1. Install the package and the driver
 
-1. Download [`fexcore-aoe4-perf5.wcp`](https://github.com/tarikbc/ageofempires-android/releases/latest/download/fexcore-aoe4-perf5.wcp)
-   and, for AoE IV, [`turnip-main-c78a9e9.zip`](https://github.com/tarikbc/ageofempires-android/releases/latest/download/turnip-main-c78a9e9.zip)
+1. Download [`fexcore-aoe4-perf6.wcp`](https://github.com/tarikbc/ageofempires-android/releases/latest/download/fexcore-aoe4-perf6.wcp)
+   (AoE IV), [`fexcore-aoe4-perf5.wcp`](https://github.com/tarikbc/ageofempires-android/releases/latest/download/fexcore-aoe4-perf5.wcp)
+   (AoE II DE) and, for AoE IV, [`turnip-main-c78a9e9.zip`](https://github.com/tarikbc/ageofempires-android/releases/latest/download/turnip-main-c78a9e9.zip)
    on the device; they land in the Download folder.
 2. In GameNative: **Menu → Settings → Contents Manager → Import .wcp from device**, and pick the `.wcp`.
-   It shows up under the FEXCore type as `aoe4-perf5 (23)`.
+   They show up under the FEXCore type as `aoe4-perf6 (30)` and `aoe4-perf5 (23)`.
 3. For AoE IV: **Menu → Settings → Driver Manager → Import ZIP from device**, and pick the driver zip.
 
 ### 2. Age of Empires IV: the container
@@ -62,7 +63,7 @@ Open the game in GameNative, tap the **cog** next to Play, then **Edit container
 | Graphics | Graphics Driver / Version | `Wrapper` / **`turnip-main-c78a9e9`** |
 | Graphics | DX Wrapper | `VKD3D` |
 | Emulation | 64-bit Emulator | `FEXCore` |
-| Emulation | FEXCore Version | **`aoe4-perf5-23`** |
+| Emulation | FEXCore Version | **`aoe4-perf6-30`** |
 | Environment | add `WINEDEBUG` | `-all` |
 | Environment | add `FEX_EXP_SKIP_CALLRET_RESET` | `1` |
 | Environment | add `VKD3D_CONFIG` | `no_staggered_submit` |
@@ -131,7 +132,11 @@ minutes 1 and 3, the game's frame times read from Android's compositor, display 
 | Protection fixes only (2026-10-07, 60 Hz display) | 26.7 / 26.6 | 33.4 ms | 721 / 734 |
 | The package, Turnip v26.2.0 R4 (v1.1.0 to v1.2.0) | 42.1 / 42.1 | 25.3 ms | 2 / 2 |
 | + the repo's Turnip driver (v1.3.0) | 52.3 / 52.3 | 16.9 ms | 4 / 5 |
-| **+ `VKD3D_CONFIG=no_staggered_submit`** (the setup above) | **58.6 / 58.1** | 16.9 ms | 9 / 16 |
+| + `VKD3D_CONFIG=no_staggered_submit` | 58.6 / 58.1 | 16.9 ms | 9 / 16 |
+
+Patch 0017 (v1.4.0, the setup above) was measured against the previous package in the same session, with the
+benchmark's lighter thermal sampler: 58.3 / 57.8 FPS against 56.4 / 56.3 before and 56.6 / 56.5 after, and about a
+fifth fewer frames of 25 ms (813 / 825 against 999 to 1,039 per window). Frames over 40 ms stayed within their spread.
 
 A real game is heavier than the idle benchmark. The **late-game benchmark** is the replay of a full 51-minute game
 against one A.I., a 90 s window at minute 48 with the player's own camera, the CPU at full clocks:
@@ -215,6 +220,11 @@ the emulator three things went wrong:
 core about 45 times per second, and Wine read two files per core for each answer: 11 % of the main thread in the
 late game. ([POWER-INFORMATION.md](docs/how-it-works/POWER-INFORMATION.md))
 
+**Patch 0017** (v1.4.0) delivers the protection's exceptions without a host trap. The protection raises about 44,000
+illegal-instruction exceptions per second; FEX turned each one into a host trap, Wine's signal handler and two passes
+through the exception dispatcher. FEX now raises the guest exception directly: about +1.5 FPS and a fifth fewer 25 ms
+frames in the benchmark. ([TUNING.md](docs/guides/TUNING.md), "Exceptions without a host trap")
+
 **The graphics driver** (v1.3.0) is Mesa's Turnip built from its 2026-10-08 main branch. The Turnip builds in
 circulation waited for the GPU on every submit because of a kernel-driver quirk (fixed in Mesa that day), so the
 game's render thread spent about 10 ms per frame waiting: 41 → 52 FPS. ([TURNIP.md](docs/guides/TURNIP.md))
@@ -246,8 +256,9 @@ All against FEX `7d3090f`, in this order ([patches/fex](patches/fex)):
 | 0014 | Reuses compiled code when the protection decrypts the same code again |
 | 0015 | Fixes a FEX bug: a 32-bit value was loaded as 64 bits |
 | 0016 | Answers the game's per-frame CPU-speed query from a 250 ms cache (v1.2.0) |
+| 0017 | Delivers the protection's illegal-instruction exceptions (about 44,000 per second) without a host trap (v1.4.0) |
 
-The package's DLL is `libarm64ecfex.dll`, SHA-1 `b5e6e357`. Since v1.1.0 the package leaves out patch 0002, which hid
+The package's DLL is `libarm64ecfex.dll`, SHA-1 `7e707379` in `aoe4-perf6` (v1.4.0; `b5e6e357` in `aoe4-perf5`, which stops at 0016). Since v1.1.0 the package leaves out patch 0002, which hid
 FEX's name from the game: the game runs the same without it. To build it yourself:
 [BUILDING-FEX.md](docs/guides/BUILDING-FEX.md) and [`tools/make_fex_wcp.py`](tools/make_fex_wcp.py). The driver:
 [`tools/build_turnip.sh`](tools/build_turnip.sh).
