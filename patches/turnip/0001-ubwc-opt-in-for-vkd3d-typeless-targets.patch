@@ -1,0 +1,93 @@
+diff --git a/src/freedreno/vulkan/tu_formats.cc b/src/freedreno/vulkan/tu_formats.cc
+index 45c2b0d..7a0c802 100644
+--- a/src/freedreno/vulkan/tu_formats.cc
++++ b/src/freedreno/vulkan/tu_formats.cc
+@@ -5,6 +5,7 @@
+  */
+ 
+ #include "tu_formats.h"
++#include "util/u_debug.h"
+ 
+ #include "drm-uapi/drm_fourcc.h"
+ 
+@@ -84,14 +85,44 @@ tu6_mutable_format_list_ubwc_compatible(const struct fd_dev_info *info,
+    if (fmt_list->viewFormatCount == 1)
+       return true;
+ 
++   /* Opt-in for vkd3d-proton's typeless render targets (ageofempires-android, 2026-10-09). vkd3d-proton gives a
++    * typeless D3D12 resource the whole format family as its view list, and for UAV-capable 32-bit families it adds
++    * R32_UINT/R32_SINT/R32_SFLOAT, which A740 does not share UBWC with. With these options the image keeps UBWC as
++    * long as the application only ever views it in a compatible format; tu_image_view_init warns if it does not.
++    *  - TU_UBWC_RGBA8_IGNORE_R32=1: an R8G8B8A8 family list may also name the R32 formats.
++    *  - TU_UBWC_RGBA16F_INT=1: an R16G16B16A16_SFLOAT list may also name the R16G16B16A16 UNORM/SNORM/UINT/SINT
++    *    formats.
++    */
++   static const bool rgba8_ignore_r32 = debug_get_bool_option("TU_UBWC_RGBA8_IGNORE_R32", false);
++   static const bool rgba16f_int = debug_get_bool_option("TU_UBWC_RGBA16F_INT", false);
++
++   if (rgba16f_int && fmt_list->pViewFormats[0] == VK_FORMAT_R16G16B16A16_SFLOAT) {
++      bool all_rgba16 = true;
++      for (uint32_t i = 1; i < fmt_list->viewFormatCount; i++) {
++         const VkFormat f = fmt_list->pViewFormats[i];
++         if (f != VK_FORMAT_R16G16B16A16_UNORM && f != VK_FORMAT_R16G16B16A16_SNORM &&
++             f != VK_FORMAT_R16G16B16A16_UINT && f != VK_FORMAT_R16G16B16A16_SINT &&
++             f != VK_FORMAT_R16G16B16A16_SFLOAT)
++            all_rgba16 = false;
++      }
++      if (all_rgba16)
++         return true;
++   }
++
+    enum fd6_ubwc_compat_type type =
+       tu6_ubwc_compat_mode(info, fmt_list->pViewFormats[0]);
+    if (type == FD6_UBWC_UNKNOWN_COMPAT)
+       return false;
+ 
+    for (uint32_t i = 1; i < fmt_list->viewFormatCount; i++) {
+-      if (tu6_ubwc_compat_mode(info, fmt_list->pViewFormats[i]) != type)
++      const VkFormat f = fmt_list->pViewFormats[i];
++      if (tu6_ubwc_compat_mode(info, f) != type) {
++         if (rgba8_ignore_r32 &&
++             (type == FD6_UBWC_R8G8B8A8_INT || type == FD6_UBWC_R8G8B8A8_UNORM) &&
++             (f == VK_FORMAT_R32_UINT || f == VK_FORMAT_R32_SINT || f == VK_FORMAT_R32_SFLOAT))
++            continue;
+          return false;
++      }
+    }
+ 
+    return true;
+diff --git a/src/freedreno/vulkan/tu_image.cc b/src/freedreno/vulkan/tu_image.cc
+index e056e18..dcd59b3 100644
+--- a/src/freedreno/vulkan/tu_image.cc
++++ b/src/freedreno/vulkan/tu_image.cc
+@@ -9,6 +9,8 @@
+ 
+ #include "tu_image.h"
+ 
++#include "common/freedreno_ubwc.h"
++
+ #include "drm-uapi/drm_fourcc.h"
+ 
+ #include "util/format/u_format.h"
+@@ -230,6 +232,21 @@ tu_image_view_init(struct tu_device *device,
+    args.level_count = vk_image_subresource_level_count(&image->vk, range);
+    args.min_lod_clamp = iview->vk.min_lod;
+    args.format = tu_format_for_aspect(format, aspect_mask);
++
++   /* With TU_UBWC_RGBA8_IGNORE_R32 or TU_UBWC_RGBA16F_INT (tu_formats.cc), warn when an application views a UBWC
++    * image in a format of another UBWC class: such a view reads or writes the compressed data wrongly.
++    */
++   static const bool ubwc_optin = debug_get_bool_option("TU_UBWC_RGBA8_IGNORE_R32", false) ||
++                                  debug_get_bool_option("TU_UBWC_RGBA16F_INT", false);
++   if (ubwc_optin && layouts[0]->ubwc && aspect_mask == VK_IMAGE_ASPECT_COLOR_BIT) {
++      const enum pipe_format img_fmt = vk_format_to_pipe_format(image->vk.format);
++      const enum fd6_ubwc_compat_type img_cls = fd6_ubwc_compat_mode(device->physical_device->info, img_fmt);
++      const enum fd6_ubwc_compat_type view_cls = fd6_ubwc_compat_mode(device->physical_device->info, format);
++      if (img_fmt != format && (img_cls == FD6_UBWC_UNKNOWN_COMPAT || img_cls != view_cls))
++         mesa_logw("UBWC opt-in: %s view of a compressed %s image (%ux%u) is in another UBWC class",
++                   util_format_name(format), util_format_name(img_fmt), image->vk.extent.width,
++                   image->vk.extent.height);
++   }
+    vk_component_mapping_to_pipe_swizzle(pCreateInfo->components, args.swiz);
+    if (conversion) {
+       unsigned char conversion_swiz[4], create_swiz[4];

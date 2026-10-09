@@ -4,6 +4,30 @@ Every release, with what changed, the files and the speed measured for it. AoE I
 skirmish benchmark (FPS at two match minutes, 90 s windows) and the late-game replay (minutes 46 and 48), on the AYN
 Thor with GameNative 1.2.1. How the versions connect: [docs/STORY.md](docs/STORY.md).
 
+## v1.5.0, 2026-10-09: colour compression, +1.5 FPS (+2.6 %)
+
+- **New driver `turnip-main-c78a9e9-ubwc`**: the v1.3.0 driver (Mesa main `c78a9e9`) plus
+  [patches/turnip/0001](patches/turnip/0001-ubwc-opt-in-for-vkd3d-typeless-targets.patch). With
+  `TU_UBWC_RGBA8_IGNORE_R32=1` and `TU_UBWC_RGBA16F_INT=1` in the container's environment, vkd3d-proton's typeless
+  RGBA8 and RGBA16F render targets keep UBWC compression; without them it behaves like the v1.3.0 driver
+  ([UBWC.md](docs/how-it-works/UBWC.md)).
+- FEX packages unchanged: `aoe4-perf6-30` for AoE IV, `aoe4-perf5-23` for AoE II DE (attached again).
+- Measured on the GameNative 1.3.0 test release; AoE IV runs on it as on 1.2.1 (58.8 / 58.9 FPS with the v1.4.0 setup).
+
+| Measured (skirmish, minute 1, alternating) | Without the variables | With them |
+|---|---|---|
+| Pair 1 | 58.1 | 60.1 |
+| Pair 2 | 58.6 | 59.6 |
+
+Also measured and not kept the same day: LRZ off, LRZ in sysmem passes, anisotropic filtering capped (no change);
+UBWC forced on every format list (+1.5 FPS but unsafe: the game views two of those images in incompatible formats).
+
+| File | SHA-256 |
+|---|---|
+| `turnip-main-c78a9e9-ubwc.zip` | `a2c79b49451dbe1b3b240f924727033bf6bdc444907dcacc47d80776606ebb0f` |
+| `fexcore-aoe4-perf6.wcp` (same file as v1.4.0) | `23bd9da0791d0310d551af25b0e82866600d8aadc4cf7ad699500bacbe09ff7b` |
+| `fexcore-aoe4-perf5.wcp` (same file as v1.2.0) | `20a32eabd5c3cb50082aa0a8f0fb835d66123b05339c48af4284364f6f90119f` |
+
 ## v1.4.0, 2026-10-09: steadier frames, +1.5 FPS
 
 - **New FEX package `aoe4-perf6` (30)**: adds patch 0017, guest faults without a host trap. The protection's 44,000

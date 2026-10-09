@@ -41,7 +41,8 @@ without !44838 was not made.
 With the CPU no longer held in lock step, GPU traces showed the next wait: vkd3d-proton itself kept only one command
 buffer in flight. [VKD3D-SUBMIT.md](VKD3D-SUBMIT.md) has that fix (+12 %). The driver options tried on top of this
 build (an autotune mode, LRZ, a second queue, a merge request and a submit patch) gave no gain, and forced tile
-rendering got no clean run; they are listed in [TUNING.md](../guides/TUNING.md), "Measured and not kept", and the GPU profile behind them is in
+rendering got no clean run; they are listed in [TUNING.md](../guides/TUNING.md), "Measured and not kept"; one later driver patch did help
+([UBWC.md](UBWC.md), v1.5.0). The GPU profile behind them is in
 [PERFORMANCE.md](../research/PERFORMANCE.md), "GPU render-stage profile".
 
 ## Not tested yet

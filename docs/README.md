@@ -11,7 +11,7 @@ To install and play, start with the [main README](../README.md). This folder has
 4. [research/](research): the dated log, the measurements, the experiment ledger, the upstream reports, and the
    archived investigation notes.
 
-Releases and their files: [CHANGELOG.md](../CHANGELOG.md). The patch files: [patches/fex](../patches/fex).
+Releases and their files: [CHANGELOG.md](../CHANGELOG.md). The patch files: [patches/fex](../patches/fex) and [patches/turnip](../patches/turnip).
 
 ## How it works: one page per fix
 
@@ -29,6 +29,7 @@ In the order they were found:
 | [GPU-DRIVER.md](how-it-works/GPU-DRIVER.md) | Turnip from Mesa main | No more CPU-GPU lock step on fence checks: 41 → 52 FPS |
 | [VKD3D-SUBMIT.md](how-it-works/VKD3D-SUBMIT.md) | `VKD3D_CONFIG=no_staggered_submit` | More than one command buffer in flight: 52 → 58 FPS |
 | [TRAPLESS-FAULTS.md](how-it-works/TRAPLESS-FAULTS.md) | patch 0017 | The protection's 44,000 exceptions per second without a host trap: +1.5 FPS |
+| [UBWC.md](how-it-works/UBWC.md) | Turnip patch 0001, two variables | The game's largest colour images keep UBWC compression: +1.5 FPS (+2.6 %) |
 
 Patches 0002 (dropped) and 0015 (a FEX bug fix) are described in [patches/fex](../patches/fex).
 
