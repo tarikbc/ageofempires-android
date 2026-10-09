@@ -196,8 +196,8 @@ instructions against guest memory at run time and needs no protection change at 
 ## Part 3: Hiding FEX's SMC trap does not stop the Aegis kill
 
 Measured on the AYN Thor, 2026-10-06, 21:20 to 22:27. All runs on the clean baseline
-(`WINEDEBUG` off, [WINEDEBUG-LEFTOVER.md](../research/WINEDEBUG-LEFTOVER.md)), launched by `tools/run_watch.py --launch`
-and judged with `suspinfo` ([KILL-REMEASURED.md](../research/KILL-REMEASURED.md)).
+(`WINEDEBUG` off, [WINEDEBUG-LEFTOVER.md](../research/archive/WINEDEBUG-LEFTOVER.md)), launched by `tools/run_watch.py --launch`
+and judged with `suspinfo` ([KILL-REMEASURED.md](../research/archive/KILL-REMEASURED.md)).
 
 **Result: with the trap hidden from the game, the kill fired in 5 of 5 runs.** Inside the game, 732,206
 memory queries passed through the filter and not one of them touched a page the trap had changed. The SMC
@@ -207,7 +207,7 @@ trap leak ([part 2](#part-2-confirmed-fex-leaks-its-smc-write-trap-to-the-guest)
 
 [`patches/fex/0004-report-guest-protection-for-trapped-pages.patch`](../../patches/fex/0004-report-guest-protection-for-trapped-pages.patch),
 against FEX `7d3090f` (the revision the device runs), built together with patch 0002 (CPUID) following
-[BUILDING-FEX.md](../guides/BUILDING-FEX.md). The committed patch is the fix2 version described below; the "fix" build
+[BUILDING-FEX.md](../guides/BUILDING.md). The committed patch is the fix2 version described below; the "fix" build
 is the same without fix2's two additions.
 
 It keeps FEX's default `mtrack` trap, so self-modifying code is still caught, and corrects what the guest
@@ -307,7 +307,7 @@ same ntdll export and are counted too.
 
 ### Side results
 
-- `SMCChecks=full` and the no-trap build both stop at start-up ([KILL-REMEASURED.md](../research/KILL-REMEASURED.md));
+- `SMCChecks=full` and the no-trap build both stop at start-up ([KILL-REMEASURED.md](../research/archive/KILL-REMEASURED.md));
   patch 0004 does not have that problem, because it adds no validation.
 - Building FEX from a fresh clone of `7d3090f` with the three macOS fixes in BUILDING-FEX.md takes about a
   minute with `ninja arm64ecfex`.

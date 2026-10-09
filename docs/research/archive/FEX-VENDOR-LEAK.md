@@ -71,7 +71,7 @@ Checked all CPUID/hypervisor-related FEX options present in the shipped DLL:
 - On the Mac, the same game runs under **Rosetta**, which is not an x86 hypervisor and does not present
   an x86 hypervisor vendor leaf. On the Thor, guest code asking the same question gets
   `FEXIFEXIEMU`.
-- Aegis is an active anti-tamper (see [AEGIS.md](AEGIS.md)) whose whole job is to notice that its
+- Aegis is an active anti-tamper (see [AEGIS.md](../../how-it-works/AEGIS.md)) whose whole job is to notice that its
   environment is not the one it shipped for. An unmasked, self-identifying emulator signature is
   exactly the class of signal such a system acts on — and it is a *clean* difference between the two
   environments where the behaviour differs.

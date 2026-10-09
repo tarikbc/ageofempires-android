@@ -2,7 +2,7 @@
 
 2026-10-06/07. The game issues many syscalls as raw x64 `syscall` instructions (4,783 in the first 3 minutes
 of one traced run), mostly through a gateway in private memory and one inside the exe
-([AEGIS-TRACE.md](../research/AEGIS-TRACE.md)). So what those instructions leave in
+([AEGIS-TRACE.md](../research/archive/AEGIS-TRACE.md)). So what those instructions leave in
 the registers is something the code behind them can check, the same way it can check timing.
 
 ## What hardware does
@@ -46,7 +46,7 @@ register except `rax` as it was.
 
 The design is the one in [`patches/experiments/proton-arm64ec-ntdll/invoke_arm64ec_syscall.s`](../../patches/experiments/proton-arm64ec-ntdll/invoke_arm64ec_syscall.s),
 an ntdll binary patch that never ran, because Wine loads ntdll from its own tree
-([NTDLL-NEVER-LOADED.md](../research/NTDLL-NEVER-LOADED.md)). Patch 0006 is the first time this fix is live. The old notes
+([NTDLL-NEVER-LOADED.md](../research/archive/NTDLL-NEVER-LOADED.md)). Patch 0006 is the first time this fix is live. The old notes
 say Wine's helper also changes `r8` and `r9`; the probe above shows them kept.
 
 Limits, by construction: a syscall with more than 18 arguments would get garbage beyond the 18th; for a thread

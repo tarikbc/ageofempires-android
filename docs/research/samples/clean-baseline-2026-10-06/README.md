@@ -1,6 +1,6 @@
 # Clean-baseline runs, 2026-10-06
 
-Raw data behind [docs/research/KILL-REMEASURED.md](../../KILL-REMEASURED.md). All runs used
+Raw data behind [docs/research/KILL-REMEASURED.md](../../archive/KILL-REMEASURED.md). All runs used
 `WINEDEBUG=-all` and were driven by `tools/run_watch.py`.
 
 | File | What it is |

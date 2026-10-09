@@ -130,7 +130,7 @@ dumps are exactly that.
 ## Import map (1298 imports resolved)
 
 Parsed the import descriptors from a `.rdata` dump so IAT slots can be named
-([`tools/research/impmap.py`](../../tools/research/impmap.py)). Thread/memory APIs actually used by the game:
+([`tools/research/impmap.py`](../../../tools/research/impmap.py)). Thread/memory APIs actually used by the game:
 
 | API | IAT slot | Call sites in `.text` |
 |---|---|---|
@@ -161,7 +161,7 @@ protection's suspend-all path is not visible as a plain call graph.
 
 ## Reverse engineering (same run) — the protection is readable and uses xxHash64
 
-Dumped the localized region from a live run with the new [`tools/research/dumprange.c`](../../tools/research/dumprange.c)
+Dumped the localized region from a live run with the new [`tools/research/dumprange.c`](../../../tools/research/dumprange.c)
 probe: `RelicCardinal.exe +0x3e00000..+0x4000000` (2 MB) and `+0x7540000..+0x7560000` (128 KB).
 Disassembling the thread entry and its call-chain addresses shows the protection is **ordinary MSVC
 x86-64 with `/GS` stack canaries** (`__security_check_cookie` at `+0x44fb0d50`) — **not** a

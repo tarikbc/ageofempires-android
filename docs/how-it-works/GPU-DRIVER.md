@@ -15,7 +15,7 @@ nothing (40.3 / 40.2 FPS); the setup stays on 2.14.1.
 
 ## Why
 
-The late-game frame trace ([TUNING.md](TUNING.md), "What gates a late-game frame") showed the render thread waiting
+The late-game frame trace ([TUNING.md](../guides/TUNING.md), "What gates a late-game frame") showed the render thread waiting
 about 10 ms per frame on the game's GPU fence. In the KGSL (Qualcomm kernel driver) back end of Turnip up to Mesa
 26.2, a fence check with a zero timeout waited until the GPU finished the work, because KGSL reads a zero timeout as
 "wait forever"; vkd3d-proton checks pending fence points on every submit, so CPU and GPU ran in lock step. Mesa merge
@@ -105,7 +105,7 @@ while the big cores were busy. Measured over the game's own frames, the threads 
 frame are the protection's thread (+13 ms), the main thread (+11), the simulation thread (+8), each of the 8 job
 workers (+4 to 6) and wineserver (+5). Without the variable, vkd3d-proton's CPU waits throttle the whole pipeline
 and this contention does not show. Thread placement (the main thread on the prime core, the render thread on a big
-core, the rest on the others; [TUNING.md](TUNING.md), "Thread placement") is the untested candidate; the late-game
+core, the rest on the others; [TUNING.md](../guides/TUNING.md), "Thread placement") is the untested candidate; the late-game
 replay runs were stopped at this point in favour of the quicker skirmish benchmark.
 
 How it was found, from the render-stage traces above
@@ -146,4 +146,4 @@ Also tried in the same session, on top of `no_staggered_submit`:
   50.5 / 50.7, a build with Mesa MR !43714 52.5 / 52.6, `disable_conservative_lrz=true` 51.0 / 50.8. `TU_DEBUG=gmem`
   got no clean run (two starts stopped with the DX12 fence error). Nothing beats the default.
 - Why `VKD3D_CONFIG=no_staggered_submit` makes the late game uneven (above); a scheduler trace inside a late-game
-  window is the next step. `tu_emulate_second_queue=true` is in [TUNING.md](TUNING.md), "The hitches at 58 FPS".
+  window is the next step. `tu_emulate_second_queue=true` is in [TUNING.md](../guides/TUNING.md), "The hitches at 58 FPS".

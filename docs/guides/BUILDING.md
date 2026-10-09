@@ -65,7 +65,7 @@ the patch itself.
 This base still contains the **CPUID hypervisor vendor leak**
 (`FEXCore/Source/Interface/Core/CPUID.cpp:984`, `HypervisorID = "FEXIFEXIEMU"`). A `.wcp` built from a
 plain main checkout therefore reintroduces a problem the repo already solved once — the CPUID patch has
-to be carried too. See [FEX-VENDOR-LEAK.md](../how-it-works/FEX-VENDOR-LEAK.md).
+to be carried too. See [FEX-VENDOR-LEAK.md](../research/archive/FEX-VENDOR-LEAK.md).
 
 
 ## Two patches now, and a built bundle

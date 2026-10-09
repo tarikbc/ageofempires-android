@@ -190,13 +190,13 @@ the memscan result above) and calls a function with `(3, string, 90000)`.
 
 **Reading, not proof:** a 3-character string with a 90,000 ms timeout is what an HTTP request with a
 90-second timeout looks like, and the kill lands roughly a minute after its triggering event. That
-would fit the server-side hypothesis in [MODULE-LIST.md](../research/MODULE-LIST.md). But three characters could be
+would fit the server-side hypothesis in [MODULE-LIST.md](../research/archive/MODULE-LIST.md). But three characters could be
 many things, and the callee's own references did not resolve — scanning `0x3e88850..0x3e8a68b` for
 RIP-relative operands into the IAT or the known Aegis data blocks found **none**, so its calls are
 obfuscated the same way its strings are. Establishing what it actually does needs either a breakpoint
 (Aegis is anti-debug) or a proper de-obfuscation pass.
 
-Worth keeping in perspective: [KILL-STILL-OPEN.md](../research/KILL-STILL-OPEN.md) already shows the kill fires
+Worth keeping in perspective: [KILL-STILL-OPEN.md](../research/archive/KILL-STILL-OPEN.md) already shows the kill fires
 with a healthy backend session for the whole run, so whatever this 90 s path is, the network is not the
 whole story.
 
@@ -233,5 +233,5 @@ this is a one-off, not a recurring string-decrypt helper, and no vocabulary can 
 
 So the earlier question — what does Aegis call with a 90-second timeout — is still open. `"SDC"` could be
 a subsystem tag (the backend's own error codes use 4-character tags like `"Matc"` and `"Reli"`, see
-[`NETWORK.md`, part 2](../research/NETWORK.md#part-2-the-kill-is-downstream-of-losing-the-backend-session)), an HTTP-ish token, or a binary value that merely happens to be
+[`NETWORK.md`, part 2](../research/archive/NETWORK.md#part-2-the-kill-is-downstream-of-losing-the-backend-session)), an HTTP-ish token, or a binary value that merely happens to be
 printable. It is not enough to identify the call.

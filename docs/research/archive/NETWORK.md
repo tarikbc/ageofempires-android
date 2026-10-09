@@ -1,6 +1,6 @@
 # The network theory: the game's backend session and Wine's TLS
 
-Three write-ups from 2026-10-06, joined in the order they were written. The stops were later traced to the hook check and the watchdog ([HOOK-CHECK.md](../how-it-works/HOOK-CHECK.md), [WATCHDOG.md](../how-it-works/WATCHDOG.md)).
+Three write-ups from 2026-10-06, joined in the order they were written. The stops were later traced to the hook check and the watchdog ([HOOK-CHECK.md](../../how-it-works/HOOK-CHECK.md), [WATCHDOG.md](../../how-it-works/WATCHDOG.md)).
 
 - [Part 1](#part-1-the-games-backend-session-is-broken): The game's backend session is broken
 - [Part 2](#part-2-the-kill-is-downstream-of-losing-the-backend-session): The kill is downstream of losing the backend session
@@ -147,7 +147,7 @@ server that wanted to drop the session would close the TCP connection cleanly, g
 WebSocket close, not a handle that stopped being a socket.
 
 And this repository already documents a Wine defect with exactly this signature — from
-[`patches/experiments/proton-arm64ec-ntdll/apply.py`](../../patches/experiments/proton-arm64ec-ntdll/apply.py):
+[`patches/experiments/proton-arm64ec-ntdll/apply.py`](../../../patches/experiments/proton-arm64ec-ntdll/apply.py):
 
 > Patch 1 (always): `invoke_arm64ec_syscall.s` replaces the x64 stub that runs a direct `syscall` from
 > emulated x64 code. **Wine's stub clobbered rdx/r8/r9/r10/rflags; the Windows kernel keeps them.**
@@ -307,7 +307,7 @@ stays healthy for the life of the run.
 remove the socket failure entirely and Aegis kills anyway, on roughly the same schedule.
 
 What remains is something that fires on a timer and is *not* network, *not* CPUID (patched, see
-[FEX-PATCH-LIVE.md](FEX-PATCH-LIVE.md)), and *not* debugger detection (see [AEGIS.md](../how-it-works/AEGIS.md)). The
+[FEX-PATCH-LIVE.md](FEX-PATCH-LIVE.md)), and *not* debugger detection (see [AEGIS.md](../../how-it-works/AEGIS.md)). The
 leading candidate is now a **code-integrity check over memory that ARM64EC legitimately rewrites** —
 which would explain, for the first time, why the Mac (x86-64 under Rosetta) passes and the Thor fails.
 An earlier experiment already showed Aegis notices a single modified byte, so the check exists.

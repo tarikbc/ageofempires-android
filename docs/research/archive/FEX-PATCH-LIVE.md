@@ -15,7 +15,7 @@ Before the patch it reported `eax=0x40000001 vendor='FEXIFEXIEMU'`. **FEX no lon
 Getting there needed two things:
 
 1. Patching the ARM64 function that builds the vendor string (see
-   [FEX-VENDOR-LEAK.md](../how-it-works/FEX-VENDOR-LEAK.md)).
+   [FEX-VENDOR-LEAK.md](FEX-VENDOR-LEAK.md)).
 2. Installing the patched DLL under the name GameNative actually loads. The `.wcp` manifest chooses
    the target path, and `xtajit64.dll` is **not** in GameNative's trusted set — it warns
    *"Untrusted Files Detected … includes files outside the trusted set"* and lists

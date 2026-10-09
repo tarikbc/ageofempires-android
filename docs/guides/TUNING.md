@@ -49,7 +49,7 @@ Thor was hot; earlier the same R4 setup gave 43.8 to 45.6 FPS.
 `meta.json` name contains `/`, and GameNative installed it under the folder name `tmp`.
 
 R4 and R6 are the same within the test's spread; R4 stayed until 2026-10-08, when a Turnip built from Mesa main gave
-52.3 FPS in this test ([TURNIP.md](TURNIP.md)). Checksums: the Balemuni and T30 files on the Thor matched the SHA-256
+52.3 FPS in this test ([TURNIP.md](../how-it-works/GPU-DRIVER.md)). Checksums: the Balemuni and T30 files on the Thor matched the SHA-256
 digests of their GitHub release assets.
 
 ## Power profile: let the CPU scale (20:00)
@@ -236,7 +236,7 @@ it did with pinned threads ("Thread placement" below). So the late game is not l
 side: it is limited by the GPU work per frame and the game waiting on it. The levers left are on the GPU side: less
 GPU work per frame (the 75 % render scale gave about 2 FPS, "Not kept" above) or a faster driver path.
 
-*Later the same day:* the GPU traces in [TURNIP.md](TURNIP.md) showed that the GPU itself worked only 37 % of the
+*Later the same day:* the GPU traces in [TURNIP.md](../how-it-works/GPU-DRIVER.md) showed that the GPU itself worked only 37 % of the
 time; the wait was vkd3d-proton holding each command buffer until the previous one finished
 (`VKD3D_CONFIG=no_staggered_submit`, +12 % in the skirmish benchmark).
 

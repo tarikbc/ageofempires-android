@@ -223,7 +223,7 @@ Immediately afterwards the container booted and everything downstream worked:
 - `wineserver`, `services.exe`, `winedevice`, `plugplay`, `explorer`, `winhandler` all started
 - the game launched and wrote a real `warnings.log`
 - `smctest` could finally be run — which is what confirmed the SMC trap
-  ([`SMC-TRAP.md`, part 2](../how-it-works/SMC-TRAP.md#part-2-confirmed-fex-leaks-its-smc-write-trap-to-the-guest))
+  ([`SMC-TRAP.md`, part 2](../../how-it-works/SMC-TRAP.md#part-2-confirmed-fex-leaks-its-smc-write-trap-to-the-guest))
 
 Selection is what matters, not importing: `proton-11.0-99-arm64ec-1` was **already installed** (it is the
 original `proton-11.0-99-arm64ec.wcp` still on the device, the `-1` being its versionCode). Re-importing

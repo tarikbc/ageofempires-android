@@ -10,7 +10,7 @@ First trustworthy run in this session with thread-state sampling. It changes the
 ## The run
 
 Launched through **Play** after a clean app restart. Verified as a real run by the guard recorded in
-[EXPERIMENTS.md](EXPERIMENTS.md): the process began at 5 threads and **grew to 18–22**.
+[EXPERIMENTS.md](../LEDGER.md): the process began at 5 threads and **grew to 18–22**.
 
 Sampled every 5 seconds with `/proc/<pid>/task/*/stat`, state parsed after the last `)` so a comm
 containing spaces cannot shift the field.

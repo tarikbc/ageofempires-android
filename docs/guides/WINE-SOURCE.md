@@ -6,7 +6,7 @@ Valve's and upstream Wine (marked "research" below where I did not re-check each
 ## The device's Wine is GameNative's Proton 11.0-1 ARM64EC
 
 - The container's Wine Version is shown as `proton-11.0-99-arm64ec-1`. Its `ntdll.dll` (SHA-256 `606d0a2f…`,
-  the "pristine" ntdll in [NTDLL-NEVER-LOADED.md](../research/NTDLL-NEVER-LOADED.md)) is byte-identical to the one in
+  the "pristine" ntdll in [NTDLL-NEVER-LOADED.md](../research/archive/NTDLL-NEVER-LOADED.md)) is byte-identical to the one in
   GameNative's official download `proton-11.0-1-arm64ec.wcp` (research). The "-99" name comes from an
   earlier manual import, not from a different build.
 - The DLL carries the build path `/home/runner/work/proton-wine/proton-wine`: it was built by GitHub Actions in
@@ -43,7 +43,7 @@ among others. According to the research none of them is in `7c98acd6`. It does c
 `NtGetContextThread` on another thread suspends and resumes that thread internally.
 
 Why this matters here: the Aegis kill is a mass `SuspendThread`, and in run 1 the suspended main thread
-reported `rip=6578653414`, an address outside every module ([KILL-REMEASURED.md](../research/KILL-REMEASURED.md) samples).
+reported `rip=6578653414`, an address outside every module ([KILL-REMEASURED.md](../research/archive/KILL-REMEASURED.md) samples).
 If Aegis inspects suspended threads, a wrong context could be what it reacts to. **That is a hypothesis.**
 
 ## A newer build exists

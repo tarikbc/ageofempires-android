@@ -85,7 +85,7 @@ Opened during a game. Items used on 2026-10-07:
   Settings, Performance, "Enable in-game power control by default".
 
 **The menu pauses the game.** A 23.9 s stay in it was followed by AoE IV exiting with code 1 about 1 s later; a
-9.3 s stay was not ([RESEARCH-LOG.md](../research/RESEARCH-LOG.md), known limits).
+9.3 s stay was not ([RESEARCH-LOG.md](../research/LOG.md), known limits).
 
 A list at the bottom (`Mode` / `Task` / `Settings`, `60 FPS MODE`, `Top screen`, …) belongs to the AYN
 device panel, not GameNative — ignore those entries when parsing.
@@ -101,7 +101,7 @@ copy /y "C:\windows\system32\xtajit64.dll" D:\aoe\xtajit_now.dll >nul
 copy /y "C:\windows\system32\libarm64ecfex.dll" D:\aoe\libfex_now.dll >nul
 ```
 
-then check offset `0x28644` (see [FEX-VENDOR-LEAK.md](../how-it-works/FEX-VENDOR-LEAK.md)) and confirm which module the
+then check offset `0x28644` (see [FEX-VENDOR-LEAK.md](../research/archive/FEX-VENDOR-LEAK.md)) and confirm which module the
 game process actually loaded with `modchk`, or which one a fresh process loads via `dbgprobe`'s module
 list.
 

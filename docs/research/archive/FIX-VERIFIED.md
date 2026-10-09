@@ -26,7 +26,7 @@ Corrected twice, both times after being wrong.
 | `VirtualProtect` reports previous | `0x20` | **`0x40`** |
 
 FEX no longer silently removes write permission from the guest's own pages. That defect was real
-([`SMC-TRAP.md`, part 2](../how-it-works/SMC-TRAP.md#part-2-confirmed-fex-leaks-its-smc-write-trap-to-the-guest)) and is fixed. This part stands.
+([`SMC-TRAP.md`, part 2](../../how-it-works/SMC-TRAP.md#part-2-confirmed-fex-leaks-its-smc-write-trap-to-the-guest)) and is fixed. This part stands.
 
 ## 2. But that patch regresses the game — and my first claim about it was wrong
 

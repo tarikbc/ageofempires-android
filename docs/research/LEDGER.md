@@ -29,7 +29,7 @@ the kill *suspends* the threads and leaves the process hung, so `ps` still shows
 | Healthy backend session for the whole run | **Still died** — so session loss is not causal |
 | Hide FEX's SMC trap from the guest (patch 0004: `NtQueryVirtualMemory` and `NtProtectVirtualMemory` report the guest's own protection; trap still armed, verified with `smctest2`) | **Killed 5 of 5.** In-game counters: 732,206 queries filtered, 0 touched a trapped page. [`SMC-TRAP.md`, part 3](../how-it-works/SMC-TRAP.md#part-3-hiding-fexs-smc-trap-does-not-stop-the-aegis-kill) |
 | No session drop (`errno=10038` absent in runs 4 and A1, 2026-10-06) | Killed on time anyway |
-| x86-64 Wine under Box64 (`proton-11.0-1-x86_64`, `proton-10.0-4-x86_64`) | **Blocked, not a result:** dies within seconds (execute fault at `ucrtbase.dll`'s entry; or in `Config File` after 16,394 illegal-instruction exceptions). [BOX64-ROUTE.md](BOX64-ROUTE.md) |
+| x86-64 Wine under Box64 (`proton-11.0-1-x86_64`, `proton-10.0-4-x86_64`) | **Blocked, not a result:** dies within seconds (execute fault at `ucrtbase.dll`'s entry; or in `Config File` after 16,394 illegal-instruction exceptions). [BOX64-ROUTE.md](archive/BOX64-ROUTE.md) |
 | `SMCChecks`: `none` | Exits ~2 min |
 | `SMCChecks`: `full` | Hangs at launch from Play (config dated 00:12 on 2026-10-06, before the round-17 debug channels; reproduced on the clean baseline at 21:13). Note: full mode keeps the trap armed in this FEX revision. |
 | `SMCChecks`: `mtrack` (default) | The freeze described here |
@@ -39,7 +39,7 @@ the kill *suspends* the threads and leaves the process hung, so `ps` still shows
 | Tried | Why it proves nothing |
 |---|---|
 | "Original vs patched Wine `ntdll`" | The **mapped** ntdll is pristine; Wine loads its own tree's ntdll, not `system32`'s. Both patches have never executed. Any conclusion from this is worthless. |
-| Evening runs, 19:52 to 20:29 on 2026-10-06 ("patched FEX regresses", "the wall is MapGen", the X-connection reading) | Launched with leftover `WINEDEBUG=+thread,+sync,+virtual,+timestamp,+tid` from round 17, which slowed the game until it stalled in `Property Bag Manager`. See [WINEDEBUG-LEFTOVER.md](WINEDEBUG-LEFTOVER.md). |
+| Evening runs, 19:52 to 20:29 on 2026-10-06 ("patched FEX regresses", "the wall is MapGen", the X-connection reading) | Launched with leftover `WINEDEBUG=+thread,+sync,+virtual,+timestamp,+tid` from round 17, which slowed the game until it stalled in `Property Bag Manager`. See [WINEDEBUG-LEFTOVER.md](archive/WINEDEBUG-LEFTOVER.md). |
 
 ## Confirmed working (infrastructure)
 
@@ -60,7 +60,7 @@ the kill *suspends* the threads and leaves the process hung, so `ps` still shows
 
 | Problem | Fix |
 |---|---|
-| **Container would not start.** Box64: `Error: File is not found. (wine)`, searching `…/imagefs/opt/wine/bin/`. Nothing else worked: no Wine process at all, for ~10 rounds. | The container's **Wine Version** was `proton-11.0-1-arm64ec-aoefix-1`, a bundle imported earlier that never worked, and `Z:\opt\` only ever showed `proton-11.0-99-arm64ec-1` — so it named a tree that did not exist. Set Wine Version to **`proton-11.0-99-arm64ec-1`**, Save. It booted immediately, and everything downstream (the game log, `smctest`, the whole SMC investigation) became possible. See [CONTAINER-WONT-START.md](CONTAINER-WONT-START.md). |
+| **Container would not start.** Box64: `Error: File is not found. (wine)`, searching `…/imagefs/opt/wine/bin/`. Nothing else worked: no Wine process at all, for ~10 rounds. | The container's **Wine Version** was `proton-11.0-1-arm64ec-aoefix-1`, a bundle imported earlier that never worked, and `Z:\opt\` only ever showed `proton-11.0-99-arm64ec-1` — so it named a tree that did not exist. Set Wine Version to **`proton-11.0-99-arm64ec-1`**, Save. It booted immediately, and everything downstream (the game log, `smctest`, the whole SMC investigation) became possible. See [CONTAINER-WONT-START.md](archive/CONTAINER-WONT-START.md). |
 
 **Two diagnoses made along the way were wrong, and both looked convincing:**
 
@@ -81,7 +81,7 @@ pointing at a tree that was never installed.
 | 20:58 | `b4dbf32d` (no-trap, patches 0001 + 0003) | Never starts: one Windows thread (the main thread), 0 % CPU, no log, for 3+ minutes. |
 | 21:13 | `460568b8` with `SMCChecks=2` (full; trap still armed) | Same as 20:58: one Windows thread, 0 % CPU, no log. Removing the trap is not needed for this stop; full-SMC validation is the shared factor. |
 
-Details in [KILL-REMEASURED.md](KILL-REMEASURED.md).
+Details in [KILL-REMEASURED.md](archive/KILL-REMEASURED.md).
 
 A failed launch is not a result: GameNative sometimes hangs on "Syncing cloud saves" after Play (run A4).
 Force-stop the app and start again; `run_watch.py --launch` now does this after 90 s.

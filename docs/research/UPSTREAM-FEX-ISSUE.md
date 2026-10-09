@@ -8,7 +8,7 @@
 > **Note (2026-10-06).** The leak is real and reproducible with `tools/research/smctest2.c`, but it is not what breaks
 > AoE IV ([`SMC-TRAP.md`, part 3](../how-it-works/SMC-TRAP.md#part-3-hiding-fexs-smc-trap-does-not-stop-the-aegis-kill)). A fix that keeps the trap and corrects the query results
 > is `patches/fex/0004`. Separately, `SMCChecks=full` stops AoE IV at start-up
-> ([KILL-REMEASURED.md](KILL-REMEASURED.md)), which may deserve its own issue.
+> ([KILL-REMEASURED.md](archive/KILL-REMEASURED.md)), which may deserve its own issue.
 
 Ready to file against [FEX-Emu/FEX](https://github.com/FEX-Emu/FEX). Written to stand on its own:
 it is a correctness bug independent of any game.

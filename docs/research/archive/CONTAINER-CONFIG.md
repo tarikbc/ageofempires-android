@@ -56,13 +56,13 @@ control: AoE backend               ok  err=0  http=200    881 ms
 ```
 
 So `12152`/`12157` are **downstream of the asio/openssl failure** (`errno=10038`, the
-[`NETWORK.md`, part 2](../research/NETWORK.md#part-2-the-kill-is-downstream-of-losing-the-backend-session) chain) and not an endpoint problem. Several rounds went into
+[`NETWORK.md`, part 2](NETWORK.md#part-2-the-kill-is-downstream-of-losing-the-backend-session) chain) and not an endpoint problem. Several rounds went into
 "Wine cannot do the game's HTTP" — that was the wrong thread, and this closes it.
 
 ## Still true
 
 The session-loss chain was already shown not to cause the kill
-([KILL-STILL-OPEN.md](../research/KILL-STILL-OPEN.md)), so this does not change the kill picture directly. What it
+([KILL-STILL-OPEN.md](KILL-STILL-OPEN.md)), so this does not change the kill picture directly. What it
 does change is leverage: **`envVars` is now an editable channel** for anything FEX or Wine reads from
 the environment — `FEX_TSOENABLED`, `FEX_MULTIBLOCK`, `FEX_X87REDUCEDPRECISION`, `BOX64_*`, `WINEDEBUG` —
 and `extraData` names the Wine version and FEXCore content the container uses.
@@ -119,7 +119,7 @@ of:
 
 That is the Wine `RtlWaitOnAddress` / `RtlWakeAddress` pathology this repo has a patch for
 (`patches/experiments/proton-arm64ec-ntdll/waitq_fix.s`), and **that patch has never been loaded** — the deployed
-ntdll is pristine ([NTDLL-NEVER-LOADED.md](../research/NTDLL-NEVER-LOADED.md)). The earlier note that it "did not
+ntdll is pristine ([NTDLL-NEVER-LOADED.md](NTDLL-NEVER-LOADED.md)). The earlier note that it "did not
 stop the AoE IV freeze" is therefore worthless, and the kill correlating with this storm means the
 waitq fix is genuinely untested rather than disproved.
 

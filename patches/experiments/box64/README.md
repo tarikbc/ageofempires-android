@@ -6,7 +6,7 @@ applied in order (checked with `git apply` on a clean checkout, 2026-10-07):
 | Patch | What it does | Status |
 |---|---|---|
 | `0001` | Decode SSE/AVX memory stores, so a fault on them reaches Wine as a write | built and used since 2026-10-05 (`0.4.5-aoefix`) |
-| `0002` | Keep the guest's `PROT_EXEC` when the host refuses it (files on Android's `noexec` shared storage) | verified: the game's own DLLs run ([BOX64-ROUTE.md](../../../docs/research/BOX64-ROUTE.md)) |
+| `0002` | Keep the guest's `PROT_EXEC` when the host refuses it (files on Android's `noexec` shared storage) | verified: the game's own DLLs run ([BOX64-ROUTE.md](../../../docs/research/archive/BOX64-ROUTE.md)) |
 | `0003` | Send raw Windows syscalls to Wine's dispatcher when Wine installed no seccomp `SIGSYS` handler (39-bit address space) | verified: the game passes its syscall gateway and writes its log |
 
 ## Build (macOS host, as done on 2026-10-07)

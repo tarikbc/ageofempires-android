@@ -60,7 +60,7 @@ FEX per-thread counters, 42 s window during loading (about 1 to 1.7 minutes into
 | `013c` (main) | 0.155 s/s | 0.114 s/s | 1,960/s | 1,114/s |
 
 So the loop thread spends about 40 % of its time compiling code and handling exceptions. The protection keeps its
-functions encrypted and decrypts one when it is called (the `c000001d` traps of [KILL-TIMER.md](../research/KILL-TIMER.md)), so
+functions encrypted and decrypts one when it is called (the `c000001d` traps of [KILL-TIMER.md](../research/archive/KILL-TIMER.md)), so
 under FEX each call means a self-modifying-code event, a recompile, and an exception.
 
 `tools/probes/exccost.c` measured a handled illegal-instruction exception (vectored handler, `ud2`) at 111 us

@@ -1,12 +1,12 @@
 # The game's module list is full of names Windows does not have
 
 > **Status: ruled out as the trigger.** The emulator DLL name was tested before this session
-> (`xtajit64.dll`) and the game still died — see [EXPERIMENTS.md](EXPERIMENTS.md). The FEX-branded name
+> (`xtajit64.dll`) and the game still died — see [EXPERIMENTS.md](../LEDGER.md). The FEX-branded name
 > is a real cosmetic regression worth reverting, but it is **not** the cause, and no further rounds
 > should be spent on it. Left here as a record of the module names, which remain interesting for the
 > hash hypothesis in [KILL-ANALYSIS.md](KILL-ANALYSIS.md).
 
-Aegis carries a **386-item blocklist** ([AEGIS.md](../how-it-works/AEGIS.md)). Enumerating what the game actually has
+Aegis carries a **386-item blocklist** ([AEGIS.md](../../how-it-works/AEGIS.md)). Enumerating what the game actually has
 loaded, 85 modules, turns up several names that cannot exist on a real Windows machine:
 
 | module | why it is a giveaway |

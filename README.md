@@ -37,7 +37,7 @@ drivers in circulation.
   - `fexcore-aoe4-perf6.wcp` (900 KB), the patched FEX for AoE IV (v1.4.0, with patch 0017). For AoE II DE use
     `fexcore-aoe4-perf5.wcp` from the same release: that is the package tested with AoE II.
   - For AoE IV: `turnip-main-c78a9e9.zip` (2.7 MB), Mesa's Turnip driver built from its 2026-10-08 main branch
-    ([TURNIP.md](docs/guides/TURNIP.md)).
+    ([TURNIP.md](docs/how-it-works/GPU-DRIVER.md)).
 
 ## Setup
 
@@ -71,7 +71,7 @@ Open the game in GameNative, tap the **cog** next to Play, then **Edit container
 Then tap **Save** (top right). What the three variables do: `WINEDEBUG=-all` stops Wine's debug output even when
 GameNative's Wine debug setting is on; `FEX_EXP_SKIP_CALLRET_RESET=1` turns on one of the package's patches (about
 twice the FPS); `VKD3D_CONFIG=no_staggered_submit` stops vkd3d-proton from holding each GPU submission until the
-previous one finished (+12 % FPS, [TURNIP.md](docs/guides/TURNIP.md)).
+previous one finished (+12 % FPS, [TURNIP.md](docs/how-it-works/GPU-DRIVER.md)).
 
 | | |
 |---|---|
@@ -148,7 +148,7 @@ against one A.I., a 90 s window at minute 48 with the player's own camera, the C
 | + `VKD3D_CONFIG=no_staggered_submit` (two runs) | 47.3 and 48.5 (47.0 at minute 46) | 86 and 57 (79 at minute 46) |
 
 In the late game the variable gains little and makes the frame times uneven: about 60 to 90 frames of 50 ms or more
-per 90 s window against 15 without it ([TURNIP.md](docs/guides/TURNIP.md)).
+per 90 s window against 15 without it ([TURNIP.md](docs/how-it-works/GPU-DRIVER.md)).
 
 During that game, played before the repo's driver existed, GameNative's FPS counter read high 20s to low 30s, and
 about 24 in the big late-game battles. The CPU runs hot in long sessions: the hottest CPU sensor read about 95 °C
@@ -175,7 +175,7 @@ benchmark the game's main thread used 95 % of one core: the emulated CPU work li
   exited once (a 9 s pause was fine).
 - **A "video card's installed driver version" dialog** can block loading after its one-day "Don't show this
   message" choice expires. GameNative's touch input did not reach its button in our tests; the repo's helper
-  `tools/probes/dlgclick` clicks it from adb ([RESEARCH-LOG.md](docs/research/RESEARCH-LOG.md), Traps).
+  `tools/probes/dlgclick` clicks it from adb ([RESEARCH-LOG.md](docs/research/LOG.md), Traps).
 - **GameNative's "Save Conflict" dialog** asks which save to keep when the local and the cloud save both changed.
   Pick the one from where you played last.
 - **Other graphics drivers:** StevenMXZ's Turnip v26.2.0 R4 and v26.3.0-R6 run the game at 41 FPS, purple-turnip
@@ -227,12 +227,12 @@ frames in the benchmark. ([TUNING.md](docs/guides/TUNING.md), "Exceptions withou
 
 **The graphics driver** (v1.3.0) is Mesa's Turnip built from its 2026-10-08 main branch. The Turnip builds in
 circulation waited for the GPU on every submit because of a kernel-driver quirk (fixed in Mesa that day), so the
-game's render thread spent about 10 ms per frame waiting: 41 → 52 FPS. ([TURNIP.md](docs/guides/TURNIP.md))
+game's render thread spent about 10 ms per frame waiting: 41 → 52 FPS. ([TURNIP.md](docs/how-it-works/GPU-DRIVER.md))
 
 **The vkd3d-proton setting.** GPU traces then showed the GPU working only 37 % of the time. Turnip offers one Vulkan
 queue, so the game's graphics, compute and copy queues all share it, and vkd3d-proton 2.14.1 then resolves fence
 waits on the CPU and keeps one command buffer in flight per queue. `VKD3D_CONFIG=no_staggered_submit` turns that
-off: 52 → 58 FPS. ([TURNIP.md](docs/guides/TURNIP.md), "What the GPU waits for")
+off: 52 → 58 FPS. ([TURNIP.md](docs/how-it-works/GPU-DRIVER.md), "What the GPU waits for")
 
 **Age of Empires II: DE** (protected with Arxan) crashed about 1 s after the start with GameNative's own FEX 2512,
 inside code it decrypts at run time. Every FEX build from this repo fixes it. Plain upstream FEX-2610 gets past that
@@ -260,7 +260,7 @@ All against FEX `7d3090f`, in this order ([patches/fex](patches/fex)):
 
 The package's DLL is `libarm64ecfex.dll`, SHA-1 `7e707379` in `aoe4-perf6` (v1.4.0; `b5e6e357` in `aoe4-perf5`, which stops at 0016). Since v1.1.0 the package leaves out patch 0002, which hid
 FEX's name from the game: the game runs the same without it. To build it yourself:
-[BUILDING-FEX.md](docs/guides/BUILDING-FEX.md) and [`tools/make_fex_wcp.py`](tools/make_fex_wcp.py). The driver:
+[BUILDING-FEX.md](docs/guides/BUILDING.md) and [`tools/make_fex_wcp.py`](tools/make_fex_wcp.py). The driver:
 [`tools/build_turnip.sh`](tools/build_turnip.sh).
 </details>
 
@@ -287,7 +287,7 @@ Which patch is which: [patches/fex](patches/fex#upstream-2026-10-08). The driver
 ## The whole story
 
 Getting here took a long investigation: what AoE IV's protection checks, what was ruled out, and every measurement.
-Start at the [docs index](docs/README.md), or read the full [research log](docs/research/RESEARCH-LOG.md).
+Start at the [docs index](docs/README.md), or read the full [research log](docs/research/LOG.md).
 
 | Folder | What is in it |
 |---|---|
