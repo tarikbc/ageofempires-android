@@ -1,5 +1,7 @@
 # Trying to drive GameNative without tapping
 
+> **Archived.** Driving GameNative without taps (2026-10-06). The lessons (lock check, HOME first, the `appid` intent) are in [GAMENATIVE.md](../../guides/GAMENATIVE.md); the "container will not start" story ended in [CONTAINER-WONT-START.md](CONTAINER-WONT-START.md) (a wrong Wine Version). The story: [STORY.md](../../STORY.md).
+
 Repeated rounds were lost to `input tap` not registering in GameNative's dialogs. These are the
 alternatives found, and how each turned out.
 

@@ -108,7 +108,8 @@ writable executable regions. Cost is bounded to those blocks rather than the who
 is what makes `SMCChecks=full` unusable.
 
 See [`patches/fex/0001-hide-smc-trap-from-guest.patch`](../../patches/fex/0001-hide-smc-trap-from-guest.patch).
-**Written, not built or tested** — ARM64EC FEX needs llvm-mingw, which is not installed here.
+**Written, not built or tested** at the time of writing. Built later the same day (with 0003, DLL `b4dbf32d`): the game
+stops at start-up ([KILL-REMEASURED.md](../research/archive/KILL-REMEASURED.md), run 2), so the package uses 0004 instead.
 
 
 ### Update (round 31): the crux is verified in source
@@ -128,7 +129,7 @@ So the mechanism is confirmed statically. What remains unconfirmed is the runtim
 guest really does read back `PAGE_EXECUTE_READ` for a page it set to `PAGE_EXECUTE_READWRITE`. That is
 exactly what `tools/research/smctest.c` measures, and it takes seconds once a session can start.
 
-Drafted upstream report: [UPSTREAM-FEX-ISSUE.md](../research/UPSTREAM-FEX-ISSUE.md).
+Upstream report (filed as FEX issue #6023): [UPSTREAM.md](../research/UPSTREAM.md#appendix-a-fex-issue-6023-the-smc-write-trap-is-observable-by-the-guest).
 
 ## Part 2: CONFIRMED: FEX leaks its SMC write trap to the guest
 
@@ -207,7 +208,7 @@ trap leak ([part 2](#part-2-confirmed-fex-leaks-its-smc-write-trap-to-the-guest)
 
 [`patches/fex/0004-report-guest-protection-for-trapped-pages.patch`](../../patches/fex/0004-report-guest-protection-for-trapped-pages.patch),
 against FEX `7d3090f` (the revision the device runs), built together with patch 0002 (CPUID) following
-[BUILDING-FEX.md](../guides/BUILDING.md). The committed patch is the fix2 version described below; the "fix" build
+[BUILDING.md](../guides/BUILDING.md). The committed patch is the fix2 version described below; the "fix" build
 is the same without fix2's two additions.
 
 It keeps FEX's default `mtrack` trap, so self-modifying code is still caught, and corrects what the guest
@@ -297,7 +298,7 @@ same ntdll export and are counted too.
 ### What this settles, and what it does not
 
 - **Settled:** the trap's visibility through `NtQueryVirtualMemory` and `NtProtectVirtualMemory` is not
-  needed for the kill. Hypothesis 2 in the README, as stated, is ruled out.
+  needed for the kill. Hypothesis 2 of the research log ([LOG.md](../research/LOG.md)), as stated, is ruled out.
 - **Settled:** the session drop is not needed either. Runs 4 and A1 had no `errno=10038` and were killed on
   time.
 - **Not covered by the fix:** timing (a trapped write costs a fault), and protection changes seen from
@@ -309,5 +310,5 @@ same ntdll export and are counted too.
 
 - `SMCChecks=full` and the no-trap build both stop at start-up ([KILL-REMEASURED.md](../research/archive/KILL-REMEASURED.md));
   patch 0004 does not have that problem, because it adds no validation.
-- Building FEX from a fresh clone of `7d3090f` with the three macOS fixes in BUILDING-FEX.md takes about a
+- Building FEX from a fresh clone of `7d3090f` with the three macOS fixes in BUILDING.md takes about a
   minute with `ninja arm64ecfex`.

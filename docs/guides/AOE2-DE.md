@@ -58,7 +58,8 @@ Whether the package still needs it was not tested.
 
    So neither 0007 nor 0010 nor 0012 to 0014 is the fix (and not 0002, which v1.2.0 does not have). Newer FEX gets
    past the start-up crash on its own, but plain upstream still exits before the menu, so at least one of this repo's
-   patches (0004, 0006, 0010, 0012 to 0014) is needed for the rest; not narrowed down further. The package was not
+   other patches (0004, 0006, 0009, 0015, 0016; FEX-2610 is also a different base than `7d3090f`) is needed for the
+   rest; not narrowed down further. The package was not
    tried with `proton-9.0-arm64ec`.
 
 ## Speed

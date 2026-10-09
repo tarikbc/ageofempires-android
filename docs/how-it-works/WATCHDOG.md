@@ -21,7 +21,8 @@ instruction, FEX emits its `Print` IR op for a marker and the 16 guest registers
 the frontend routes `PrintValue` into the dump buffer. Only `cmp`/`test` instructions and plain stores were watched,
 and FEX spills NZCV around the call, so the guest flags are kept. A second experiment gives every game thread a FEX
 `ThreadStats` slot in an in-memory table, so FEX's own JIT-time, signal-time and SMC counters run without the
-shared-memory unix helper. These two experiments are not yet in `patches/`.
+shared-memory unix helper. These two experiments are not in `patches/`, nor are the later counter builds
+(`THRSTAT1`, `FASTTRP1`) used in the speed work.
 
 ### The loop and the bucket
 
@@ -178,7 +179,8 @@ container was restarted.
 ### The patch
 
 [`0010-fast-continue-to-x64.patch`](../../patches/fex/0010-fast-continue-to-x64.patch), on top of 0004 (it uses
-0004's `__wine_syscall_dispatcher` hook), off unless `FEX_EXP_FASTCONTINUE=1`. For an `NtContinue` with
+0004's `__wine_syscall_dispatcher` hook), off unless `FEX_EXP_FASTCONTINUE=1` in the first builds (on by default since
+build `eca1e25b`; `FEX_EXP_FASTCONTINUE=0` turns it off). For an `NtContinue` with
 `alertable == FALSE`, a full context (control, integer and floating point) and a target that `RtlIsEcCode` does
 not report as ARM64EC code, the hook does what Wine does after the round trip: it copies the context near the top
 of the emulator stack and jumps to ntdll's `KiUserEmulationDispatcher` there. `KiUserEmulationDispatcher` converts

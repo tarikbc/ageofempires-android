@@ -1,5 +1,7 @@
 # You can edit the container config from inside Wine
 
+> **Archived.** How to edit the container config from inside Wine (2026-10-06). The how-to parts are in [GAMENATIVE.md](../../guides/GAMENATIVE.md). The winhttp and verbose-channel findings belong to the network and ntdll leads, both closed; the lead called "now the priority" below was void. The story: [STORY.md](../../STORY.md).
+
 The single most useful thing found in this session. GameNative's live container configuration is a
 plain JSON file **inside the imagefs**, so it can be read and written with nothing but `cmd` in a
 running session — no UI, no tapping, no `.wcp` import.

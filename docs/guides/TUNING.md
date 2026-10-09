@@ -1,11 +1,25 @@
-# Tuning after the FEX fixes: what helps and what does not
+# Settings for AoE IV: what helps and what does not
 
-Measured on 2026-10-07, 15:59 to 18:43, with FEX build `6990a221` (patches through 0014) and the automated skirmish test
-(`tools/bench.py run`, 90 s of compositor frame times at match minutes 1 and 5). Each change was tested alone and
-reverted unless kept. Run-to-run spread with the same setup was about ±1 FPS (43.8 / 44.2 against 45.6 / 45.3 for two
-120 Hz runs).
+The settings of the tested setup, each with the measurement behind it, and every setting that was measured and not
+kept. The setup itself (where to click) is in the [README](../../README.md#setup). The dated measurements are in
+[PERFORMANCE.md](../research/PERFORMANCE.md); the fixes in the package and the driver are in
+[how-it-works](../how-it-works).
 
-## Kept: the display at 120 Hz
+## In use
+
+| Setting | Where | Value | Why |
+|---|---|---|---|
+| Display refresh rate | Thor quick settings, before the game starts | 120 Hz | Frames wait for the next 8.3 ms step instead of 16.7 ms; long frames almost disappear (below) |
+| FEX package | container, Emulation | `aoe4-perf6-30` | The protection fixes and the speed patches ([patches/fex](../../patches/fex)) |
+| Graphics driver | container, Graphics | `turnip-main-c78a9e9` | +27 % FPS ([GPU-DRIVER.md](../how-it-works/GPU-DRIVER.md)) |
+| `VKD3D_CONFIG` | container, Environment | `no_staggered_submit` | +12 % FPS in the skirmish, a less even late game ([VKD3D-SUBMIT.md](../how-it-works/VKD3D-SUBMIT.md)) |
+| `FEX_EXP_SKIP_CALLRET_RESET` | container, Environment | `1` | Turns on patch 0009. On 2026-10-07, before patches 0012 to 0014, the match HUD read 8.0 FPS without it and 22.8 to 29.5 with it ([LOG.md](../research/LOG.md), "Speed before 0012/0013"). Not re-measured on the current package |
+| `WINEDEBUG` | container, Environment | `-all` | Keeps Wine's debug output off even when GameNative's Wine debug setting is on (below) |
+| Power profile, CPU | container power profile | scaling, 307 MHz to 3187 MHz, `SCHEDUTIL` | Holding the maximum gave no FPS and no lower temperature; a cap near 2 GHz cost the late game 36.0 → 27.8 FPS (below) |
+| Power profile, GPU | container power profile | levels 8 and 8 (680 MHz) | About +2 FPS in the late game, nothing in the early game (below) |
+| Game graphics | game settings | 1280 × 720, render scale 100 %, `verticalsync` off, `frameratelimit` 0 | As found; a 75 % render scale gave +2 FPS in the late game but a softer picture and more long frames |
+
+## The display at 120 Hz
 
 The Thor's main screen supports 60 and 120 Hz (`dumpsys display`: modes 1 and 2), but the system settings
 `peak_refresh_rate` and `min_refresh_rate` were both `60.0`. At 60 Hz **every frame was a whole number of 16.7 ms
@@ -13,7 +27,7 @@ refreshes** (0 of 4,103 frames off a step): 2,568 frames took one refresh and 1,
 18 ms was shown for 33.4 ms.
 
 With both settings at 120 (`settings put system peak_refresh_rate 120.0`, the same for `min_refresh_rate`, or the
-refresh-rate tile in quick settings):
+refresh-rate tile in quick settings), skirmish benchmark of 2026-10-07 with the v1.0.0 package and Turnip R4:
 
 | | FPS minute 1 / 5 | median frame | frames > 50 ms (per 90 s) |
 |---|---|---|---|
@@ -22,54 +36,43 @@ refresh-rate tile in quick settings):
 | 120 Hz (17:58, same setup again) | 43.8 / 44.2 | 25.3 ms | 4 / 1 |
 
 At 120 Hz the steps are 8.3 ms: 1,868 frames took two refreshes and 2,305 took three, so the game's own frame time is
-about 20 to 22 ms. The gain in average FPS is small, but the long frames almost disappear.
+about 20 to 22 ms. The gain in average FPS is small, but the long frames almost disappear. Run-to-run spread with the
+same setup was about ±1 FPS.
 
 **The game must be started after the change.** GameNative votes a frame rate for its game surface when it creates it:
 its refresh-rate limit if set, else the screen's current rate (`VulkanRenderer.applyScanoutFrameRateHint`). With the
 game already running at 60 Hz, the main screen stayed at 60 Hz after the settings change (SurfaceFlinger
 `refresh-rate: 60.00 Hz`, only the second screen switched); after the next start it ran at 120 Hz.
 
-## Graphics drivers (19:02 to 19:57)
+## Power profile
 
-Same test at 120 Hz, the drivers installed with `tools/gn_driver.py` (GameNative Driver Manager, then the container's
-Graphics Driver Version). Temperatures from `tools/thermals.py` (hottest CPU sensor and the mean of all CPU sensors,
-hottest GPU sensor), sampled every 3 s in each window. These runs came after hours of back-to-back tests, so the
-Thor was hot; earlier the same R4 setup gave 43.8 to 45.6 FPS.
+GameNative applies the container's power profile (`.config/.power-profile`, edited in its Power Control tab) at every
+game start. It sets the CPU limits per core group and the GPU power levels (GameNative writes sysfs level = 8 minus
+the value).
 
-| Driver | FPS minute 1 / 5 / 7 | frames > 50 ms | frames > 100 ms | CPU hottest / mean | GPU hottest |
-|---|---|---|---|---|---|
-| **Turnip v26.2.0 R4** (in use) | 42.1 / 42.1 / 42.2 | 2 / 2 / 2 | 2 / 0 / 0 | 95.1 to 95.5 / 81.9 to 83.6 °C | 75.2 to 77.2 °C |
-| Turnip v26.3.0-R6 (StevenMXZ, 2026-09-30) | 42.4 / 42.6 / 41.9 | 4 / 0 / 2 | 1 / 0 / 1 | 94.3 / 81.7 °C (minute 7) | 75.2 °C |
-| Turnip T30 (MrPurple666 purple-turnip, Mesa 26.3.0, 2026-08-17) | 39.7 / 39.8 / - | 6 / 2 | 2 / 0 | not recorded | GPU 69 to 73 % busy |
-| Balemuni Apex v2 ULTIMATE SD 8 Gen 2 (Mesa 26.3.0-devel `b9a2bf3`, 2026-08-26) | - | - | - | - | - |
-
-**Balemuni Apex v2 stops the game** about two minutes after the start, twice in two runs (19:04:32 and 19:09:19):
-`Failed to wait for DX12 fence (error 102). Initial value: 3688, Expected value: 3689, Actual value: 3688` then
-`-- FATAL EXIT --` in the game's log (error 102 is a wait timeout: the GPU did not finish the submitted work). Its
-`meta.json` name contains `/`, and GameNative installed it under the folder name `tmp`.
-
-R4 and R6 are the same within the test's spread; R4 stayed until 2026-10-08, when a Turnip built from Mesa main gave
-52.3 FPS in this test ([TURNIP.md](../how-it-works/GPU-DRIVER.md)). Checksums: the Balemuni and T30 files on the Thor matched the SHA-256
-digests of their GitHub release assets.
-
-## Power profile: let the CPU scale (20:00)
-
-Until then the container's GameNative power profile held every CPU core at its maximum clock (`minCpuFreq` =
+**CPU: let it scale.** Until 2026-10-07 20:00 the profile held every CPU core at its maximum clock (`minCpuFreq` =
 `maxCpuFreq` = 3187200). With the minimum released (`"minCpuFreq":307200`, `"maxCpuFreq":3187200`, governor
-`SCHEDUTIL`, GPU levels 7 and 8 as before), same test, R4 driver, right after the R4 run above:
+`SCHEDUTIL`, GPU levels 7 and 8), same test, R4 driver, right after the run with the held clock:
 
 | CPU minimum | FPS minute 1 / 5 / 7 | frames > 50 ms | frames > 100 ms | CPU hottest / mean | GPU hottest | prime core |
 |---|---|---|---|---|---|---|
 | held at 3187 MHz | 42.1 / 42.1 / 42.2 | 2 / 2 / 2 | 2 / 0 / 0 | 95.1 to 95.5 / 81.9 to 83.6 °C | 75.2 to 77.2 °C | 3187 MHz |
 | 307 MHz (scaling) | 43.9 / 44.1 / 44.0 | 1 / 2 / 2 | 0 / 1 / 0 | 94.7 to 95.9 / 83.3 to 84.1 °C | 76.4 to 77.2 °C | 729 to 3187 MHz |
 
-Holding the clock brought no FPS and no lower temperature, so the scaling profile is the one in use.
+Holding the clock brought no FPS and no lower temperature, so the scaling profile is the one in use. The full clocks
+matter: with the Thor's own `performance_mode=2` capping the big cores at about 1.9 GHz, the late game ran at 27.8 FPS
+instead of 36.0 ([PERFORMANCE.md](../research/PERFORMANCE.md), "the late game at full clocks"). A fresh game start
+re-applies the profile and lifts that cap.
 
-## `WINEDEBUG=-all` in the container: still needed here (20:39 to 20:43)
+**GPU: held at 680 MHz.** With levels 7 and 8 the GPU stayed at 615 MHz; with `"minGpuPowerLevel":8,"maxGpuPowerLevel":8`
+it runs at 680 MHz. In the early-game benchmark that gave nothing (44.7 FPS, GPU still 65 to 70 % busy); in the late
+game it gave about 2 FPS (36.7 / 36.5 to 39.0 / 38.6), so it is in use since 2026-10-08.
+
+## `WINEDEBUG=-all` in the container
 
 GameNative 1.2.1 sets `WINEDEBUG` itself and then merges the container's `envVars`, which win: `-all` when Settings →
 Debug → Wine debug is off, else `+` and the channels listed on that screen (`XServerScreen.kt`). Read from
-GameNative's own logcat line `Env Vars (Final Guest)` at three "Open container" starts:
+GameNative's own logcat line `Env Vars (Final Guest)` at three "Open container" starts on 2026-10-07:
 
 | Container `envVars` | `WINEDEBUG` given to Wine |
 |---|---|
@@ -77,314 +80,75 @@ GameNative's own logcat line `Env Vars (Final Guest)` at three "Open container" 
 | without it | `+warn` |
 | with it again | `-all` |
 
-GameNative's Wine debug setting was on here with the channel `warn` (its `wine_debug.log` was written at that start),
-so without the variable Wine would print its warnings. The variable stays. With Wine debug off in GameNative it should
-change nothing (from the code; not tested). The container's config was put back byte for byte afterwards.
+GameNative's Wine debug setting was on here with the channel `warn`, so without the variable Wine would print its
+warnings. Leftover debug channels slowed the whole game on 2026-10-06
+([archive/WINEDEBUG-LEFTOVER.md](../research/archive/WINEDEBUG-LEFTOVER.md)). With Wine debug off in GameNative the
+variable should change nothing (from the code; not tested).
 
-## A full game (2026-10-07, 22:30 to 23:24)
+## Graphics drivers compared (2026-10-07, 19:02 to 19:57)
 
-The user played a full skirmish to victory with the v1.1.0 package: 51 min 22 s on Danube River against one A.I.
-(Intermediate). GameNative's FPS counter read high 20s to low 30s for most of the game and about 24 in the big
-late-game battles (the user's reading). The benchmark below measures the first minutes of an idle 1v1, so it is far
-lighter than this. The game kept its replay (`playback\temp.rec`, 2.8 MB, overwritten by the next match); a copy
-outside the repo can serve as a repeatable late-game test.
+Skirmish benchmark at 120 Hz, the drivers installed with `tools/gn_driver.py` (GameNative Driver Manager, then the
+container's Graphics Driver Version), v1.0.0 package. These runs came after hours of back-to-back tests, so the Thor
+was hot; earlier the same R4 setup gave 43.8 to 45.6 FPS.
 
-After the match the result panel said "Retrieving..." ("Waiting to retrieve match results from the server") for
-minutes. The game log had no network error and nothing from the server after the match ended; the match then showed
-in Match History.
-
-## The late game, measured on that game's replay (2026-10-07 23:46 to 2026-10-08 00:02)
-
-The replay of that game (profile, Match History, the match, X "View Replay"; X again in the replay locks the camera to
-the player's recorded view), at 1X, measured with `tools/replay.py window` (90 s of compositor frame times, then 20 s
-of per-thread CPU). Package v1.1.0. **The CPU clocks were capped by a Thor setting the user had changed at 23:32**
-(`performance_mode=2`, governor `performance`): cores 3 to 6 at most 1.92 GHz and core 7 at most 1.98 GHz, against
-2.80 and 3.19 GHz possible; the container's GameNative power profile file was unchanged (`SCHEDUTIL`, 307 MHz to
-3.19 GHz). So these numbers are for those clocks.
-
-| Window (game time at start) | FPS | median frame | p99 | frames > 50 ms / > 100 ms | GPU busy |
+| Driver | FPS minute 1 / 5 / 7 | frames > 50 ms | frames > 100 ms | CPU hottest / mean | GPU hottest |
 |---|---|---|---|---|---|
-| 24:52 | 29.3 | 33.7 ms | 50.5 ms | 128 / 1 | 54 % at 615 MHz |
-| 42:31 | 27.4 | 33.7 ms | 59.0 ms | 283 / 0 | 55 % |
-| 46:13 | 27.8 | 33.7 ms | 59.0 ms | 270 / 0 | 54 % |
-| 48:23 | 27.8 | 33.7 ms | 59.0 ms | 264 / 2 | 55 % |
-| 50:42 (includes the end at 51:22 and the end screen) | 25.4 | 33.7 ms | 75.8 ms | 373 / 17 | 45 % |
+| Turnip v26.2.0 R4 (in use until 2026-10-08) | 42.1 / 42.1 / 42.2 | 2 / 2 / 2 | 2 / 0 / 0 | 95.1 to 95.5 / 81.9 to 83.6 °C | 75.2 to 77.2 °C |
+| Turnip v26.3.0-R6 (StevenMXZ, 2026-09-30) | 42.4 / 42.6 / 41.9 | 4 / 0 / 2 | 1 / 0 / 1 | 94.3 / 81.7 °C (minute 7) | 75.2 °C |
+| Turnip T30 (MrPurple666 purple-turnip, Mesa 26.3.0, 2026-08-17) | 39.7 / 39.8 / - | 6 / 2 | 2 / 0 | not recorded | GPU 69 to 73 % busy |
+| Balemuni Apex v2 ULTIMATE SD 8 Gen 2 (Mesa 26.3.0-devel `b9a2bf3`, 2026-08-26) | - | - | - | - | - |
 
-The late game holds at about 27.7 FPS with many frames over 50 ms, which matches the user's reading. In the four windows
-before the end the game's threads used 3.0 to 3.3 cores in total: main thread 55 to 58 % of one core, render thread 34 to 40 %, the
-protection's loop about 26 %, eight `rcss worker` threads 12 to 23 % each, audio (`AK::EventManager`) 16 to 21 %,
-`Simulation Thread` 15 to 19 %. No thread is saturated and the GPU is about half busy, so the stages wait on each
-other, as in the early game.
+**Balemuni Apex v2 stops the game** about two minutes after the start, twice in two runs (19:04:32 and 19:09:19):
+`Failed to wait for DX12 fence (error 102). Initial value: 3688, Expected value: 3689, Actual value: 3688` then
+`-- FATAL EXIT --` in the game's log (error 102 is a wait timeout: the GPU did not finish the submitted work). Its
+`meta.json` name contains `/`, and GameNative installed it under the folder name `tmp`. The Balemuni and T30 files on
+the Thor matched the SHA-256 digests of their GitHub release assets.
 
-At 8X the replay ran at about 3.3 times real time early in the game (00:41 to 08:40 in about 2 to 2.5 minutes); near 41
-minutes it advanced only 59 game seconds between two clock crops taken about a minute apart (not timed exactly).
+R4 and R6 are the same within the test's spread. On 2026-10-08 a Turnip built from Mesa main gave 52.3 FPS in this
+test against 41.0 for R4 the same hour ([GPU-DRIVER.md](../how-it-works/GPU-DRIVER.md)).
 
-**Thread placement could not be tested.** All game threads had `Cpus_allowed_list: 0-5,7` (mask `bf`, core 6 left
-out; where that comes from is not known). `tools/agent.py affin 0 f8 f8` reported 65 threads set to cores 3 to 7, but
-`/proc` showed the list unchanged and threads kept running on cores 0 to 2; `taskset` from the adb shell is not
-permitted (`Operation not permitted`). So the windows at 46:13 and 48:23 ran with the default placement. (The cause,
-found the next day: a thread mask outside the process mask is refused; see the next section.)
+## Measured and not kept
 
-## The late game at full clocks (2026-10-08, 00:37 to 03:25)
+Each change was tested alone against a baseline of the same session and reverted. "Skirmish" is the automated
+benchmark (FPS at two match minutes), "late game" the replay windows at 46:13 and 48:23. The details of each test are
+in [PERFORMANCE.md](../research/PERFORMANCE.md) under its date.
 
-The same replay and windows at full CPU clocks. A fresh game start was enough: GameNative applies the container's
-power profile at every start, and after it the limits were 2.02 GHz (cores 0 to 2), 2.80 GHz (cores 3 to 6) and
-3.19 GHz (core 7), governor `schedutil`, while the Thor's `performance_mode` setting was still 2. 120 Hz, R4 driver,
-the Thor's fan at Custom 88 % during the measured windows. Each row adds one change to the row above it, except the
-last:
-
-| Setup | FPS 46:13 / 48:23 | frames > 50 ms | GPU busy |
+| Change | Test, date | Result | Against |
 |---|---|---|---|
-| CPU capped (the section above), v1.1.0 | 27.8 / 27.8 | 270 / 264 | 54 / 55 % at 615 MHz |
-| Full clocks, v1.1.0 (`bc82c565`) | 36.0 / 36.2 | 19 / 15 | 66 / 68 % at 615 MHz |
-| + patch 0016 (v1.2.0, `b5e6e357`) | 36.7 / 36.5 | 10 / 11 | 69 / 70 % at 615 MHz |
-| + every game thread allowed on all 8 cores (`agent.py procaffin ff`, live) | 37.6 / 37.0 | 2 / 10 | 72 / 72 % at 615 MHz |
-| + GPU held at 680 MHz (power profile GPU levels 8 and 8) | 40.1 / 40.1 | 1 / 3 | 69 / 70 % at 680 MHz |
-| **v1.2.0 and GPU at 680 MHz, default core mask** (the package as released, fresh start) | **39.0 / 38.6** | 18 / 22 | 67 / 68 % at 680 MHz |
+| FEX TSO off (`FEX_TSOENABLED=0`) | skirmish, 2026-10-07 | 42.7 / 42.2 | 43.8 to 45.6 |
+| | late game, 2026-10-08 | 39.4 / 39.3; the render thread ran a tenth less and waited more | 39.8 / 39.7 |
+| Main thread on the prime core 7, all others on cores 0 to 6 | skirmish, 2026-10-07 | 44.6, 53 frames > 50 ms | 45.3, 3 frames |
+| | late game, 2026-10-08 | 38.3 / 38.8 | 39.0 / 38.6 |
+| Main thread on core 7, render thread on core 6, all others on cores 0 to 5 | late game, 2026-10-08 | 38.9 / 39.0; the render thread lost its core half as often | 39.0 / 38.6 |
+| Every game thread allowed on all 8 cores (`agent.py procaffin ff`, live) | late game, 2026-10-08 | 37.6 / 37.0, fewer long frames | 36.7 / 36.5; within the spread, so the package does not set it |
+| The 8 `rcss worker` threads on the big cores (mask `f8`) | skirmish, 2026-10-08 | 58 frames over 40 ms per 60 s | 23 and 22 (A-B-A) |
+| Render thread at `THREAD_PRIORITY_HIGHEST` | late game, 2026-10-08 | 35.1 / 34.6 | 36.0 / 36.2 |
+| Render scale 75 % (from 100 %) | late game, 2026-10-08 | 38.3 / 37.9, 30 / 39 frames > 50 ms, softer picture | 36.0 / 36.2, 19 / 15 frames |
+| `shadows` 4 → 2 and `volumetriclighting` 3 → 1 in `configuration_system.lua` | skirmish, 2026-10-07 | 34.3 / 34.2, GPU 71 to 78 % busy | 43.8 to 45.6. The file has no labels, so these values may not mean "lower"; the file was put back byte for byte |
+| AVX hidden from the game (`FEX_HOSTFEATURES=disableavx`) | start | The game stops: "Your CPU needs to support AVX instructions to run this game." | |
+| Turnip forced to tile rendering (`TU_DEBUG=noconform,gmem`, R4) | skirmish, 2026-10-07 | 28.8, rendered correctly | 43.8 to 45.6 |
+| `TU_DEBUG=gmem` on the repo's driver | skirmish, 2026-10-08 | no clean run: two starts stopped with the DX12 fence error | |
+| `TU_AUTOTUNE_ALGO=bandwidth` | skirmish, 2026-10-08 | 50.5 / 50.7 | 52.3 / 52.3 |
+| `disable_conservative_lrz=true` | skirmish, 2026-10-08 | 51.0 / 50.8 | 52.3 / 52.3 |
+| Turnip with Mesa MR !43714 | skirmish, 2026-10-08 | 52.5 / 52.6 | 52.3 / 52.3 |
+| Turnip without the same-context timestamp wait before each submit | skirmish, 2026-10-08 | 56.4 / 56.6 | 58.6 / 58.1 |
+| Turnip `tu_emulate_second_queue=true` | skirmish, 2026-10-08 | 57.7 / 57.7, 269 frames over 33 ms per window | 124 to 152 frames over 33 ms |
+| vkd3d-proton 3.0.1-4559a01d (R4 driver) | skirmish, 2026-10-08 | 40.3 / 40.2 | 41.0 / 41.1 |
+| `VKD3D_FRAME_RATE=60` | skirmish, 2026-10-09 | 55.6 / 55.8, 39 / 40 frames over 40 ms | the hour's baseline: 38 / 40 frames over 40 ms |
+| `VKD3D_SWAPCHAIN_LATENCY_FRAMES=2` | skirmish, 2026-10-09 | 56.6 / 56.0, 33 / 47 frames over 40 ms | the hour's baseline: 38 / 40 frames over 40 ms |
+| `MESA_VK_WSI_PRESENT_MODE=fifo` (the container uses mailbox) | skirmish, 2026-10-09 | 56.9 / 57.1 but 335 / 312 frames over 33 ms | 56.4 / 56.3 and 112 / 124 frames over 33 ms |
+| GameNative's wrapper without present wait (`WRAPPER_DISABLE_PRESENT_WAIT=1`) | skirmish, 2026-10-07 (R4) | 37.0, GPU 55 to 58 % busy | 43.8 to 45.6 |
+| | skirmish, 2026-10-08 (repo's driver) | 58.8 / 57.0, frames over 40 ms within the spread | 24 to 67 frames over 40 ms in identical runs |
+| Cache for unpacked BCn textures (`WRAPPER_USE_BCN_CACHE=1`) | skirmish, 2026-10-07 | 43.7 / 43.2 | no change |
 
-Mid game (25:43, full clocks, v1.1.0): 37.7 FPS and 16 frames over 50 ms, against 29.3 FPS at 24:52 with the cap. The
-median frame was 25.3 ms in every full-clock window (33.7 ms capped). The two windows of one run differed by up to
-0.6 FPS; the spread between runs was not measured. Hottest sensors in the last row: CPU 95.1 / 93.1 °C, GPU 78.8 / 77.6 °C.
+Patch experiments inside FEX that were not kept are in [LEDGER.md](../research/LEDGER.md) and
+[patches/fex](../../patches/fex).
 
-**The GPU clock.** With levels 7 and 8 (sysfs levels 1 and 0) the GPU stayed at 615 MHz in every window; with 8 and 8
-it ran at 680 MHz, and the late game gained about 2 FPS (36.7 / 36.5 to 39.0 / 38.6; 2.5 to 3.1 FPS with all cores
-allowed). That run had more frames over 50 ms (18 / 22) than v1.2.0 at 615 MHz (10 / 11) and the all-cores run at
-680 MHz (1 / 3); not explained, and one run each. In the early-game benchmark the same change gave nothing
-("Tried and reverted" below). The setting: `"minGpuPowerLevel":8,"maxGpuPowerLevel":8` in the container's
-`.config/.power-profile` (GameNative writes sysfs level = 8 - value). It was written with `tools/wincopy.py`; GameNative's
-Power Control tab has GPU minimum and maximum controls and saves the profile when the game stops (read in its source,
-not tried).
-
-**The core mask.** The game's process affinity mask leaves out one core: `df` (core 5) at one start, `bf` (core 6) at
-another. The container lists all 8 cores, so where it comes from is not known. A thread mask that is not inside the
-process mask is refused, which is why `affin` changed nothing in the section above. `agent.py procaffin ff` sets the
-process mask first, then every thread: 68 of 68 threads set, and `/proc` then showed `Cpus_allowed_list: 0-7`. The
-gain (+0.9 / +0.5 FPS, fewer long frames) is close to the spread, so the package does not set it.
-
-**Not kept** (each against "Full clocks, v1.1.0"):
-
-| Change | FPS 46:13 / 48:23 | frames > 50 ms | Notes |
-|---|---|---|---|
-| Render scale 75 % (game Settings, Graphics; from 100 %) | 38.3 / 37.9 | 30 / 39 | Softer picture and more long frames; set back to 100 % |
-| Render thread at `THREAD_PRIORITY_HIGHEST` (`agent.py prio Game/Render 2`) | 35.1 / 34.6 | 24 / 32 | Slower |
-
-**Where the time goes now** (v1.2.0, full clocks, GPU at 615 MHz): the main thread used 47.7 / 48.6 % of one core
-(55.6 % with v1.1.0) and spent 35.5 % of its samples waiting in `NtWaitForAlertByThreadId` (locks and condition
-variables); the render thread 35 %; the GPU about 70 % busy. No stage is saturated, so the stages wait on each other.
-The protection's loop still raises about 25,000 handled exceptions per second (`tools/excrate.py`); at 2.5 us each
-(`exccost`) that is about 6 % of one core, an estimate. How patch 0016 was found:
-[POWER-INFORMATION.md](../how-it-works/POWER-INFORMATION.md).
-
-## Where the late game waits (2026-10-08, 09:19 to 09:23)
-
-The replay at 46:12, 1X, v1.2.0 with the GPU at 680 MHz and the default core mask (the setup as released). First
-`tools/threadwaits.py 20`, then 1,500 RIP samples per thread, 2 ms apart (`tools/agent.py sample '#tid' ...`), with
-the system calls named by `tools/research/sysprof.py`:
-
-| Thread | CPU | waits/s | pushed off its core /s | Where its samples are |
-|---|---|---|---|---|
-| Game/Main Thread | 52.3 % | 1,111 | 112 | game code 49 %; `NtWaitForAlertByThreadId` 34.9 %, `NtAlertThreadByThreadId` 5.1 %, `NtPowerInformation` 1.5 % |
-| Game/Render thread | 36.5 % | 333 | 573 | game code 29 %; `NtWaitForAlertByThreadId` 17.1 %, `NtWaitForSingleObject` 14.5 %; `winevulkan.dll` 13.3 %, `d3d12core.dll` 7.4 % |
-| The protection's loop (start `exe+3e1b04c`) | 23.0 % | 529 | 170 | `NtWaitForSingleObject` 49.1 %; file calls 13 % (`NtQueryInformationFile` 5.0 %, `NtCreateFile` 4.4 %, `NtClose` 3.6 %), all from the protection's code |
-| 8 × rcss worker | 10.7 to 17.7 % each | 1,026 to 1,609 each | 186 to 589 | worker 00: `NtWaitForAlertByThreadId` 87.1 %, game code 7.9 % |
-| Simulation Thread | 12.3 % | 358 | 25 | `NtWaitForSingleObject` 63.7 %, `NtWaitForAlertByThreadId` 16.6 % |
-| AK::EventManager (audio) | 11.2 % | 114 | 49 | `NtWaitForSingleObject` 91.0 % |
-| vkd3d_queue | 9.8 % | 894 | 161 | `winevulkan.dll` 91.1 % (inside the Vulkan driver) |
-
-No single call stands out the way `NtPowerInformation` did before patch 0016. The main thread waits for other game
-threads: 476 of its 515 wait samples have `exe+3254372` among the return addresses on the stack. The render thread
-waits about a third of the time and is pushed off its core 573 times per second. The workers sleep and wake about
-9,000 times per second together.
-
-**What one sleep/wake costs** (`tools/probes/wakecost.c`, in an AoE IV container session with this package, no
-game running): a plain system call (`SwitchToThread`) 1.09 µs; a `WaitOnAddress` / `WakeByAddressSingle` round trip
-between two threads 16.95 µs (two hand-offs, about 8.5 µs each); the same with an SRW lock and a condition variable
-17.64 µs. So Wine and FEX add about 1 µs per call and most of a hand-off is the Linux scheduler waking the other
-thread. A faster path for these calls in FEX would save about 1 to 2 % of one core at 9,000 hand-offs per second
-(an estimate from these numbers); not pursued.
-
-The protection's file loop is off the frame path, and changing it would change how the anti-tamper behaves; not
-pursued. Note for `callers`: during these waits RCX read FEX's `RetToEntryThunk`, not the waited-on address, so RCX
-only shows a call's first argument when the game calls the stub's module directly (as in patch 0016's case).
-
-## What gates a late-game frame (2026-10-08, 11:52 to 12:14)
-
-Two replay passes, windows at 46:13 and 48:23, v1.2.0 with the GPU at 680 MHz. Between the windows a 5 s
-`atrace -t 5 sched freq sync gfx` (the system `perfetto` crashed in `traced_probes` while building its ftrace table on
-this firmware, so its ftrace data is empty), analysed with [`tools/research/at_analyze.py`](../../tools/research/at_analyze.py).
-
-| Pass | FPS 46:13 / 48:23 | frames > 50 ms | render thread running | main thread running |
-|---|---|---|---|---|
-| Released setup | 39.8 / 39.7 | 15 / 9 | 41.0 % | 45.5 % |
-| `FEX_TSOENABLED=0` | 39.4 / 39.3 | 14 / 10 | 36.6 % | 44.0 % |
-
-What the trace shows (released setup):
-
-- **The render thread waits for the GPU once per frame.** The `vkd3d_fence` thread woke it 185 times in 5 s (about
-  once per frame), after a median wait of 9.8 ms, 38 % of the render thread's time. `vkd3d_fence` signals the game's
-  own D3D12 fence events, so this is the game waiting for an earlier frame's GPU work, not vkd3d-proton's swapchain
-  limit (that defaults to 3 frames, `VKD3D_SWAPCHAIN_LATENCY_FRAMES`, swapchain.c in 2.14.1).
-- **The main thread waits for its job workers.** It ran 45.5 % and slept 50.7 %; the 8 `rcss worker` threads woke it
-  most often. It also slept 783 times in a 1 ms timed wait (157 per second).
-- **The workers queue for cores.** Each was runnable but not running 11 to 22 % of the time, and ran 15 to 25 % of
-  its time on the small cores 0 to 2. The process mask left out one big core (`0-5,7` this start; the game's cpuset
-  `top-app` allows 0-7, and GameNative logged CPU list 0-7, so something sets it explicitly; not found).
-- **Frames sit on the 120 Hz grid:** about 60 % took 3 refreshes (25.3 ms), 20 % took 2 and 17 % took 4.
-
-TSO off cut the render thread's CPU time by about a tenth and the time went into waiting; the FPS stayed the same, as
-it did with pinned threads ("Thread placement" below). So the late game is not limited by how fast FEX runs the CPU
-side: it is limited by the GPU work per frame and the game waiting on it. The levers left are on the GPU side: less
-GPU work per frame (the 75 % render scale gave about 2 FPS, "Not kept" above) or a faster driver path.
-
-*Later the same day:* the GPU traces in [TURNIP.md](../how-it-works/GPU-DRIVER.md) showed that the GPU itself worked only 37 % of the
-time; the wait was vkd3d-proton holding each command buffer until the previous one finished
-(`VKD3D_CONFIG=no_staggered_submit`, +12 % in the skirmish benchmark).
-
-## Thread placement in the late game (2026-10-08, 10:56 to 11:18)
-
-The same replay windows, v1.2.0 with the GPU at 680 MHz, one replay pass per setup. `agent.py procaffin ff` first
-(the process mask was `bf` in pass A and `df` in pass B), then per-thread masks; `/proc` showed them in effect for 68
-threads, while about 10 threads that Windows does not list (likely Wine or driver threads) kept the process default.
-
-| Setup | FPS 46:13 / 48:23 | frames > 50 ms | GPU busy | render thread pushed off its core /s |
-|---|---|---|---|---|
-| Default core mask (03:23, "The late game at full clocks") | 39.0 / 38.6 | 18 / 22 | 67 / 68 % | 573 (09:20 profile) |
-| A: main thread on core 7 only, all others on cores 0 to 6 | 38.3 / 38.8 | 31 / 12 | 66 / 68 % | 432 |
-| B: main on core 7, render thread on core 6, all others on cores 0 to 5 | 38.9 / 39.0 | 34 / 5 | 67 / 67 % | 304 |
-
-Pass A's windows started about 12 s late (46:25, 48:35). Pinning halved how often the render thread lost its core,
-but the FPS stayed within the spread, so the package does not set it. `agent.py taffin '#tid' mask` sets one thread.
-
-## The hitches at 58 FPS (2026-10-08, 19:40 to 20:50)
-
-With the repo's driver and `VKD3D_CONFIG=no_staggered_submit` the skirmish benchmark runs at about 58 FPS, and a
-few frames per minute still take 42 or 51 ms (5 or 6 refreshes of the 120 Hz display). In one 94 s window: 988
-frames of one refresh, 3,271 of two, 868 of three, 163 of four, 56 of five and 11 of six or more. They are isolated:
-the frames before and after are normal. A still camera gives 46 frames over 40 ms per window against 67 with the
-camera turning, so streaming new content is not the main cause.
-
-What a 40 s scheduler trace on the display's clock shows for the long frames
-([`tools/research/stutter_align.py`](../../tools/research/stutter_align.py), method in [TESTING.md](TESTING.md)):
-
-- **Not the emulator.** FEX's own counters (a build with a per-thread statistics table, sampled 4 times a second)
-  give 4.6 ms of translation per second over all threads, the same in bins with a long frame as without (4.5 against
-  4.6 ms/s); its signal time (0.9 against 1.0 ms/s) and self-modifying-code events (342 against 348 per second) are
-  flat too.
-- **Not the clocks, not other apps.** Inside long frames the CPU clocks are equal or higher (prime core 2,988 against
-  2,899 MHz, big cores 2,672 against 2,641), the game's threads are rarely runnable-but-waiting, and other processes
-  take a few ms at most. (Two exceptions were this repo's own measurement tools: `cat` of the thermal zones and
-  `dumpsys` took up to 30 ms on a big core in a few frames.)
-- **Two sources.** The game's own presents (the wrapper's `QueueSubmit` marks, 59.0 per second) and GameNative's
-  `queueBuffer` to Android (58.9 per second) are both in the trace
-  ([`present_chain.py`](../../tools/research/present_chain.py)). Of 22 long display frames, 14 contain a long frame of
-  the game itself (a gap of 25 to 49 ms between its presents), and 8 have a normal game cadence (gaps of 11 to 16 ms)
-  while GameNative queued the buffer late: the latency from a game present to GameNative's `queueBuffer` is 6.5 ms
-  median, 15.5 ms p90, 30 ms max.
-- **The game-side long frames are job bursts.** Measured in game time (frames between the game's presents, 57 over
-  30 ms in 40 s): the main and render threads sleep 20 to 31 ms waiting to be woken by `rcss worker` threads, each
-  of the 8 workers runs 9 to 10 ms instead of 1 to 2, and the protection's thread (`exe+3e1b04c`) runs 11.6 ms
-  instead of 2.8. That thread works in 80 to 100 ms bursts every 0.26 s, a quarter of a core, but the bursts overlap
-  the long frames only at chance level (27 of 55), so it is a bystander.
-
-Tried against it:
-
-| Change | Frames over 40 ms per 60 s | Result |
-|---|---|---|
-| The 8 `rcss worker` threads pinned to the big cores (mask `f8`), A-B-A in one match | 23, **58**, 22 | Worse: the workers then compete with the main and render threads. Default placement stays |
-| `WRAPPER_DISABLE_PRESENT_WAIT=1` (GameNative's wrapper no longer waits for the game's present), skirmish benchmark | 24 / 35 per 90 s window | 58.8 / 57.0 FPS. Within the spread of the same setup without it (24 to 67 in six windows). Not kept |
-| Turnip `tu_emulate_second_queue=true` (two Vulkan queues for vkd3d-proton) | 29 / 40 per 90 s window | 57.7 / 57.7 FPS, but 269 frames over 33 ms per window against 124 to 152: more 3-refresh frames. Not kept |
-
-The counts of frames over 40 ms vary from 24 to 67 between windows of the same setup, so a single run cannot show a
-small gain here. The two sources above are the game's own job system and GameNative's compositor; neither has a
-knob in this repo. The compositor latency is reported with the numbers above for GameNative.
-
-## Exceptions without a host trap (patch 0017, 2026-10-09, 00:40 to 02:05)
-
-Instruction-pointer samples of the main thread in the skirmish (2 ms, 50 s, through `tools/agent.py sample`) put
-13.7 % of it at the entry of one of the protection's vectored exception handlers (`exe+3cd9430`), and patch 0010's own
-counter (`FSTCONT1`, read through the agent) showed about 44,000 resumed exceptions per second in the game process.
-Counting them by FEX's guest signal (`FASTTRP1`, a counter in the experiment build): **all of them are illegal-instruction
-faults (SIGILL)** raised by JIT code. Each one cost a `hlt` host trap, Wine's signal handler, a first
-`KiUserExceptionDispatcher` pass whose only job was to rethrow it to the guest, and a unix `NtRaiseException`.
-[Patch 0017](../../patches/fex/0017-trapless-guest-faults.patch) lets FEXCore's guest-signal stubs branch to the
-frontend instead of trapping, and the frontend raises the guest exception directly (fast raise), as it already does for
-emulated syscalls.
-
-Skirmish benchmark, the same session, in this order (frames at the 120 Hz display; 3 refreshes = 25 ms):
-
-| Run | FPS (minutes 1 / 3) | frames of 3 refreshes | of 2 refreshes | over 40 ms |
-|---|---|---|---|---|
-| Release FEX (`aoe4-perf5-23`), 00:52 | 56.4 / 56.3 | 1,038 / 1,039 | 3,371 / 3,363 | 23 / 37 |
-| 0017 without the fast raise (`FEX_EXP_FASTRAISE=0`) | 57.6 / 57.6 | 840 / 808 | 3,752 / 3,731 | 25 / 21 |
-| **0017** | **58.3 / 57.8** | **813 / 825** | 3,695 / 3,634 | 21 / 40 |
-| Release FEX again, 02:02 | 56.6 / 56.5 | 999 / 1,014 | 3,446 / 3,365 | 26 / 26 |
-
-So about +1.5 FPS and a fifth fewer 25 ms frames; the frames over 40 ms stay within their spread (21 to 40 per window
-in identical runs). With 0017 every exception took both new paths (`FASTTRP1` 44,175/s, `FASTRAIS` 44,264/s, no
-fallback). The fast raise alone, on the old trap path, gave no measurable change (56.0 / 55.8 against 56.9 / 56.8).
-
-Release check of the package `aoe4-perf6-30` (the same DLL), 02:29 to 02:48: windows at match minutes 1, 5, 10 and 15
-gave 57.8, 57.4, 57.4 and 54.7 FPS (the base grows over the match), no stop in 19 minutes, and the counters still read
-43,582 trap-less exceptions and 43,396 fast raises per second.
-
-Tried in the same session and not kept (each against the baseline of its hour):
-
-| Change | Result |
-|---|---|
-| `VKD3D_FRAME_RATE=60` | 55.6 / 55.8 FPS, frames over 40 ms 39 / 40: lower FPS, no fewer long frames |
-| `VKD3D_SWAPCHAIN_LATENCY_FRAMES=2` | 56.6 / 56.0 FPS, 33 / 47 over 40 ms |
-| `MESA_VK_WSI_PRESENT_MODE=fifo` (the container uses mailbox) | 56.9 / 57.1 FPS but 335 / 312 frames over 33 ms and 70 / 61 over 40 ms |
-
-Two findings that closed other leads:
-
-- **GameNative adds little.** In the scheduler trace, GameNative's X server thread (`RequestHandler`) is woken by the
-  game's Mesa WSI present thread (`WSI swapchain q`) a median 5.2 ms (p90 11.4) after the game's present: that wait is
-  the WSI thread waiting for the GPU to finish the frame. From there to GameNative's `queueBuffer` takes about 0.1 ms
-  in most frames ([`tools/research/gn_chain.py`](../../tools/research/gn_chain.py)).
-- **LRZ.** A Turnip build that names the cause showed every "Depth write + blending" case as a color write mask of RGB
-  without alpha (`a0:mask7/f`), no blending; the passes it affects are mostly 2 to 4 draws, so early depth rejection
-  would save little there.
-
-The thermal sampler of `tools/bench.py` ran two `cat` processes per thermal zone (95 zones) every 3 s, which took up to
-30 ms of a big core inside measured frames; it now uses shell builtins. The numbers in this section use the new
-sampler and are not comparable with earlier sections.
-
-## v1.1.0 package: same speed without 0002 (21:54 to 22:17)
-
-The package without patch 0002, with 0007 in every process and with 0015 (`aoe4-perf3-21`, DLL `bc82c565`), against
-the v1.0.0 package (`aoe4-perf2-20`, `6990a221`), back to back on a Thor already hot from earlier runs (120 Hz, R4
-driver, scaling power profile):
-
-| Package | FPS minute 1 / 5 | frames > 50 ms | frames > 100 ms | CPU hottest | GPU hottest |
-|---|---|---|---|---|---|
-| v1.1.0 (21:59, 22:03) | 41.3 / 40.7 | 6 / 5 | 0 / 0 | 96.3 / 95.1 °C | 79.6 / 81.2 °C |
-| v1.0.0 (22:12, 22:16) | 41.0 / 40.8 | 3 / 7 | 0 / 0 | 96.3 / 96.3 °C | 81.2 / 82.0 °C |
-
-The same within the test's spread. Earlier that evening a cooler Thor gave 42.6 FPS at minute 1 (v1.0.0, 21:20).
-
-## Where the frame time goes (60 Hz, 16:50, `tools/threadcpu.py`)
-
-Main thread 52.6 % of one core, render thread 34.6 %, the protection's loop 21.9 %, `vkd3d_queue` 9.6 %, eight
-`rcss worker` threads 5 to 10 % each; GPU 68 to 71 % busy at 615 MHz. No single stage is saturated, so the stages wait
-on each other.
-
-## Tried and reverted
-
-| Change | FPS minute 1 / 5 | Notes |
-|---|---|---|
-| GPU fixed at 680 MHz (power profile GPU levels 8/8; normally 7/8 = 615 to 680 MHz) | 44.7 | GPU still 65 to 70 % busy at 680 MHz: no gain in the early game. **In the late game it gave about 2 FPS, so it is in use since 2026-10-08** ("The late game at full clocks"). |
-| Main thread pinned to the prime core 7, all other threads to cores 0 to 6 (`tools/agent.py affin 4fb0884 80 7f`, live) | 44.6 | 53 frames > 50 ms and 2 > 100 ms, against 45.3 FPS, 3 and 0 just before. Not checked whether the masks took effect; a mask outside the game's process mask is refused ("The late game at full clocks"). |
-| FEX TSO off (`FEX_TSOENABLED=0`) | 42.7 / 42.2 | Cheaper CPU code did not raise the FPS. |
-| `shadows` 4 → 2 and `volumetriclighting` 3 → 1 in `configuration_system.lua` | 34.3 / 34.2 | GPU 71 to 78 % busy. The file has no labels, so these numbers may not mean "lower"; the original file was put back byte for byte. |
-| Turnip forced to tile rendering (`TU_DEBUG=noconform,gmem`) | 28.8 | Rendered correctly, a third slower. |
-| AVX hidden from the game (`FEX_HOSTFEATURES=disableavx`) | — | The game stops at start: "Your CPU needs to support AVX instructions to run this game." |
-| GameNative's wrapper without present wait (`WRAPPER_DISABLE_PRESENT_WAIT=1`) | 37.0 | GPU only 55 to 58 % busy: present wait helps the pacing here. |
-| Cache for unpacked BCn textures (`WRAPPER_USE_BCN_CACHE=1`) | 43.7 / 43.2 | No change. |
-
-Notes for these tests:
+## Notes
 
 - Container `envVars` set by the user win over the values GameNative computes for the graphics driver: GameNative
   merges `container.envVars` after them (`XServerScreen.kt`, `envVars.putAll(container.envVars)`).
-- The game's own settings already were 1280×720, `verticalsync = false`, `frameratelimit = 0`.
-- GameNative's wrapper unpacks BCn textures for Adreno (`WRAPPER_EMULATE_BCN=3` in a GameNative debug log of this
-  game from 2026-09-21), which the GPU then reads uncompressed.
+- BCn textures: GameNative sets `WRAPPER_EMULATE_BCN=3` ("auto") for its wrapper. In the wrapper source read on
+  2026-10-09 (`src/vulkan/wrapper/wrapper_physical_device.c` in the Winlator-bionic Mesa fork), "auto" turns emulation
+  off when the driver is Turnip, which supports BCn natively. Whether GameNative's wrapper build is exactly that code
+  was not checked; the BCn cache made no difference, which fits.

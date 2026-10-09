@@ -1,153 +1,146 @@
-# Driving GameNative on the Thor (learned the hard way)
+# Driving GameNative over adb
 
-Steps verified on the AYN Thor, GameNative 1.2.1, display 0 (1920×1080). Coordinates are for that
-display; they are stable across launches.
+How the tests in this repo read and drive GameNative on the AYN Thor from a Mac. Verified with GameNative 1.2.1 on
+2026-10-06 to 2026-10-08, display 0 (1920 × 1080); coordinates are for that display and were stable across launches.
+`tools/gn_nav.py`, `tools/gn_driver.py`, `tools/gn_import_wcp.py`, `tools/gn_select_fex.py` and `tools/run_watch.py`
+wrap the steps below. On 2026-10-09 the Thor moved to the GameNative 1.3.0 test release for GTA V; its library, the
+Settings list (Driver Manager, Contents Manager) and the game page's Options cog at `(1651, 536)` looked the same, the
+rest was not re-checked.
 
-## The one thing that matters most: dump **all** windows
+## Before any scripted UI work
 
-```
-adb shell uiautomator dump --windows /sdcard/gn_ui.xml
-```
+1. **Check that the device is unlocked.** A locked screen looks exactly like a broken app: taps do nothing, no
+   process starts, nothing is logged. User storage is only mounted after the first unlock following a boot:
 
-A plain `uiautomator dump` sees only the default window and **silently goes stale** here: it kept
-returning the game detail page while the screen actually showed the AYN assistant panel, which cost a
-lot of time chasing "taps don't register". GameNative's menus and the AYN assistant panel are separate
-windows, so `--windows` is required. `tools/gn_nav.py` does this.
+   ```
+   adb shell dumpsys trust | grep -q "deviceLocked=1" && echo "UNLOCK THE DEVICE FIRST"
+   ls /sdcard/        -> No such file or directory     the user storage is not decrypted
+   dumpsys user       -> State: RUNNING_LOCKED
+   ```
 
-Taps themselves are fine (`input -d 0 tap X Y`); it was the *reading* that lied, not the input.
+2. **Press HOME, then bring GameNative back.** The launcher's drag-and-drop target (`ShellDropTarget`) and the AYN
+   assistant can sit above the app as full-screen touchable windows and eat taps:
 
-If a dump still looks wrong, ask the human what is on screen — it is faster than fighting it.
+   ```sh
+   adb shell input keyevent 3                       # HOME, resets the launcher overlays
+   adb shell am start -n app.gamenative/.MainActivityAliasDefault
+   ```
+
+3. **Read the screen with all windows.** A plain `uiautomator dump` sees only the default window and silently goes
+   stale here (it kept returning the game page while the AYN assistant panel was showing):
+
+   ```
+   adb shell uiautomator dump --windows /sdcard/gn_ui.xml
+   ```
+
+   Taps themselves are fine (`input -d 0 tap X Y`). A list at the bottom (`Mode` / `Task` / `Settings`,
+   `60 FPS MODE`, `Top screen`, …) belongs to the AYN device panel on the second screen; ignore it when parsing. If a
+   dump still looks wrong, a screenshot (`adb exec-out screencap -p`) settles it.
 
 ## Navigation
 
-**Game list → game detail page**
-Tap the game's card. Its position is **not** fixed. After a start, GameNative asks its API for a suggested
-game. Until the answer arrives, AoE IV is the first card; when it arrives, the suggestion takes the first
-card (labelled `Recommended`) and AoE IV moves to the second (`(723, 297)` on 2026-10-07). A tap that
-races the move opens the suggested game: on 2026-10-07 three "Open container" attempts opened the
-container of another game (`STEAM_503820` in logcat) instead of AoE IV.
-`GN.open_game_page()` in `tools/gn_nav.py` waits for the `Recommended` card (30 s at most), taps the card
-from the same screen read, and checks that the page that opens shows the game's title, `Play` and the
-`Options` cog. `run_watch.py --launch` and `ab_fex.py` use it.
+**Game list → game page.** Tap the game's card. Its position is **not** fixed: after a start, GameNative asks its
+API for a suggested game, and when the answer arrives the suggestion takes the first card (labelled `Recommended`)
+and AoE IV moves to the second (`(723, 297)` on 2026-10-07). A tap that races the move opens the suggested game.
+`GN.open_game_page()` in `tools/gn_nav.py` waits for the `Recommended` card (30 s at most), taps the card from the same
+screen read, and checks that the page shows the game's title, `Play` and the `Options` cog.
 
-**Game detail → container config**
-Tap the cog (top right of the detail page, ~`(1651, 536)`).
-This opens the **AYN assistant panel**, not a GameNative screen:
-`Options` / `Quick Actions` / `Edit container` / `Open container` / `Get AI help` /
-`Create shortcut` / `Export for frontend` / `Copy launch link`.
+**Game page → container settings.** Tap the cog (`~(1651, 536)`). It opens the AYN assistant panel, not a
+GameNative screen: `Options` / `Quick Actions` / `Edit container` / `Open container` / `Get AI help` /
+`Create shortcut` / `Export for frontend` / `Copy launch link`. **Do not tap right of the cog** on an installed
+game: `(1790, 536)` is the uninstall button (GameNative 1.3.0 asks for a confirmation).
 
-**→ Edit container** (`~1381, 328`).
+**→ Edit container** (`~(1381, 328)`) opens `<game> Config` with the tabs `General` · `Graphics` · `Emulation` ·
+`Controller` · `Wine` · `Win Components` · `Environment` · `Drives` (the tab strip scrolls). Save is at the top
+right.
 
-That opens the GameNative container config, titled `<game> Config`, with tabs:
+## Installing a FEX package or a driver
 
-`General` · `Graphics` · **`Emulation`** · `Controller` · `Wine` · `Win Components` · `Environment` · `Drives`
+**FEX package (`.wcp`):** library, top-right **Menu** (`(1841, 73)`), **Settings**, scroll down to **Contents
+Manager** (under Emulation), **Import .wcp from device**. Android's file picker opens in Downloads; its search
+(`(1753, 110)`) finds the file by a one-word name. The bundle is then listed under Installed contents, FEXCore, as
+`<versionName> (<versionCode>)`, and in the container's Emulation tab, FEXCore Version, as
+`<versionName>-<versionCode>` below the built-in versions (the list scrolls). Only imported contents appear there.
+**A bundle whose `versionName` and code are already installed is unpacked and then dropped without a message**; give
+every new build a new code. From adb: `tools/gn_import_wcp.py` and `tools/gn_select_fex.py <name>-<code>`.
 
-Note the tab strip scrolls; `Win Components` may be off-screen to the right until you scroll it.
+**Driver (`.zip`):** **Settings → Driver Manager → Import ZIP from device**, then the container's Graphics tab,
+Graphics Driver Version. From adb: `tools/gn_driver.py import FILE.zip SEARCH` and `tools/gn_driver.py select NAME`.
 
-On `General` you can read **Container Variant** (`bionic`) and **Wine Version**
-(`proton-11.0-99-arm64ec-1`).
+**What the game then loads.** GameNative writes the files of the selected FEXCore content into `system32` at every
+container start, and sets `HKLM\Software\Microsoft\Wow64\amd64` from the content's manifest. With this repo's
+packages, which ship only `libarm64ecfex.dll`, the game loads `C:\windows\system32\libarm64ecfex.dll`; `tools/agent.py
+peek libarm64ecfex.dll ...` reads the patch counters from that module in the game. (On 2026-10-06 the then-current
+contents named `xtajit64.dll`, and the game loaded that name; several archived notes say so. Editing the registry value
+or `wine.inf` by hand does not survive a launch: [archive/MODULE-LIST.md](../research/archive/MODULE-LIST.md).)
 
-**`Emulation` tab** is where the emulators live:
+## The container's config from inside Wine
 
-| field | value seen |
+GameNative's live container configuration is a JSON file inside the imagefs, readable and writable with `cmd` in a
+running session:
+
+| File | What it is |
 |---|---|
-| FEXCore Version | `2610-aoe-1` |
-| 64-bit Emulator | `FEXCore` |
-| 32-bit Emulator | `Box64` |
-| Box64 Version | `0.4.2` |
+| `Z:\home\xuser-STEAM_<appid>\.container` | the **source** copy: top-level `wineVersion`, `containerVariant`, `emulator`, `fexcoreVersion`, `envVars`, `drives` |
+| `Z:\home\xuser\.container` | the **applied** copy: `extraData.appliedWineVersion`, `extraData.appliedContainerVariant`, … |
+| `Z:\home\xuser\applied_config.json` | a stale copy from an earlier session (an output, not an input) |
 
-The **FEXCore Version** value is a dropdown (~`121, 370`); it lists installed FEXCore contents only —
-a `.wcp` that has not been imported will **not** appear there.
+Only some fields are honoured when edited there: **`envVars` yes** (GameNative reads it back and does not overwrite it),
+`wineVersion` and the FEXCore content **no** (re-applied from GameNative's own store; change them in the UI).
+`tools/research/cfgedit.py OLD NEW` pulls, patches and pushes the applied copy in one step. A container saved from
+GameNative's UI gets GameNative's own copy of `envVars` back, so make UI changes first and environment edits after.
 
-**Installing a build:** Settings → **Contents Manager** → **Import .wcp from device** → pick the file
-(e.g. `/sdcard/Download/fexcore-2610-aoe-nofex2.wcp`) → then select it in
-Edit container → Emulation → FEXCore Version.
+The Wine versions are read-only directories under `Z:\opt\` (for example `Z:\opt\proton-11.0-99-arm64ec-1\` with
+`bin/`, `lib/`, `share/`, `prefixPack.txz`, `profile.json`): files can be copied out but not written.
 
-Path on 2026-10-07 (GameNative 1.2.1): library, top-right **Menu** (`(1841, 73)`), **Settings**, scroll down to
-**Contents Manager** (under Emulation), **Import .wcp from device**. That opens Android's file picker in
-Downloads; its search (`(1753, 110)`) finds the file by a one-word name such as `fexcore` (the keyboard split
-`fastcontinue` into two words). After the import the bundle is listed under Installed contents, FEXCore, as
-`<versionName> (<versionCode>)`. In the Emulation tab's FEXCore Version list it appears as
-`<versionName>-<versionCode>` below the built-in versions; the list scrolls. **A bundle whose `versionName` is
-already installed is unpacked and then dropped without a message** (2026-10-07: `aoe-fastcontinue` code 11 did not
-appear next to code 10); give every new bundle a new `versionName`.
+**`Open container` is the fast path** for probes and config edits: the assistant panel's **Open container** starts
+`explorer` plus `winhandler` in about 30 s, with no game launch and no save sync. `tools/run_watch.py` sends commands
+to that session through `winhandler` (UDP 7946; a command's parameters are limited to 51 bytes, so longer commands go
+into a `.bat` file on the `D:` drive, which is `/sdcard/Download`).
+
+## Starting a game without taps
+
+GameNative registers `gamenative://run` (key `appid`, all lowercase, read from the APK's DEX) and the action
+`app.gamenative.LAUNCH_GAME`. Neither started a game or a container as tried on 2026-10-06 (`am start -a
+android.intent.action.VIEW -d 'gamenative://run?appid=STEAM_1466860' app.gamenative` with the container id and the
+bare number, warm and cold): the app comes to the front and nothing else happens. The tests tap **Play** instead.
 
 ## The in-game Quick Menu
 
 Opened during a game. Items used on 2026-10-07:
 
-- **Controller** tab, **Edit Physical Controller**: per-game button bindings. Face buttons can be bound to other
-  gamepad buttons (A to B, X to Y and back), which swapped A/B and X/Y for AoE IV on the Thor.
+- **Controller** tab, **Edit Physical Controller**: per-game button bindings (the tested setup needs none; the Thor's
+  controller runs in its standard mode).
 - **Performance HUD**: FPS, CPU and GPU load, temperatures on screen.
-- **Power Control** (tab 7 in logcat): GameNative's own CPU and GPU clock control. While it was on, the CPU caps
-  were 2.05 GHz (cores 3 to 6) and 1.98 GHz (core 7); turning it off restored 2.71 and 3.19 GHz (logcat
-  `PowerControl: Clean restore executed`) and raised AoE IV from 13.7 to about 25 FPS. Its default is in
-  Settings, Performance, "Enable in-game power control by default".
+- **Power Control**: GameNative's own CPU and GPU clock control. While it was on with its defaults, the CPU caps were
+  2.05 GHz (cores 3 to 6) and 1.98 GHz (core 7); turning it off restored 2.71 and 3.19 GHz and raised AoE IV from
+  13.7 to about 25 FPS (2026-10-07). The values in use since then: [TUNING.md](TUNING.md), "Power profile".
 
 **The menu pauses the game.** A 23.9 s stay in it was followed by AoE IV exiting with code 1 about 1 s later; a
-9.3 s stay was not ([RESEARCH-LOG.md](../research/LOG.md), known limits).
+9.3 s stay was not ([LOG.md](../research/LOG.md), known limits).
 
-A list at the bottom (`Mode` / `Task` / `Settings`, `60 FPS MODE`, `Top screen`, …) belongs to the AYN
-device panel, not GameNative — ignore those entries when parsing.
+## Recovering from a FEX build that stops every start
 
-## Verifying what actually got installed
+GameNative writes the selected content's DLL at every start, so after a bad build, selecting a good content in the
+Emulation tab (`tools/gn_select_fex.py aoe4-perf6-30`) is enough; it takes effect at the next start. On 2026-10-08
+`aoe4-perf4-22`, a first build of patch 0016 that froze the game at start, was removed that way and then deleted in
+Contents Manager (FEXCore type, trash icon, Remove).
 
-Installing a FEXCore updates the files the manifest names. Do **not** assume that means the emulator in
-use changed — copy the DLLs out and check the bytes:
-
-```bat
-:: dllnow.bat, run inside the session
-copy /y "C:\windows\system32\xtajit64.dll" D:\aoe\xtajit_now.dll >nul
-copy /y "C:\windows\system32\libarm64ecfex.dll" D:\aoe\libfex_now.dll >nul
-```
-
-then check offset `0x28644` (see [FEX-VENDOR-LEAK.md](../research/archive/FEX-VENDOR-LEAK.md)) and confirm which module the
-game process actually loaded with `modchk`, or which one a fresh process loads via `dbgprobe`'s module
-list.
-
-**GameNative loads `xtajit64.dll`, not `libarm64ecfex.dll`.** The two files started out byte-identical,
-which makes this easy to miss. A `.wcp` can install to either name because the manifest chooses the
-target — `fexcore-2610-aoe-nofex2.wcp` installs the patched DLL under **both** names for that reason.
-
-## A FEX build that stops every container start
-
-On 2026-10-07 the job build `hot2` (`a29bf0a8`; hot-page SMC experiment plus a `thread_local` in
-`InvalidationTracker.cpp`) was installed by hand as `C:\windows\system32\libarm64ecfex.dll`. After
-that, every container start ended about 13 s after the Wine processes appeared, also with
-`FEX_EXP_HOT_SMC` removed from the environment. Which of the two changes causes it is not isolated.
-With no running container, the file cannot be replaced from Wine, and the app data is private
-(`run-as: package not debuggable`, no `su`). This restored it:
-
-1. Edit container → Emulation → FEXCore Version → `2610-aoe-nofex2-3` → Save. That content names
-   `libarm64ecfex.dll`, so the next start writes `460568b8`.
-2. Open container. It starts.
-3. Install the wanted build in that session (`ab_fex.install(name)`, rename-aside and copy).
-4. Edit container → Emulation → FEXCore Version → `ntdll-waitq-fix-1` → Save, so the next start does
-   not write `460568b8` again.
-
-In the FEXCore Version list, `ntdll-waitq-fix-1` is the last item and sits at the screen edge
-(`(1680, 1055)`).
-
-**Since 2026-10-07 evening** the Thor no longer has `2610-aoe-nofex2-3` or `ntdll-waitq-fix-1` (removed in the
-clean-up). Its FEXCore contents are `aoe4-perf5-23` (in use since 2026-10-08, DLL `b5e6e357`, release v1.2.0),
-`aoe4-perf3-21`
-(`bc82c565`, release v1.1.0), `aoe4-perf2-20` (`6990a221`,
-release v1.0.0), `aoe4-perf-18` (`20fdc47a`, without
-patch 0014) and `aoe-fastcontinue2-11` (`eca1e25b`, without 0012 to 0014). `aoe4-perf4-22`, a first build of patch 0016 that froze
-the game at start, was removed in Contents Manager (FEXCore type, trash icon, Remove) on 2026-10-08. GameNative writes the selected content's
-DLL at every start, so after a bad build, selecting one of these in the Emulation tab (`tools/gn_select_fex.py
-aoe4-perf5-23`) is enough; that switch was used many times that day, each time taking effect at the next start.
+A DLL installed by hand that the selected content does not name stays in place. On 2026-10-07 the job build `hot2`
+(`a29bf0a8`, with a `thread_local` in `InvalidationTracker.cpp`), installed by hand as `libarm64ecfex.dll`, ended every
+container start about 13 s in. With no running container the file cannot be replaced from Wine, and the app data is
+private (`run-as: package not debuggable`, no `su`). Selecting a content that names `libarm64ecfex.dll` overwrote it
+at the next start.
 
 ## Gotchas
 
-- GameNative **re-installs the files of the selected FEXCore Version on every launch** (Emulation tab).
-  A hand-patched DLL that the selected content names is reverted (observed: patched `libarm64ecfex.dll`,
-  mtime 10:13, reverted to stock at 10:27 when the game next launched). A DLL that the content does
-  not name stays: `ntdll-waitq-fix-1` ships only `ntdll.dll`, and with it selected a hand-installed
-  `libarm64ecfex.dll` (`d20e07a7`) was still in place after a fresh container start (2026-10-07 08:53).
-- The `Wow64\amd64` registry value is forced back to `xtajit64.dll`; editing it (or the `wine.inf` that
-  defines it — there is no copy inside the prefix) does not survive a launch.
-- Long waits are normal: launching to the AoE IV loading screen takes minutes, and "stuck" often means
-  it is uploading saves rather than hung.
-- The AYN assistant overlay is `NOT_FOCUSABLE NOT_TOUCHABLE` (a `MAGNIFICATION_OVERLAY`, type 2027) —
-  it does **not** swallow taps.
+- GameNative **re-installs the files of the selected FEXCore Version on every launch**. A hand-patched DLL that the
+  selected content names is reverted at the next launch.
+- The `Wow64\amd64` registry value follows the selected content's manifest; editing it or `wine.inf` does not
+  survive a launch.
+- Long waits are normal: launching to the AoE IV loading screen takes minutes, and "stuck" often means it is syncing
+  saves rather than hung. A "Save Conflict" dialog can appear at a start; the tests always answer **Keep local**.
+- The AYN assistant overlay is `NOT_FOCUSABLE NOT_TOUCHABLE` (a `MAGNIFICATION_OVERLAY`, type 2027); it does not
+  swallow taps. The launcher's `ShellDropTarget` does (step 2 above).
+- About 20 game starts in one day made Steam log the account off right after logon on 2026-10-08, and GameNative then
+  crashed on every game page. Space test starts out, and wait minutes, not seconds, after a crashed start.

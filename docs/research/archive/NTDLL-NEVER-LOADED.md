@@ -1,5 +1,7 @@
 # The ntdll patches were never loaded
 
+> **Archived.** A void result, correct as a measurement (2026-10-06). Patch 0006 later applied the same register fix inside FEX and the kill still came ([SYSCALL-RETURN.md](../../how-it-works/SYSCALL-RETURN.md)), which also has the measured register list (rcx = status, rdx changed, r10 = return address, r8 and r9 kept, r11 = rflags kept). The invoke-only test below was never run and is no longer needed. The story: [STORY.md](../../STORY.md).
+
 This is the most important finding of the investigation so far, and it invalidates conclusions drawn
 across multiple earlier sessions.
 

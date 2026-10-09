@@ -15,7 +15,7 @@ import shutil
 import struct
 import subprocess
 
-# llvm-nm and llvm-objdump from llvm-mingw (docs/guides/BUILDING-FEX.md); set LLVM_MINGW to its directory if they are
+# llvm-nm and llvm-objdump from llvm-mingw (docs/guides/BUILDING.md); set LLVM_MINGW to its directory if they are
 # not on PATH.
 NM = os.path.join(os.environ["LLVM_MINGW"], "bin", "llvm-nm") if os.environ.get("LLVM_MINGW") else shutil.which("llvm-nm") or "llvm-nm"
 

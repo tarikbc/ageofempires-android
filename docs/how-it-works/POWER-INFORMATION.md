@@ -41,7 +41,8 @@ until its hang detector stopped it after 240 s. Using the original function's en
 by `powrprof.dll`) fixed it: `pwrcost` then got status 0, the right MHz for all 8 cores, and 2,000 calls took less
 than 0.05 us each.
 
-Counters, readable with `tools/agent.py peek libarm64ecfex.dll 3ef2e8 28` (build `b5e6e357`, marker `PWRCACH1`):
+Counters, readable with `tools/agent.py peek libarm64ecfex.dll 3ef2e8 28` (marker `PWRCACH1`; the same RVA in the
+v1.2.0 DLL `b5e6e357` and the v1.4.0 DLL `7e707379`):
 target, calls, cached calls, redirect target. In the game: 8,819 calls and 8,217 answered from the cache after the
 start and the first minutes of a replay; 45 calls and 41 cached per second at 8X.
 
@@ -56,4 +57,4 @@ Late-game windows of the replay (game time at start), 1X, the player's camera, f
 
 The main thread after 0016, same late game: `NtPowerInformation` 1.7 %, `NtWaitForAlertByThreadId` 35.5 %, CPU 46 %
 of one core (55 % before). The freed time became waiting: the main thread is not what limits the frame. The larger
-step came from the GPU clock ([TUNING.md](../guides/TUNING.md), "The late game at full clocks").
+step came from the GPU clock ([PERFORMANCE.md](../research/PERFORMANCE.md), "the late game at full clocks").

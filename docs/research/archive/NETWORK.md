@@ -1,5 +1,7 @@
 # The network theory: the game's backend session and Wine's TLS
 
+> **Archived.** Ruled out as a trigger (2026-10-06). Two statements below are wrong: the patched ntdll was never loaded ([NTDLL-NEVER-LOADED.md](NTDLL-NEVER-LOADED.md)), and `CertificateRevocation=0` is a mitigation, not a fix ([WINE-GAPS.md](WINE-GAPS.md)). Whether that registry value is still set on the Thor was not checked; the current setup does not need it. The story: [STORY.md](../../STORY.md).
+
 Three write-ups from 2026-10-06, joined in the order they were written. The stops were later traced to the hook check and the watchdog ([HOOK-CHECK.md](../../how-it-works/HOOK-CHECK.md), [WATCHDOG.md](../../how-it-works/WATCHDOG.md)).
 
 - [Part 1](#part-1-the-games-backend-session-is-broken): The game's backend session is broken

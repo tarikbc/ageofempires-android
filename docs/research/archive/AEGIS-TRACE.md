@@ -1,5 +1,7 @@
 # Tracing the syscalls made inside the game
 
+> **Archived.** A FEX build that logs the game's syscalls (2026-10-06). Not finished: the trace builds broke the game. The syscall result that mattered is in [SYSCALL-RETURN.md](../../how-it-works/SYSCALL-RETURN.md). The story: [STORY.md](../../STORY.md).
+
 Work in progress, 2026-10-06/07. The goal: record what the game, and Aegis in particular, asks the OS, up to the
 kill, so the first point where it behaves differently from a working machine can be found.
 

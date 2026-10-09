@@ -53,8 +53,9 @@ If Aegis inspects suspended threads, a wrong context could be what it reacts to.
 research it adds the cooperative-suspend fixes b8d8f34f, 211e7a3d and 6e8bf984, but not the context fixes. Its
 profile says "Needs a fresh arm64ec container"; it also switches synchronisation to ntsync. GameNative's own
 content list stops at 11.0-1 for ARM64EC, so it has to be imported as a `.wcp`
-(`/sdcard/Download/proton-11.0-2-arm64ec.wcp`, SHA-256 `fffa467241bdae3e…`, pushed 2026-10-06). **Not tested
-yet.**
+(`/sdcard/Download/proton-11.0-2-arm64ec.wcp`, SHA-256 `fffa467241bdae3e…`, pushed 2026-10-06). **Tested on
+2026-10-07 (12:27 to 12:40):** no FPS gain, some stutters, and its exception resume path still about 60 times slower
+than patch 0010's, so the setup stays on 11.0-99 ([`WATCHDOG.md`, part 2](../how-it-works/WATCHDOG.md#part-2-fast-continue-the-watchdogs-real-cost-was-a-wineserver-round-trip-per-exception-2026-10-07)).
 
 ## The device's FEX already has FEX's own suspend fixes (research)
 

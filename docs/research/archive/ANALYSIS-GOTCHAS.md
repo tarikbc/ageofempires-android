@@ -1,5 +1,7 @@
 # Two things to check before trusting an offline analysis
 
+> **Archived.** Checks for offline analysis of the game binary (2026-10-06): three sections, although the title says two. The delay constants and the `SDC` loop quoted in [AEGIS.md](../../how-it-works/AEGIS.md) are at RVA + 0x1000 per this note. `ghidra_scripts/DecompileTargets.py` is not in the repo. The story: [STORY.md](../../STORY.md).
+
 Both of these cost real time this session. Neither is obvious from the files themselves.
 
 ## 1. `text.bin` is indexed by `RVA - 0x1000`, not by RVA

@@ -1,15 +1,20 @@
-# Experiment ledger
+# Experiment ledger: getting the game to run (2026-10-06 and 07)
 
-Everything tried, and what actually happened. **The binary outcome is always the same test:** does the
-game's own log (`warnings.log`) keep growing past ~5 minutes? "Process still alive" is not success —
+Everything tried against the protection's stops, and what actually happened. **The binary outcome is always the same
+test:** does the game's own log (`warnings.log`) keep growing past ~5 minutes? "Process still alive" is not success:
 the kill *suspends* the threads and leaves the process hung, so `ps` still shows it.
+
+The speed work that followed has its own ledgers: settings measured and not kept in
+[TUNING.md](../guides/TUNING.md), "Measured and not kept"; FEX patches and experiment builds in
+[patches/fex](../../patches/fex); every speed measurement in [PERFORMANCE.md](PERFORMANCE.md). The story of both
+phases is [STORY.md](../STORY.md).
 
 ## Solved (2026-10-07)
 
 | Tried | Result |
 |---|---|
-| FEX patch 0007: rewrite Wine's exported `FF 25` thunks to `48 FF 25` in the game process | The game's API hook check flags nothing; the start-up kill is gone ([HOOK-CHECK.md](../how-it-works/HOOK-CHECK.md)) |
-| FEX patch 0010 (`FEX_EXP_FASTCONTINUE=1`): resume x64 code after an exception without Wine's wineserver round trip | Protection loop about 1.1 s per cycle, watchdog bucket 0; the game played past 15 minutes in two runs, the second with the exact repo patch set ([`WATCHDOG.md`, part 2](../how-it-works/WATCHDOG.md#part-2-fast-continue-the-watchdogs-real-cost-was-a-wineserver-round-trip-per-exception-2026-10-07)) |
+| FEX patch 0007: rewrite Wine's exported `FF 25` thunks to `48 FF 25` (in the game process at first; in every process that runs x64 code since v1.1.0) | The game's API hook check flags nothing; the start-up kill is gone ([HOOK-CHECK.md](../how-it-works/HOOK-CHECK.md)) |
+| FEX patch 0010 (first behind `FEX_EXP_FASTCONTINUE=1`, on by default since build `eca1e25b`): resume x64 code after an exception without Wine's wineserver round trip | Protection loop about 1.1 s per cycle, watchdog bucket 0; the game played past 15 minutes in two runs, the second with the exact repo patch set ([`WATCHDOG.md`, part 2](../how-it-works/WATCHDOG.md#part-2-fast-continue-the-watchdogs-real-cost-was-a-wineserver-round-trip-per-exception-2026-10-07)) |
 
 ## Ruled out — tested, game still died
 

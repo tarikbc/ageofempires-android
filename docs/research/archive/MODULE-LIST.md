@@ -1,7 +1,9 @@
 # The game's module list is full of names Windows does not have
 
+> **Archived.** Ruled out (2026-10-06). The rule for which emulator DLL name the game loads is in [GAMENATIVE.md](../../guides/GAMENATIVE.md). "The README" is the first README (git `7e7ae2a`). The story: [STORY.md](../../STORY.md).
+
 > **Status: ruled out as the trigger.** The emulator DLL name was tested before this session
-> (`xtajit64.dll`) and the game still died — see [EXPERIMENTS.md](../LEDGER.md). The FEX-branded name
+> (`xtajit64.dll`) and the game still died — see [LEDGER.md](../LEDGER.md). The FEX-branded name
 > is a real cosmetic regression worth reverting, but it is **not** the cause, and no further rounds
 > should be spent on it. Left here as a record of the module names, which remain interesting for the
 > hash hypothesis in [KILL-ANALYSIS.md](KILL-ANALYSIS.md).

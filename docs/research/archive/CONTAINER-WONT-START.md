@@ -1,5 +1,7 @@
 # Why the container stalls: Box64 cannot find `wine`
 
+> **Archived.** Resolved (2026-10-06): the container's Wine Version named a missing tree. The earlier sections are wrong diagnoses kept for the record. The how-to parts are in [GAMENATIVE.md](../../guides/GAMENATIVE.md). The story: [STORY.md](../../STORY.md).
+
 GameNative keeps its own logs under `/sdcard/Android/data/app.gamenative/files/` — readable over adb,
 unlike everything in `/data/user/0/app.gamenative/` (which is app-private and denied).
 

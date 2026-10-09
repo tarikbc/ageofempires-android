@@ -1,5 +1,7 @@
 # FEX leaks its identity to the guest: CPUID leaf 0x40000000
 
+> **Archived.** Patch 0002 hid FEX's name in CPUID leaf `0x40000000` (2026-10-06). Tested live, the kill came anyway ([FEX-PATCH-LIVE.md](FEX-PATCH-LIVE.md)); the package dropped 0002 in v1.1.0 at the same speed. The "Next steps" below were done; `dbgprobe_cpuid_report.txt` is not in the repo. The story: [STORY.md](../../STORY.md).
+
 The environment hands the game an unambiguous "you are running under FEX" signature, and FEX's
 `HideHypervisorBit` option does **not** hide it.
 

@@ -79,8 +79,8 @@ buffer cap from 128 to 512 MB, so the full recompile comes less often.
 | analysis `be6234d8` (before) | ~13 min | 25.6 | 33.4 ms | 116.9 ms | 761 (7.9/s) | 65 (0.67/s) | 617 ms |
 | analysis + 0012 (128 MB cap) | ~1 min | 43.4 | 16.7 ms | 33.4 ms | 37 (0.39/s) | 8 (0.08/s) | 300 ms |
 | analysis + 0012 + 0013 | ~1 min | 42.6 | 16.7 ms | 50.0 ms | 60 | 1 | 334 ms |
-| **previous release** `eca1e25b` (0002, 0004, 0006, 0007, 0009, 0010) | 1 / 5 / 10 min | 26.7 / 26.6 / 26.0 | 33.4 ms | 133.5 ms | 721 / 734 / 744 | 71 / 75 / 83 | 467 / 517 / 434 ms |
-| **release** `20fdc47a` (the same + 0012 + 0013) | 1 / 5 / 10 / 20 min | 43.7 / 43.2 / 42.3 / 42.0 | 16.7 ms | 33.4 ms | 29 / 35 / 39 / 24 | 2 / 0 / 2 / 0 | 167 / 67 / 267 / 50 ms |
+| **previous build** `eca1e25b` (`aoe-fastcontinue2-11`) (0002, 0004, 0006, 0007, 0009, 0010) | 1 / 5 / 10 min | 26.7 / 26.6 / 26.0 | 33.4 ms | 133.5 ms | 721 / 734 / 744 | 71 / 75 / 83 | 467 / 517 / 434 ms |
+| **build** `20fdc47a` (`aoe4-perf-18`) (the same + 0012 + 0013) | 1 / 5 / 10 / 20 min | 43.7 / 43.2 / 42.3 / 42.0 | 16.7 ms | 33.4 ms | 29 / 35 / 39 / 24 | 2 / 0 / 2 / 0 | 167 / 67 / 267 / 50 ms |
 
 The last two rows are the same automated run (`tools/bench.py run`, 14:52 and 15:20), one after the other.
 

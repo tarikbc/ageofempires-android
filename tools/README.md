@@ -32,17 +32,23 @@ Scripts that run on a Mac with the Thor connected over adb. How they fit togethe
 | [`gn_select_fex.py`](gn_select_fex.py) | Selects the FEXCore version of the AoE IV container |
 | [`gn_driver.py`](gn_driver.py) | Imports and selects a graphics driver |
 | [`build_turnip.sh`](build_turnip.sh) | Builds Mesa's Turnip for Android on a Mac and packages it as a GameNative driver zip |
+| [`gn_nav.py`](gn_nav.py) | GameNative UI automation, used by the scripts above |
+| [`redact.py`](redact.py) | Removes personal data (Steam name, IDs, tokens) from logs before they are committed: `python3 tools/redact.py --check docs` must report nothing |
+
+## Reading traces
+
+| Tool | What it does |
+|---|---|
 | [`research/turnip_stages.py`](research/turnip_stages.py) | GPU time per render stage from a Perfetto trace of a Turnip built with perfetto (with `turnip_lrz_reasons.py` and `turnip_renderstages.cfg`) |
 | [`research/turnip_gpu_timeline.py`](research/turnip_gpu_timeline.py) | GPU busy share and idle gaps from the same trace; `turnip_submit_latency.py` matches each `vkQueueSubmit` to its GPU execution, `turnip_cpu_events.py` counts the driver's CPU events per thread |
 | [`research/frametimes_graph.py`](research/frametimes_graph.py) | Stacked frame-time panels from `bench.py` CSVs (the README graph) |
 | [`research/stutter_align.py`](research/stutter_align.py) | Thread states inside long frames from a mono-clock atrace (with `present_chain.py`, `pipeline_timeline.py`, `freq_in_frames.py`, `fexstats_align.py`; TESTING.md) |
-| [`gn_nav.py`](gn_nav.py) | GameNative UI automation, used by the scripts above |
-| [`redact.py`](redact.py) | Removes personal data (Steam name, IDs, tokens) from logs before they are committed |
+| [`research/`](research) | One-off scripts and probes from the investigation ([index](research/README.md)) |
+| [`research/gn_chain.py`](research/gn_chain.py) | Latency from the game's present to GameNative's `queueBuffer`, from the same kind of atrace |
 
 ## Folders
 
 | Folder | What is in it |
 |---|---|
-| [`probes/`](probes) | Small Windows programs that run inside the Wine session; build them with [`probes/build.sh`](probes/build.sh) (needs mingw-w64) |
+| [`probes/`](probes) | Small Windows programs that run inside the Wine session ([list](probes/README.md)); build them with [`probes/build.sh`](probes/build.sh) (needs mingw-w64) |
 | [`thor/`](thor) | Batch files that the watch scripts run inside Wine |
-| [`research/`](research) | One-off scripts and probes from the investigation |

@@ -1,5 +1,7 @@
 # Four fixes applied, the kill survives — and two theories are now dead
 
+> **Archived.** Superseded state of the kill question before the SMC work (2026-10-06). The "deployed ntdll" line is void: Wine never loaded that ntdll ([NTDLL-NEVER-LOADED.md](NTDLL-NEVER-LOADED.md)). The story: [STORY.md](../../STORY.md).
+
 The state at the end of this session, recorded honestly. Everything below was verified by hash or by
 measurement, not assumed.
 

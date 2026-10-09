@@ -1,5 +1,7 @@
 # Concrete gaps between Wine and Windows that Aegis could notice
 
+> **Archived.** Two Wine gaps the protection could notice (2026-10-06). Neither was tested further; neither was needed for the fixes. The story: [STORY.md](../../STORY.md).
+
 Both were measured from inside the game's own session, and both are things a "stealth" anti-tamper
 plausibly depends on.
 

@@ -111,6 +111,8 @@ protected code is replaced by virtualized data, and at runtime it is restored/in
 
 ## Why this matters for the freeze
 
+> Written on 2026-10-06, before the cause was known. The stops turned out to be the start-up hook check and the watchdog ([HOOK-CHECK.md](HOOK-CHECK.md), [WATCHDOG.md](WATCHDOG.md)); the socket timing was not causal ([archive/NETWORK.md](../research/archive/NETWORK.md)). The block-list numbers are the log's own two lines: 464 unique items added from `BlockList.json`, and "Aegis block list contains 386 items".
+
 Aegis is an **active anti-tamper**: it carries permit/block/report lists, injects fake instructions, patches
 RTTI and runs a stealth startup before `main`. The freeze — a thread that suspends every other thread ~1 min
 after the socket closes — is consistent with Aegis's runtime response to a check it does not like. The
@@ -154,6 +156,8 @@ direct evidence that Aegis's kill is an integrity response.
 
 
 ## Timing constants inside the protection region (round 12 analysis)
+
+> The addresses in this section were read from `text.bin`, which is indexed by RVA − 0x1000: the real RVAs are 0x1000 higher ([archive/ANALYSIS-GOTCHAS.md](../research/archive/ANALYSIS-GOTCHAS.md)).
 
 With the `.wcp` import blocked, I analysed the restored `.text` dump (`text.bin`, 91 MB) directly,
 looking for the millisecond constants a delayed kill would need.
@@ -201,6 +205,8 @@ with a healthy backend session for the whole run, so whatever this 90 s path is,
 whole story.
 
 ## The 3-byte runtime string: "SDC"
+
+> The addresses in this section were read from `text.bin`, which is indexed by RVA − 0x1000: the real RVAs are 0x1000 higher ([archive/ANALYSIS-GOTCHAS.md](../research/archive/ANALYSIS-GOTCHAS.md)).
 
 The string at `0x3e41ae6` is built by an inline decrypt loop, so it can be recovered statically:
 
