@@ -1,0 +1,165 @@
+--- a/FEXCore/include/FEXCore/Core/CoreState.h
++++ b/FEXCore/include/FEXCore/Core/CoreState.h
+@@ -375,6 +375,7 @@
+   uint64_t ThreadDispatchRemoveCodeEntry {};
+   uint64_t GuestSignal_SIGILL {};
+   uint64_t GuestSignal_SIGTRAP {};
++  uint64_t GuestSignalTrapNative {}; // Patch 0017: when set, the guest-signal stubs branch here instead of trapping
+   uint64_t GuestSignal_SIGSEGV {};
+   uint64_t SignalReturnHandler {};
+   uint64_t SignalReturnHandlerRT {};
+--- a/FEXCore/Source/Interface/Core/Dispatcher/Dispatcher.cpp
++++ b/FEXCore/Source/Interface/Core/Dispatcher/Dispatcher.cpp
+@@ -403,6 +403,13 @@
+     GuestSignal_SIGILL = GetCursorAddress<uint64_t>();
+ 
+     SpillStaticRegs(TMP1);
++
++    // Patch 0017: a frontend may take this guest fault directly (no host trap) through a per-thread pointer.
++    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignalTrapNative));
++    ARMEmitter::ForwardLabel NoNativeSIGILL;
++    (void)cbz(ARMEmitter::Size::i64Bit, TMP1, &NoNativeSIGILL);
++    br(TMP1);
++    (void)Bind(&NoNativeSIGILL);
+ 
+     hlt(0);
+   }
+@@ -414,6 +421,13 @@
+ 
+     SpillStaticRegs(TMP1);
+ 
++    // Patch 0017: a frontend may take this guest fault directly (no host trap) through a per-thread pointer.
++    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignalTrapNative));
++    ARMEmitter::ForwardLabel NoNativeSIGTRAP;
++    (void)cbz(ARMEmitter::Size::i64Bit, TMP1, &NoNativeSIGTRAP);
++    br(TMP1);
++    (void)Bind(&NoNativeSIGTRAP);
++
+     brk(0);
+   }
+ 
+@@ -423,6 +437,13 @@
+     GuestSignal_SIGSEGV = GetCursorAddress<uint64_t>();
+ 
+     SpillStaticRegs(TMP1);
++
++    // Patch 0017: a frontend may take this guest fault directly (no host trap) through a per-thread pointer.
++    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignalTrapNative));
++    ARMEmitter::ForwardLabel NoNativeSIGSEGV;
++    (void)cbz(ARMEmitter::Size::i64Bit, TMP1, &NoNativeSIGSEGV);
++    br(TMP1);
++    (void)Bind(&NoNativeSIGSEGV);
+ 
+     // hlt/udf = SIGILL
+     // brk = SIGTRAP
+--- a/Source/Windows/ARM64EC/Module.cpp
++++ b/Source/Windows/ARM64EC/Module.cpp
+@@ -779,6 +779,81 @@
+   ECContext.Fpsr = FPSR;
+ 
+   return ECContext;
++}
++
++struct FastRaiseStatsType {
++  uint64_t Marker; // "FASTRAIS"
++  uint64_t Fast;
++  uint64_t Slow;
++};
++FastRaiseStatsType FastRaiseStats = {0x5349415254534146ULL, 0, 0}; // "FASTRAIS"
++static bool FastRaiseEnabled = [] { const char* E = getenv("FEX_EXP_FASTRAISE"); return !(E && E[0] == '0'); }();
++
++static void FastRaiseTo(EXCEPTION_RECORD& GuestRec, ARM64_NT_CONTEXT& GuestContext, BOOL FirstChance) {
++  if (FastRaiseEnabled && FirstChance) {
++    const uintptr_t Sp = (GuestContext.Sp - 128 - sizeof(KiUserExceptionDispatcherStackLayout)) & ~uintptr_t(0xF);
++    MEMORY_BASIC_INFORMATION Info {};
++    if (Sp > 0x10000 && NtQueryVirtualMemory(NtCurrentProcess(), reinterpret_cast<void*>(Sp), MemoryBasicInformation, &Info, sizeof(Info), nullptr) == STATUS_SUCCESS &&
++        Info.State == MEM_COMMIT && (Info.Protect & (PAGE_READWRITE | PAGE_EXECUTE_READWRITE)) &&
++        reinterpret_cast<uintptr_t>(Info.BaseAddress) + Info.RegionSize >= Sp + sizeof(KiUserExceptionDispatcherStackLayout)) {
++      auto* Args = reinterpret_cast<KiUserExceptionDispatcherStackLayout*>(Sp);
++      memset(Args, 0, sizeof(*Args));
++      Args->Context = GuestContext;
++      Args->Rec = GuestRec;
++      __atomic_fetch_add(&FastRaiseStats.Fast, 1, __ATOMIC_RELAXED);
++      JumpSetStack(KiUserExceptionDispatcher, Sp);
++    }
++    __atomic_fetch_add(&FastRaiseStats.Slow, 1, __ATOMIC_RELAXED);
++  }
++  NtRaiseExceptionNative(&GuestRec, &GuestContext, FirstChance);
++}
++
++struct FastTrapStatsType {
++  uint64_t Marker; // "FASTTRP1"
++  uint64_t Taken;
++  uint64_t Fallback;
++  uint64_t Ill, Trap, Segv;
++};
++FastTrapStatsType FastTrapStats = {0x3150525454534146ULL, 0, 0, 0, 0, 0}; // "FASTTRP1"
++static bool FastTrapEnabled = [] { const char* E = getenv("FEX_EXP_FASTTRAP"); return !(E && E[0] == '0'); }();
++static void FastRaiseOrNative(EXCEPTION_RECORD& GuestRec, ARM64_NT_CONTEXT& GuestContext, BOOL FirstChance);
++
++// Patch 0017: entered from FEXCore's guest-signal stubs (SIGILL/SIGTRAP/SIGSEGV breaks of JIT code: ud2, int3, int n,
++// trap-flag steps) with the static registers spilled, on the emulator stack, instead of a hlt/brk host trap. Builds the
++// guest exception as RethrowGuestException does after that trap, without the trap, the signal handler and the first
++// KiUserExceptionDispatcher pass. FEX_EXP_FASTTRAP=0 turns it off. Never returns.
++extern "C" __attribute__((noreturn)) void FastTrapEntry() {
++  uint64_t FPCR, FPSR;
++  __asm volatile("mrs %[fpcr], fpcr" : [fpcr] "=r"(FPCR));
++  __asm volatile("mrs %[fpsr], fpsr" : [fpsr] "=r"(FPSR));
++  auto* Thread = GetCPUArea().ThreadState();
++  auto& Fault = Thread->CurrentFrame->SynchronousFaultData;
++  if (Fault.Signal == FEXCore::Core::FAULT_SIGILL) {
++    __atomic_fetch_add(&FastTrapStats.Ill, 1, __ATOMIC_RELAXED);
++  } else if (Fault.Signal == FEXCore::Core::FAULT_SIGTRAP) {
++    __atomic_fetch_add(&FastTrapStats.Trap, 1, __ATOMIC_RELAXED);
++  } else {
++    __atomic_fetch_add(&FastTrapStats.Segv, 1, __ATOMIC_RELAXED);
++  }
++  ARM64_NT_CONTEXT GuestContext = StoreStateToPackedECContext(Thread, static_cast<uint32_t>(FPCR), static_cast<uint32_t>(FPSR));
++
++  // As RethrowGuestException: x64 clears TF when an exception is delivered.
++  uint32_t EFlags = CTX->ReconstructCompactedEFLAGS(Thread, false, nullptr, 0);
++  EFlags &= ~(1 << FEXCore::X86State::RFLAG_TF_RAW_LOC);
++  CTX->SetFlagsFromCompactedEFLAGS(Thread, EFlags);
++
++  EXCEPTION_RECORD HostRec {};
++  HostRec.ExceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION;
++  BOOL FirstChance = TRUE;
++  EXCEPTION_RECORD GuestRec = FEX::Windows::HandleGuestException(Fault, HostRec, GuestContext.Pc, GuestContext.X8, GuestContext.X0, FirstChance);
++  if (GuestRec.ExceptionCode == EXCEPTION_SINGLE_STEP) {
++    GuestContext.Cpsr &= ~(1 << 21); // PSTATE.SS
++  } else if (GuestRec.ExceptionCode == EXCEPTION_BREAKPOINT) {
++    GuestContext.Pc -= 1;
++  }
++  __atomic_fetch_add(&FastTrapStats.Taken, 1, __ATOMIC_RELAXED);
++  FastRaiseOrNative(GuestRec, GuestContext, FirstChance);
++  __builtin_unreachable();
+ }
+ 
+ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT& Context) {
+@@ -808,9 +883,17 @@
+     GuestContext.Pc -= 1;
+   }
+ 
+-  NtRaiseExceptionNative(&GuestRec, &GuestContext, FirstChance);
++  // Patch 0017 (fast raise): place the dispatcher frame on the guest stack below the x64 red zone and enter
++  // KiUserExceptionDispatcher directly, as HandleSyscall does, instead of the unix NtRaiseException. A debugger does
++  // not see the first-chance event; the old path stays as the fallback when the guest stack cannot take the frame.
++  // FEX_EXP_FASTRAISE=0 turns it off.
++  FastRaiseTo(GuestRec, GuestContext, FirstChance);
+ }
+ 
++static void FastRaiseOrNative(EXCEPTION_RECORD& GuestRec, ARM64_NT_CONTEXT& GuestContext, BOOL FirstChance) {
++  FastRaiseTo(GuestRec, GuestContext, FirstChance);
++}
++
+ class ECSyscallHandler : public FEXCore::HLE::SyscallHandler, public FEXCore::Allocator::FEXAllocOperators {
+ public:
+   ECSyscallHandler() = default;
+@@ -1542,6 +1625,7 @@
+ 
+   FEX::Windows::CallRetStack::InitializeThread(Thread);
+   Thread->CurrentFrame->Pointers.ExitFunctionEC = reinterpret_cast<uintptr_t>(&ExitFunctionEC);
++  Thread->CurrentFrame->Pointers.GuestSignalTrapNative = Exception::FastTrapEnabled ? reinterpret_cast<uintptr_t>(&Exception::FastTrapEntry) : 0;
+   CPUArea.StateFrame() = Thread->CurrentFrame;
+ 
+   uint64_t EnterEC = Thread->CurrentFrame->Pointers.DispatcherLoopTopEnterEC;

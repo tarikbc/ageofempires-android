@@ -298,6 +298,57 @@ The counts of frames over 40 ms vary from 24 to 67 between windows of the same s
 small gain here. The two sources above are the game's own job system and GameNative's compositor; neither has a
 knob in this repo. The compositor latency is reported with the numbers above for GameNative.
 
+## Exceptions without a host trap (patch 0017, 2026-10-09, 00:40 to 02:05)
+
+Instruction-pointer samples of the main thread in the skirmish (2 ms, 50 s, through `tools/agent.py sample`) put
+13.7 % of it at the entry of one of the protection's vectored exception handlers (`exe+3cd9430`), and patch 0010's own
+counter (`FSTCONT1`, read through the agent) showed about 44,000 resumed exceptions per second in the game process.
+Counting them by FEX's guest signal (`FASTTRP1`, a counter in the experiment build): **all of them are illegal-instruction
+faults (SIGILL)** raised by JIT code. Each one cost a `hlt` host trap, Wine's signal handler, a first
+`KiUserExceptionDispatcher` pass whose only job was to rethrow it to the guest, and a unix `NtRaiseException`.
+[Patch 0017](../../patches/fex/0017-trapless-guest-faults.patch) lets FEXCore's guest-signal stubs branch to the
+frontend instead of trapping, and the frontend raises the guest exception directly (fast raise), as it already does for
+emulated syscalls.
+
+Skirmish benchmark, the same session, in this order (frames at the 120 Hz display; 3 refreshes = 25 ms):
+
+| Run | FPS (minutes 1 / 3) | frames of 3 refreshes | of 2 refreshes | over 40 ms |
+|---|---|---|---|---|
+| Release FEX (`aoe4-perf5-23`), 00:52 | 56.4 / 56.3 | 1,038 / 1,039 | 3,371 / 3,363 | 23 / 37 |
+| 0017 without the fast raise (`FEX_EXP_FASTRAISE=0`) | 57.6 / 57.6 | 840 / 808 | 3,752 / 3,731 | 25 / 21 |
+| **0017** | **58.3 / 57.8** | **813 / 825** | 3,695 / 3,634 | 21 / 40 |
+| Release FEX again, 02:02 | 56.6 / 56.5 | 999 / 1,014 | 3,446 / 3,365 | 26 / 26 |
+
+So about +1.5 FPS and a fifth fewer 25 ms frames; the frames over 40 ms stay within their spread (21 to 40 per window
+in identical runs). With 0017 every exception took both new paths (`FASTTRP1` 44,175/s, `FASTRAIS` 44,264/s, no
+fallback). The fast raise alone, on the old trap path, gave no measurable change (56.0 / 55.8 against 56.9 / 56.8).
+
+Release check of the package `aoe4-perf6-30` (the same DLL), 02:29 to 02:48: windows at match minutes 1, 5, 10 and 15
+gave 57.8, 57.4, 57.4 and 54.7 FPS (the base grows over the match), no stop in 19 minutes, and the counters still read
+43,582 trap-less exceptions and 43,396 fast raises per second.
+
+Tried in the same session and not kept (each against the baseline of its hour):
+
+| Change | Result |
+|---|---|
+| `VKD3D_FRAME_RATE=60` | 55.6 / 55.8 FPS, frames over 40 ms 39 / 40: lower FPS, no fewer long frames |
+| `VKD3D_SWAPCHAIN_LATENCY_FRAMES=2` | 56.6 / 56.0 FPS, 33 / 47 over 40 ms |
+| `MESA_VK_WSI_PRESENT_MODE=fifo` (the container uses mailbox) | 56.9 / 57.1 FPS but 335 / 312 frames over 33 ms and 70 / 61 over 40 ms |
+
+Two findings that closed other leads:
+
+- **GameNative adds little.** In the scheduler trace, GameNative's X server thread (`RequestHandler`) is woken by the
+  game's Mesa WSI present thread (`WSI swapchain q`) a median 5.2 ms (p90 11.4) after the game's present: that wait is
+  the WSI thread waiting for the GPU to finish the frame. From there to GameNative's `queueBuffer` takes about 0.1 ms
+  in most frames ([`tools/research/gn_chain.py`](../../tools/research/gn_chain.py)).
+- **LRZ.** A Turnip build that names the cause showed every "Depth write + blending" case as a color write mask of RGB
+  without alpha (`a0:mask7/f`), no blending; the passes it affects are mostly 2 to 4 draws, so early depth rejection
+  would save little there.
+
+The thermal sampler of `tools/bench.py` ran two `cat` processes per thermal zone (95 zones) every 3 s, which took up to
+30 ms of a big core inside measured frames; it now uses shell builtins. The numbers in this section use the new
+sampler and are not comparable with earlier sections.
+
 ## v1.1.0 package: same speed without 0002 (21:54 to 22:17)
 
 The package without patch 0002, with 0007 in every process and with 0015 (`aoe4-perf3-21`, DLL `bc82c565`), against

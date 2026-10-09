@@ -12,18 +12,34 @@ import threading
 import time
 
 SERIAL = "64ff2273"
-SCRIPT = ("for z in /sys/class/thermal/thermal_zone*; do echo T $(cat $z/type) $(cat $z/temp); done 2>/dev/null; "
-          "echo G $(cat /sys/class/kgsl/kgsl-3d0/gpu_busy_percentage) $(cat /sys/class/kgsl/kgsl-3d0/gpuclk); "
-          "echo F $(cat /sys/devices/system/cpu/cpu3/cpufreq/scaling_cur_freq) "
-          "$(cat /sys/devices/system/cpu/cpu7/cpufreq/scaling_cur_freq)")
+# Shell builtins only (read, echo): the earlier version ran two `cat` per thermal zone (95 zones, about 190 processes
+# every 3 s), which took up to 30 ms of a big core inside measured frames. Zone names are read once.
+SCRIPT = ("for z in /sys/class/thermal/thermal_zone*; do read t < $z/temp && echo T ${z##*zone} $t; done 2>/dev/null; "
+          "read b < /sys/class/kgsl/kgsl-3d0/gpu_busy_percentage; read c < /sys/class/kgsl/kgsl-3d0/gpuclk; echo G $b $c; "
+          "read m < /sys/devices/system/cpu/cpu3/cpufreq/scaling_cur_freq; "
+          "read x < /sys/devices/system/cpu/cpu7/cpufreq/scaling_cur_freq; echo F $m $x")
+TYPES_SCRIPT = "for z in /sys/class/thermal/thermal_zone*; do read n < $z/type && echo ${z##*zone} $n; done 2>/dev/null"
+_types = {}
+
+
+def zone_types():
+    if not _types:
+        out = subprocess.run(["adb", "-s", SERIAL, "shell", TYPES_SCRIPT], capture_output=True, text=True).stdout
+        for line in out.splitlines():
+            p = line.split()
+            if len(p) == 2:
+                _types[p[0]] = p[1]
+    return _types
 
 
 def sample():
+    types = zone_types()
     out = subprocess.run(["adb", "-s", SERIAL, "shell", SCRIPT], capture_output=True, text=True).stdout
     cpu, gpu, res = [], [], {}
     for line in out.splitlines():
         p = line.split()
         if p[:1] == ["T"] and len(p) == 3 and p[2].lstrip("-").isdigit():
+            p[1] = types.get(p[1], "")
             if p[1].startswith(("cpu-", "cpuss-")):
                 cpu.append(int(p[2]) / 1000)
             elif p[1].startswith("gpuss-"):
