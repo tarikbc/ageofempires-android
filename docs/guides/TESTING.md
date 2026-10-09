@@ -115,7 +115,9 @@ player's own camera:
    `probes/gcopy.exe`, no console window), for example to `D:\aoe\m51.rec`.
 2. **Start it in the game:** profile (LS on the main menu), Match History, select the match, X "View Replay". In the
    replay, X locks the camera to the player's recorded view (a lock shows next to the name), and the D-pad sets the
-   speed (`tools/replay.py speed up|down N`; steps 1/2X, 1X, 2X, 4X, 8X).
+   speed (`tools/replay.py speed up|down N`; steps 1/2X, 1X, 2X, 4X, 8X). Check the match's length in its details
+   (51 m 22 s for the benchmark game): a benchmark skirmish that ran to its end (the A.I. won) is also in Match
+   History, as the newest row, and its replay is the idle base with the camera turning.
 3. **Run to the late game** at 8X and read the clock with `tools/replay.py clock` (a small crop of the game clock and
    the speed). Reaching 42 minutes took about 15 minutes on the Thor.
 4. **Measure** at 1X: `tools/replay.py window LABEL` (90 s of frame times with temperatures, then 20 s of per-thread
@@ -126,6 +128,29 @@ clocks". A fresh game start applies the container's power profile again; check t
 (`tools/thermals.py`). The replay file holds the
 players' names and IDs, so it stays out of the repo. `probes/lsgame.exe` lists the game's `My Games` folder into
 `D:\aoe\ls.txt`, also without a window.
+
+## Lining long frames up with a scheduler trace
+
+The compositor's present times (`frametimes.py`) are on `CLOCK_MONOTONIC`; ftrace runs on the boot clock by default,
+and the shell user may switch it: start `atrace --async_start -b 65536 sched freq idle gfx`, write `mono` to
+`/sys/kernel/tracing/trace_clock`, and stop with `atrace --async_stop -o FILE` after the window. A 40 s capture is
+about 1.1 GB of text; `grep -E "sched_switch|sched_waking|cpu_frequency"` cuts it to what the scripts read.
+
+- [`tools/research/stutter_align.py FRAMES.csv TRACE.txt [MS]`](../../tools/research/stutter_align.py): for every
+  frame longer than MS, the run / runnable / sleep time of the main, render, vkd3d and swapchain threads, their
+  longest sleep and who ended it, the cores they ran on, other tasks on the big cores, clock changes; then every
+  game thread's run time per frame, long frames against normal ones. Give it the game's own presents as the frames
+  file (one row per `QueueSubmit` pair of the `vkd3d_queue` thread) to measure in game time instead of display time.
+- [`present_chain.py FRAMES.csv GFX.txt [PRES.txt]`](../../tools/research/present_chain.py): the game's present
+  cadence, GameNative's `queueBuffer` cadence, the latency between them, and for each long display frame which of the
+  two had the gap. `GFX.txt` is the trace's `tracing_mark_write` lines for `queueBuffer`, `dequeueBuffer`, `present`,
+  `QueueSubmit` and `GPU completion`; `PRES.txt` the compositor thread's full B/E marks for durations.
+- [`pipeline_timeline.py`](../../tools/research/pipeline_timeline.py): the same events as a timeline inside each long
+  frame. [`freq_in_frames.py`](../../tools/research/freq_in_frames.py): time-weighted CPU clocks inside long against
+  normal frames. [`fexstats_align.py`](../../tools/research/fexstats_align.py): FEX's per-thread counters (a build
+  with the `THRSTAT1` table, read through the agent's `peek`) per sample bin against the longest frame in the bin.
+
+Results: [TUNING.md](TUNING.md), "The hitches at 58 FPS".
 
 ## Where the game spends its time
 

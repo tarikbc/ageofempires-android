@@ -255,6 +255,49 @@ threads, while about 10 threads that Windows does not list (likely Wine or drive
 Pass A's windows started about 12 s late (46:25, 48:35). Pinning halved how often the render thread lost its core,
 but the FPS stayed within the spread, so the package does not set it. `agent.py taffin '#tid' mask` sets one thread.
 
+## The hitches at 58 FPS (2026-10-08, 19:40 to 20:50)
+
+With the repo's driver and `VKD3D_CONFIG=no_staggered_submit` the skirmish benchmark runs at about 58 FPS, and a
+few frames per minute still take 42 or 51 ms (5 or 6 refreshes of the 120 Hz display). In one 94 s window: 988
+frames of one refresh, 3,271 of two, 868 of three, 163 of four, 56 of five and 11 of six or more. They are isolated:
+the frames before and after are normal. A still camera gives 46 frames over 40 ms per window against 67 with the
+camera turning, so streaming new content is not the main cause.
+
+What a 40 s scheduler trace on the display's clock shows for the long frames
+([`tools/research/stutter_align.py`](../../tools/research/stutter_align.py), method in [TESTING.md](TESTING.md)):
+
+- **Not the emulator.** FEX's own counters (a build with a per-thread statistics table, sampled 4 times a second)
+  give 4.6 ms of translation per second over all threads, the same in bins with a long frame as without (4.5 against
+  4.6 ms/s); its signal time (0.9 against 1.0 ms/s) and self-modifying-code events (342 against 348 per second) are
+  flat too.
+- **Not the clocks, not other apps.** Inside long frames the CPU clocks are equal or higher (prime core 2,988 against
+  2,899 MHz, big cores 2,672 against 2,641), the game's threads are rarely runnable-but-waiting, and other processes
+  take a few ms at most. (Two exceptions were this repo's own measurement tools: `cat` of the thermal zones and
+  `dumpsys` took up to 30 ms on a big core in a few frames.)
+- **Two sources.** The game's own presents (the wrapper's `QueueSubmit` marks, 59.0 per second) and GameNative's
+  `queueBuffer` to Android (58.9 per second) are both in the trace
+  ([`present_chain.py`](../../tools/research/present_chain.py)). Of 22 long display frames, 14 contain a long frame of
+  the game itself (a gap of 25 to 49 ms between its presents), and 8 have a normal game cadence (gaps of 11 to 16 ms)
+  while GameNative queued the buffer late: the latency from a game present to GameNative's `queueBuffer` is 6.5 ms
+  median, 15.5 ms p90, 30 ms max.
+- **The game-side long frames are job bursts.** Measured in game time (frames between the game's presents, 57 over
+  30 ms in 40 s): the main and render threads sleep 20 to 31 ms waiting to be woken by `rcss worker` threads, each
+  of the 8 workers runs 9 to 10 ms instead of 1 to 2, and the protection's thread (`exe+3e1b04c`) runs 11.6 ms
+  instead of 2.8. That thread works in 80 to 100 ms bursts every 0.26 s, a quarter of a core, but the bursts overlap
+  the long frames only at chance level (27 of 55), so it is a bystander.
+
+Tried against it:
+
+| Change | Frames over 40 ms per 60 s | Result |
+|---|---|---|
+| The 8 `rcss worker` threads pinned to the big cores (mask `f8`), A-B-A in one match | 23, **58**, 22 | Worse: the workers then compete with the main and render threads. Default placement stays |
+| `WRAPPER_DISABLE_PRESENT_WAIT=1` (GameNative's wrapper no longer waits for the game's present), skirmish benchmark | 24 / 35 per 90 s window | 58.8 / 57.0 FPS. Within the spread of the same setup without it (24 to 67 in six windows). Not kept |
+| Turnip `tu_emulate_second_queue=true` (two Vulkan queues for vkd3d-proton) | 29 / 40 per 90 s window | 57.7 / 57.7 FPS, but 269 frames over 33 ms per window against 124 to 152: more 3-refresh frames. Not kept |
+
+The counts of frames over 40 ms vary from 24 to 67 between windows of the same setup, so a single run cannot show a
+small gain here. The two sources above are the game's own job system and GameNative's compositor; neither has a
+knob in this repo. The compositor latency is reported with the numbers above for GameNative.
+
 ## v1.1.0 package: same speed without 0002 (21:54 to 22:17)
 
 The package without patch 0002, with 0007 in every process and with 0015 (`aoe4-perf3-21`, DLL `bc82c565`), against

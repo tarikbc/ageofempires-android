@@ -93,7 +93,20 @@ The CPU side of the same trace: 1,100 `vkQueueSubmit` per second from `vkd3d_que
 
 **Result:** `VKD3D_CONFIG=no_staggered_submit` in the container's environment gives **58.6 / 58.1 FPS** in the skirmish
 benchmark (minutes 1 / 3) against 52.3 / 52.3 the same afternoon with the same driver, median frame 16.9 ms, the GPU
-reported 95 % busy instead of 85 %. It is in the README setup. The late-game replay was not re-measured yet.
+reported 95 % busy instead of 85 %. In the late-game replay (two runs, 21:14 and 21:35 to 21:38) it gives 47.3 and
+48.5 FPS at 48:23 and 47.0 at 46:13, against 46.1 without it, but with 86, 57 and 79 frames over 50 ms per window
+against 15: the frame-time distribution widens (584 to 604 frames of one refresh and 165 to 200 of five per window,
+against 151 and 60), so the late game feels less even with it.
+
+A 60 s scheduler trace inside a late-game window with the variable (the tracing itself cost: 42.0 FPS and 191 frames
+over 50 ms in that window, so its numbers are indicative) showed a mechanism the early game does not have: in the long
+frames the main and render threads were runnable but not running for 17 to 45 ms, queued on the small cores 0 to 2,
+while the big cores were busy. Measured over the game's own frames, the threads that add the most time in a long
+frame are the protection's thread (+13 ms), the main thread (+11), the simulation thread (+8), each of the 8 job
+workers (+4 to 6) and wineserver (+5). Without the variable, vkd3d-proton's CPU waits throttle the whole pipeline
+and this contention does not show. Thread placement (the main thread on the prime core, the render thread on a big
+core, the rest on the others; [TUNING.md](TUNING.md), "Thread placement") is the untested candidate; the late-game
+replay runs were stopped at this point in favour of the quicker skirmish benchmark.
 
 How it was found, from the render-stage traces above
 ([`turnip_gpu_timeline.py`](../../tools/research/turnip_gpu_timeline.py),
@@ -132,6 +145,5 @@ Also tried in the same session, on top of `no_staggered_submit`:
 - Run-time options tried in the skirmish benchmark on this driver (52.3 FPS as released): `TU_AUTOTUNE_ALGO=bandwidth`
   50.5 / 50.7, a build with Mesa MR !43714 52.5 / 52.6, `disable_conservative_lrz=true` 51.0 / 50.8. `TU_DEBUG=gmem`
   got no clean run (two starts stopped with the DX12 fence error). Nothing beats the default.
-- Turnip's `tu_emulate_second_queue=true` (a second Vulkan queue on the same kernel submit queue, which would give
-  vkd3d-proton's compute and copy queues their own Vulkan queue): the run was stopped before it measured.
-- The late-game replay with `VKD3D_CONFIG=no_staggered_submit`.
+- Why `VKD3D_CONFIG=no_staggered_submit` makes the late game uneven (above); a scheduler trace inside a late-game
+  window is the next step. `tu_emulate_second_queue=true` is in [TUNING.md](TUNING.md), "The hitches at 58 FPS".
