@@ -10,7 +10,7 @@ python3 tools/bench.py run LABEL --at 1,3 --out bench_out
 ```
 
 `--at` lists the match minutes of the 90 s windows. The script's default is `1,5,10`; since 2026-10-08 the A/B
-tests use `--at 1,3` (about 7 minutes per run), and the results in the docs say which windows they used.
+tests use `--at 1,3`, and the results in the docs say which windows they used.
 
 It starts the game, gets through the intro films, starts a 1v1 skirmish, holds the camera turning, and records 90 s
 of frame times at each listed match minute. One line per window goes to `bench_out/results.tsv`, for example:
@@ -70,7 +70,7 @@ runs inside Wine or the game, and the Thor's only extra work is one `dumpsys` pe
 - In a 24 s check it gave 26.7 FPS while GameNative's HUD showed between 15.8 and 35.5 in the same seconds; the
   compositor values are per frame, the HUD's are 1 s averages.
 - Frames are whole multiples of the display's refresh: 16.7 ms steps at 60 Hz (this check), 8.3 ms steps at 120 Hz
-  (the setup since 2026-10-07 17:00).
+  (the setup since 2026-10-07 17:06).
 
 `tools/fpsgraph.py` keeps one `adb shell` loop running that prints the window once a second, merges the windows on the
 Mac and serves a live graph (one bar per frame, like Minecraft's frame graph) at `http://127.0.0.1:8790`, with FPS,

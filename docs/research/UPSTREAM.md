@@ -6,12 +6,12 @@ checked at master `63f62f7cd696` and FEX's at main `14c92681f` (FEX-2610) first.
 
 | Fix | Upstream | Status |
 |---|---|---|
-| FEX patch 0015 (a 32-bit value loaded as 64 bits in `CheckCall`) | FEX pull request [#6021](https://github.com/FEX-Emu/FEX/pull/6021), with a second fix found while porting it (`CheckCall`'s bound used `b.hi`, which let an offset equal to the table size through; `b.hs`) | Open. Both fixes built on upstream main; a build of this package plus `b.hs` ran AoE II DE (menu, its ranked benchmark, score 1079.3) and AoE IV (skirmish, 41.2 / 41.4 FPS) |
-| FEX patches 0012 and 0014 (the instruction stepper) | FEX issue [#6022](https://github.com/FEX-Emu/FEX/issues/6022), asking how the maintainers want it before a clean PR | Open |
-| FEX patch 0004 (the SMC write trap is visible to the guest) | FEX issue [#6023](https://github.com/FEX-Emu/FEX/issues/6023); reproducer [`tools/probes/smcquery.c`](../../tools/probes/smcquery.c) | Open. The original draft is [Appendix A](#appendix-a-fex-issue-6023-the-smc-write-trap-is-observable-by-the-guest) |
-| FEX patch 0006 (registers after a raw x64 `syscall`) | Wine bug [60461](https://bugs.winehq.org/show_bug.cgi?id=60461): the cause is Wine's `invoke_arm64ec_syscall`, still the same in master | Open |
-| FEX patch 0016 (CPU-speed query) | Wine bug [60462](https://bugs.winehq.org/show_bug.cgi?id=60462): `NtPowerInformation(ProcessorInformation)` opens two cpufreq files per CPU per call in master | Open |
-| FEX patch 0007 (Wine's ARM64EC export stubs fail the hook check) | Wine bug [60463](https://bugs.winehq.org/show_bug.cgi?id=60463) | Open. The text is [Appendix B](#appendix-b-wine-bug-60463-arm64ec--import-exports-start-with-a-bare-x64-jmp-ripx) |
+| FEX patch 0015 (a 32-bit value loaded as 64 bits in `CheckCall`) | FEX pull request [#6021](https://github.com/FEX-Emu/FEX/pull/6021), with a second fix found while porting it (`CheckCall`'s bound used `b.hi`, which let an offset equal to the table size through; `b.hs`) | Filed 2026-10-08; no later status check is recorded. Both fixes built on upstream main; a build of this package plus `b.hs` ran AoE II DE (menu, its ranked benchmark, score 1079.3) and AoE IV (skirmish, 41.2 / 41.4 FPS) |
+| FEX patches 0012 and 0014 (the instruction stepper) | FEX issue [#6022](https://github.com/FEX-Emu/FEX/issues/6022), asking how the maintainers want it before a clean PR | Filed 2026-10-08; no later status check is recorded |
+| FEX patch 0004 (the SMC write trap is visible to the guest) | FEX issue [#6023](https://github.com/FEX-Emu/FEX/issues/6023); reproducer [`tools/probes/smcquery.c`](../../tools/probes/smcquery.c) | Filed 2026-10-08; no later status check is recorded. The original draft is [Appendix A](#appendix-a-fex-issue-6023-the-smc-write-trap-is-observable-by-the-guest) |
+| FEX patch 0006 (registers after a raw x64 `syscall`) | Wine bug [60461](https://bugs.winehq.org/show_bug.cgi?id=60461): the cause is Wine's `invoke_arm64ec_syscall`, still the same in master | Filed 2026-10-08; no later status check is recorded |
+| FEX patch 0016 (CPU-speed query) | Wine bug [60462](https://bugs.winehq.org/show_bug.cgi?id=60462): `NtPowerInformation(ProcessorInformation)` opens two cpufreq files per CPU per call in master | Filed 2026-10-08; no later status check is recorded |
+| FEX patch 0007 (Wine's ARM64EC export stubs fail the hook check) | Wine bug [60463](https://bugs.winehq.org/show_bug.cgi?id=60463) | Filed 2026-10-08; no later status check is recorded. The text is [Appendix B](#appendix-b-wine-bug-60463-arm64ec--import-exports-start-with-a-bare-x64-jmp-ripx) |
 | FEX patch 0010 (resume without a wineserver round trip) | Not reported: the round trip is gone in Proton 11.0-2 and Wine master (`NtContinueEx` only calls the server for alertable continues) | With the Wine the package runs on (11.0-99) it still helps |
 | FEX patch 0017 (exceptions without a host trap) | Not reported yet | |
 | FEX patches 0009, 0013, 0002, 0008 | Not proposed: 0009 is unsafe in general, 0013 is a tuning constant, 0002 hid FEX from the game, 0008 is an analysis tool | |
@@ -20,7 +20,7 @@ checked at master `63f62f7cd696` and FEX's at main `14c92681f` (FEX-2610) first.
 ## Appendix A: FEX issue #6023, the SMC write trap is observable by the guest
 
 This is the draft as it was before filing; the filed issue was rewritten for current main. Two things in it are
-outdated: the reproducer was run on hardware before filing (numbers in the table above), and its suggested fix
+outdated: the reproducer was run on hardware before filing (numbers in the note below), and its suggested fix
 (`ForceFullSMCDetection` for writable code, patch 0001) stops AoE IV at start-up; the filed issue maps to patch 0004.
 
 > **Filed (2026-10-08)** as FEX issue [#6023](https://github.com/FEX-Emu/FEX/issues/6023), rewritten for current main,
@@ -44,8 +44,8 @@ it is a correctness bug independent of any game.
 permission on the guest's own writable+executable pages, so a write faults and the translated block can
 be invalidated. That mechanism leaks: a page the guest set to `PAGE_EXECUTE_READWRITE` reads back as
 `PAGE_EXECUTE_READ` from `NtQueryVirtualMemory`. Internal instrumentation should not be visible in the
-guest's view of its own address space, and software that checks its own page protections — anti-tamper
-in particular, but also JITs and self-modifying runtimes — sees a page it never asked for.
+guest's view of its own address space, and software that checks its own page protections (anti-tamper
+in particular, but also JITs and self-modifying runtimes) sees a page it never asked for.
 
 **Where.**
 
@@ -66,13 +66,13 @@ bool InvalidationTracker::ProtectRWXIntervalsInternal(uint64_t Address, uint64_t
 `Source/Windows/ARM64EC/Module.cpp` arms it as soon as the guest marks a range executable
 (`MarkGuestExecutableRange` → `ReprotectRWXIntervals` → `ProtectRWXIntervalsInternal`).
 
-**Why it is not hidden.** The ARM64EC syscall table tracks four calls by name —
-`NtContinue`, `NtAllocateVirtualMemory`, `NtProtectVirtualMemory`, `NtRaiseException` — and FEX
+**Why it is not hidden.** The ARM64EC syscall table tracks four calls by name
+(`NtContinue`, `NtAllocateVirtualMemory`, `NtProtectVirtualMemory`, `NtRaiseException`), and FEX
 registers with the ARM64EC BT interface for `NotifyMemoryAlloc` / `NotifyMemoryProtect` /
 `NotifyMemoryFree`. **There is no query direction in either place**, so `NtQueryVirtualMemory` passes
 through and reports the trap protection as if the guest had asked for it.
 
-**Reproducer** (no game needed — it runs inside the guest):
+**Reproducer** (no game needed: it runs inside the guest):
 
 ```c
 void *p = VirtualAlloc(NULL, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
@@ -88,9 +88,9 @@ trap is the cause.
 **Suggested fix.** FEX already has a mechanism that needs no protection change:
 `ForceFullSMCDetection` makes the core validate each translated instruction against guest memory at run
 time (`Core.cpp`, via `_ValidateCode`). It is currently enabled only for Mono hacks. The decoder already
-knows whether a block lies in a writable executable region — `CheckRangeExecutable()` populates
+knows whether a block lies in a writable executable region: `CheckRangeExecutable()` populates
 `ExecutableRangeWritable`, and on ARM64EC `QueryExecutableRange` returns `Writable = true` for exactly
-the `RWXIntervals` the trap would otherwise cover — so the change is small:
+the `RWXIntervals` the trap would otherwise cover, so the change is small:
 
 ```cpp
 if (!BlockIt->ForceFullSMCDetection && CheckRangeExecutable(BlockIt->Entry, 1) && ExecutableRangeWritable) {
@@ -101,7 +101,7 @@ if (!BlockIt->ForceFullSMCDetection && CheckRangeExecutable(BlockIt->Entry, 1) &
 in `Decoder::DecodeLoop`. Cost is bounded to blocks in writable executable regions rather than the
 whole address space, which is what makes `SMCChecks=full` impractical.
 
-Alternatively, if the trap is kept, the guest-visible protection should be virtualised — but note that
+Alternatively, if the trap is kept, the guest-visible protection should be virtualised, but note that
 an external process's `VirtualQueryEx` would still see the real value, so masking only in-process is a
 partial fix.
 

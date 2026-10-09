@@ -4,9 +4,9 @@
 **52.3 FPS** in the skirmish benchmark and **46.1 FPS** in the late-game replay, against 41 and about 39 with the
 Turnip v26.2.0 R4 the setup used until then. Picture unchanged in the tests; the GPU went from 61 to 85 % busy.
 
-| Test | Turnip v26.2.0 R4 (same hour) | Mesa main `c78a9e9` Turnip |
+| Test | Turnip v26.2.0 R4 | Mesa main `c78a9e9` Turnip |
 |---|---|---|
-| Skirmish benchmark, minutes 1 / 3 (`tools/bench.py`) | 41.0 / 41.1 FPS, GPU 61 % | **52.3 / 52.3 FPS**, GPU 85 %, median frame 16.9 ms |
+| Skirmish benchmark, minutes 1 / 3 (`tools/bench.py`) | 41.0 / 41.1 FPS (the same hour), GPU 61 % | **52.3 / 52.3 FPS**, GPU 85 %, median frame 16.9 ms |
 | Late-game replay, 48:23 (`tools/replay.py window`) | 38.6 (03:25) and 39.7 (11:55) FPS, GPU 68 % | **46.1 FPS**, GPU 82 %, median frame 16.9 ms |
 
 The release asset is `turnip-main-c78a9e9.zip` (SHA-256 `b2e7bf9e81e400cc1511b5d9ada3ef654fe2f3567351cb1cb685e68364e69112`);
@@ -17,9 +17,9 @@ nothing (40.3 / 40.2 FPS); the setup stays on 2.14.1. How to build the driver: [
 ## How it was found
 
 A late-game scheduler trace ([PERFORMANCE.md](../research/PERFORMANCE.md), "What gates a late-game frame") showed the
-render thread waiting about 10 ms per frame on the game's GPU fence, while the GPU was only 60 to 70 % busy. The
-waiting thread was `vkd3d_fence`, which signals the game's own D3D12 fence events, so the game was waiting for an
-earlier frame's GPU work.
+render thread waiting about 10 ms per frame on the game's GPU fence, while the GPU was only about 68 % busy. The
+thread that woke it was `vkd3d_fence`, which signals the game's own D3D12 fence events, so the game was waiting for
+an earlier frame's GPU work.
 
 ## Why
 
@@ -40,8 +40,8 @@ without !44838 was not made.
 
 With the CPU no longer held in lock step, GPU traces showed the next wait: vkd3d-proton itself kept only one command
 buffer in flight. [VKD3D-SUBMIT.md](VKD3D-SUBMIT.md) has that fix (+12 %). The driver options tried on top of this
-build (autotune, LRZ, forced tile rendering, a second queue, a merge request and a submit patch) gave nothing; they are
-listed in [TUNING.md](../guides/TUNING.md), "Measured and not kept", and the GPU profile behind them is in
+build (an autotune mode, LRZ, a second queue, a merge request and a submit patch) gave no gain, and forced tile
+rendering got no clean run; they are listed in [TUNING.md](../guides/TUNING.md), "Measured and not kept", and the GPU profile behind them is in
 [PERFORMANCE.md](../research/PERFORMANCE.md), "GPU render-stage profile".
 
 ## Not tested yet

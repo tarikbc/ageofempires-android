@@ -1,23 +1,24 @@
 # Performance measurements, in date order
 
-Every speed measurement of AoE IV after the protection fixes, with its date and setup. The settings that came out of
+The speed measurements of AoE IV after the protection fixes, with their date and setup (the settings round of
+2026-10-07 afternoon is in [TUNING.md](../guides/TUNING.md)). The settings that came out of
 them are in [TUNING.md](../guides/TUNING.md), the fixes in [how-it-works](../how-it-works), and the story that ties
 them together in [STORY.md](../STORY.md). The earlier speed work (patches 0009 and 0012 to 0014, 26.7 to 43.7 FPS)
-is in [WATCHDOG.md](../how-it-works/WATCHDOG.md) and [INSTRUCTION-STEPPER.md](../how-it-works/INSTRUCTION-STEPPER.md).
+is in [LOG.md](LOG.md), "Speed before 0012/0013", and [INSTRUCTION-STEPPER.md](../how-it-works/INSTRUCTION-STEPPER.md).
 
 **Before comparing numbers across sections:**
 
 - **Display:** sections before 2026-10-07 17:00 ran at 60 Hz (frames are whole 16.7 ms steps); later ones at 120 Hz
   (8.3 ms steps).
 - **Windows:** the skirmish benchmark (`tools/bench.py`) measured 90 s windows at match minutes 1 and 5 (sometimes
-  also 7 or 10) until 2026-10-08 noon, then at minutes 1 and 3 (`--at 1,3`). The late-game benchmark is the replay of
+  also 7 or 10) until the v1.3.0 driver test of 2026-10-08, then at minutes 1 and 3 (`--at 1,3`). The late-game benchmark is the replay of
   one 51-minute game, windows at 46:13 and 48:23 ([TESTING.md](../guides/TESTING.md)).
 - **Heat:** runs after hours of back-to-back tests read 1 to 3 FPS lower than a cool Thor.
-- **Thermal sampler:** from 2026-10-09 00:45 the benchmark's temperature sampler uses shell builtins instead of
+- **Thermal sampler:** from the 2026-10-09 session (00:40) the benchmark's temperature sampler uses shell builtins instead of
   starting two `cat` processes per thermal zone (190 per sample). In that session the same setup read 56.4 to 56.6 FPS
   against 58.6 the day before; the cause of the difference was not isolated. Compare only inside one session.
-- **Driver and vkd3d-proton:** until 2026-10-08 13:00 Turnip v26.2.0 R4; then the repo's Turnip (`c78a9e9`); from
-  2026-10-08 16:00 with `VKD3D_CONFIG=no_staggered_submit`.
+- **Driver and vkd3d-proton:** Turnip v26.2.0 R4 until the v1.3.0 driver test of 2026-10-08, then the repo's Turnip
+  (`c78a9e9`); with `VKD3D_CONFIG=no_staggered_submit` from the vkd3d-proton session of 2026-10-08 (15:40 to 16:30) on.
 
 ## 2026-10-07, 16:50: where the frame time goes (60 Hz)
 
@@ -107,7 +108,7 @@ median frame was 25.3 ms in every full-clock window (33.7 ms capped). The two wi
 it ran at 680 MHz, and the late game gained about 2 FPS (36.7 / 36.5 to 39.0 / 38.6; 2.5 to 3.1 FPS with all cores
 allowed). That run had more frames over 50 ms (18 / 22) than v1.2.0 at 615 MHz (10 / 11) and the all-cores run at
 680 MHz (1 / 3); not explained, and one run each. In the early-game benchmark the same change gave nothing
-([TUNING.md](../guides/TUNING.md), "Measured and not kept"). The setting: `"minGpuPowerLevel":8,"maxGpuPowerLevel":8` in the container's
+([TUNING.md](../guides/TUNING.md), "Power profile"). The setting: `"minGpuPowerLevel":8,"maxGpuPowerLevel":8` in the container's
 `.config/.power-profile` (GameNative writes sysfs level = 8 - value). It was written with `tools/wincopy.py`; GameNative's
 Power Control tab has GPU minimum and maximum controls and saves the profile when the game stops (read in its source,
 not tried).
@@ -208,7 +209,7 @@ it did with pinned threads ("Thread placement in the late game" above). So the l
 side: it is limited by the GPU work per frame and the game waiting on it. The levers left are on the GPU side: less
 GPU work per frame (the 75 % render scale gave about 2 FPS, "Not kept" above) or a faster driver path.
 
-*Later the same day:* the GPU traces in [VKD3D-SUBMIT.md](../how-it-works/VKD3D-SUBMIT.md) showed that the GPU itself worked only 37 % of the
+*Later the same day:* the GPU traces in [VKD3D-SUBMIT.md](../how-it-works/VKD3D-SUBMIT.md) (a tracing build; see the note under the GPU render-stage profile) showed that the GPU itself worked only 37 % of the
 time; the wait was vkd3d-proton holding each command buffer until the previous one finished
 (`VKD3D_CONFIG=no_staggered_submit`, +12 % in the skirmish benchmark).
 
@@ -297,7 +298,7 @@ The counts of frames over 40 ms vary from 24 to 67 between windows of the same s
 small gain here. The two sources above are the game's own job system and GameNative's compositor; neither has a
 knob in this repo. The compositor latency is reported with the numbers above for GameNative.
 
-## 2026-10-09, 00:05 to 02:05: settings tried around patch 0017
+## 2026-10-09, 00:40 to 02:05: settings tried around patch 0017
 
 Patch 0017 itself, its measurements and the thermal-sampler change are in [TRAPLESS-FAULTS.md](../how-it-works/TRAPLESS-FAULTS.md). Tried in the same session and not kept (each against the baseline of its hour):
 

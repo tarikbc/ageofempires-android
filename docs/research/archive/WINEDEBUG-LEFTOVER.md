@@ -1,6 +1,6 @@
 # The evening runs were slowed by leftover Wine debug channels
 
-> **Archived.** Leftover debug channels slowed the evening runs of 2026-10-06. Correct; the rule it led to (`WINEDEBUG=-all`) is in [TUNING.md](../../guides/TUNING.md). `dbgprobe_cpuid_report.txt`, named below, is not in the repo. The story: [STORY.md](../../STORY.md).
+> **Archived.** Leftover debug channels slowed the evening runs of 2026-10-06. Correct; the rule it led to (`WINEDEBUG=-all`) is in [TUNING.md](../../guides/TUNING.md). `samples/aegis/libarm64ecfex.patched.dll`, named below, is not in the repo. The story: [STORY.md](../../STORY.md).
 
 Measured on the AYN Thor, 2026-10-06, 20:47 to 20:57.
 

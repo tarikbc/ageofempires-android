@@ -20,12 +20,18 @@ result to a file on `D:\`. The ones marked GUI open no console window and can ru
 | `pwrcost` (GUI) | Cost of `CallNtPowerInformation(ProcessorInformation)` the way AoE IV calls it every frame (patch 0016) |
 | `smcquery` (GUI) | The reproducer for FEX issue #6023: whether FEX's SMC write trap shows through `NtQueryVirtualMemory` |
 | `exccost` | Cost of one illegal-instruction exception handled by a vectored handler, as the protection uses them |
+| `fexstats` | Reads patch 0004's SMC-trap counters from the game's `libarm64ecfex.dll` |
+| `xinputprobe` | Which XInput pads Wine sees, and their state for a few seconds |
+
+**One-shot probes that the agent replaces** (`aoeagent.c` says it does their work, and `blkread`'s, inside one
+long-running process)
+
+| Probe | What it does |
+|---|---|
 | `peek` | Hex dump of a memory range of a running process |
 | `modbase` | Base address and size of one module in a process, for `peek` at a FEX global |
 | `affin` | Lists a process's threads with start address, CPU time and affinity; can pin the threads that start at one address |
 | `tpause`, `tduty` | Suspend the threads that start at one address for a time, or duty-cycle them, to see what one thread costs the others |
-| `fexstats` | Reads patch 0004's SMC-trap counters from the game's `libarm64ecfex.dll` |
-| `xinputprobe` | Which XInput pads Wine sees, and their state for a few seconds |
 
 **From the kill investigation of 2026-10-06 and 07** ([archive](../../docs/research/archive))
 

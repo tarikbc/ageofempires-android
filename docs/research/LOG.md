@@ -1,7 +1,8 @@
-# Research log, 2026-10-06 to 2026-10-08
+# Research log, 2026-10-06 to 2026-10-09
 
 > The project's working log, kept as it grew: the status history, how the stops were found, verified facts,
-> hypotheses and traps. It was the README until 2026-10-07 and was last updated for v1.2.0 (2026-10-08). The same
+> hypotheses and traps. It was the README until 2026-10-07; its main sections stop at v1.2.0 (2026-10-08), and a short 2026-10-09 entry is at
+> the end. The same
 > history told forward, with every version, is [STORY.md](../STORY.md); the current setup is in the
 > [README](../../README.md); later measurements are in [PERFORMANCE.md](PERFORMANCE.md).
 
@@ -9,7 +10,7 @@ Device: AYN Thor (Snapdragon 8 Gen 2, Adreno 740, 16 GB, Android 13), GameNative
 (24231237).
 
 **Goal:** the game's copy protection, **Aegis** (Relic's in-house virtualization/anti-tamper), stopped the game 2 to
-3.5 minutes in (2 to 4.5 in the first runs, which had Wine debug output on). The user owns the game, so the aim was to
+3.5 minutes in on a clean baseline ("2 to 4.5 minutes" in the first README). The user owns the game, so the aim was to
 make the protection *accept* this environment, not to strip it out.
 
 ## The setup on 2026-10-08 (v1.2.0)
@@ -264,7 +265,8 @@ below was needed to run the game; they stay as notes and were not tested further
 
 ## Next actions as of 2026-10-07 (done since)
 
-> Item 1 led to patch 0016, the repo's driver and the vkd3d-proton setting ([STORY.md](../STORY.md)). Item 2: TSO off gave no gain in AoE IV ([TUNING.md](../guides/TUNING.md)) and about 30 % more FPS in AoE II's big battles ([AOE2-DE.md](../guides/AOE2-DE.md)). Item 3 stands.
+> The leads of item 1 (290 blocks/s outside 0012's pattern, the code buffer's growth) were not pursued; the later
+> speed work came from main-thread sampling (patch 0016) and the GPU side ([STORY.md](../STORY.md)). Item 2: TSO off gave no gain in AoE IV ([TUNING.md](../guides/TUNING.md)) and about 30 % more FPS in AoE II's big battles ([AOE2-DE.md](../guides/AOE2-DE.md)). Item 3 stands.
 
 1. **Speed, what is left after 0012 to 0014:** about 290 blocks/s in the protection's slot buffer do not fit
    0012's pattern and are compiled on each visit, and the code buffer still grows (and so recompiles everything) a
@@ -369,6 +371,26 @@ note Bionic Steam copies Settings channels into `WINEDEBUG` even when the switch
   (49 read on 2026-10-07: lag, network and login-throttling warnings only).
 - **Syscall numbers:** [`tools/research/ntdll_syscall_table.py`](../../tools/research/ntdll_syscall_table.py) decodes them from an
   ntdll's own stubs; the device's differ from upstream Wine ([WINE-SOURCE.md](../guides/WINE-SOURCE.md)).
+
+## 2026-10-09
+
+- **The Thor's GameNative is now the 1.3.0 test release.** At 09:17 `gamenative-v1.3.0-prerelease.apk` (GitHub,
+  2026-10-04, SHA-256 `90cb39b8…`) was installed over 1.2.1, to run GTA V: under 1.2.1 the Rockstar launcher's
+  installer stopped at "Installing Service..." because `RockstarService.exe` crashed inside Wine's `rpcrt4`. The
+  APK has the same signing certificate and the same version code (23) as 1.2.1, and still names itself "1.2.1".
+  The library, the Steam login and the containers were kept. AoE IV has not been started on it yet. On a game page
+  of 1.3.0, the button right of the Options cog uninstalls the game and asks for a confirmation first.
+- **Steam log-offs (2026-10-08, about 14:45).** After about 20 game starts that day, Steam logged the account off
+  right after each logon ("Logged off of Steam: Fail" about 2 s after "Connected to Steam"), and GameNative 1.2.1
+  then crashed on every game page. The game ran again at 15:11 (the first GPU trace).
+- **A reading of the Turnip code and the 2026-10-08 GPU traces (analysis, not tested on the device).** Without
+  `VKD3D_CONFIG=one_time_submit`, vkd3d-proton's command buffers are not one-time-submit, and a Turnip tracing build
+  then adds a timestamp copy that drains the GPU after every command buffer of a submit (`tu_queue.cc`), and another
+  after every render pass (`tu_cmd_buffer.cc`). Most of the idle time in the traces lies inside single submissions,
+  which fits these drains, so the "GPU worked 37 %" figure does not describe the game without tracing. In the same
+  traces about 82 % of render-pass time writes colour targets without UBWC compression (depth has it), LRZ is off in
+  every scene pass, and compute takes about 3 ms per frame. Next on the device: `TU_DEBUG=perf` to see why the
+  colour targets lose UBWC, a trace with `one_time_submit`, and `TU_DEBUG=noubwc` / `nolrz` as calibration runs.
 
 ## Elsewhere
 

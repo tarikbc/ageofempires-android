@@ -9,7 +9,7 @@ Windows probes used for testing.
 
 ```sh
 brew install ninja nasm
-# llvm-mingw 20260922, the release every package in this repo was built with
+# llvm-mingw 20260922, the same release the earlier FEX builds used
 curl -sLO https://github.com/mstorsjo/llvm-mingw/releases/download/20260922/llvm-mingw-20260922-ucrt-macos-universal.tar.xz
 tar -xf llvm-mingw-20260922-ucrt-macos-universal.tar.xz -C ~/toolchains
 export PATH=~/toolchains/llvm-mingw-20260922-ucrt-macos-universal/bin:$PATH
@@ -58,19 +58,20 @@ ninja arm64ecfex          # NOT plain ninja, see problem 3
 ```
 
 The build prints its revision (`-- FEX commit: 7d3090f78237267b2adf2d32116f0105b8d665cb`). Artifact:
-`Bin/libarm64ecfex.dll`. That patch list is the v1.4.0 set (`aoe4-perf6`, DLL SHA-1 `7e707379`); v1.2.0 and v1.3.0
+`Bin/libarm64ecfex.dll` (about 5.6 MB, `PE32+ executable (DLL) (GUI) x86-64`). That patch list is the v1.4.0 set (`aoe4-perf6`, DLL SHA-1 `7e707379`); v1.2.0 and v1.3.0
 stop at 0016 (`b5e6e357`). A clean build of a released set gives the released DLL except the 4 bytes of the build
 time stamp (PE header and debug directory); [patches/fex](../../patches/fex) lists which sets were checked that way.
 
 ### Package it as a `.wcp`
 
 ```sh
-python3 tools/make_fex_wcp.py Bin/libarm64ecfex.dll fexcore-aoe4-perf6.wcp --name aoe4-perf6 --code 30
+# from this repo's folder
+python3 tools/make_fex_wcp.py /path/to/FEX/build/Bin/libarm64ecfex.dll fexcore-aoe4-perf6.wcp --name aoe4-perf6 --code 30
 ```
 
 A `.wcp` is an xz-compressed tar with `profile.json` and the files it names; it ships only `libarm64ecfex.dll`.
-GameNative's Contents Manager imports it, and the dropdown shows it as `<name>-<code>`. GameNative refuses a name and
-code it already has, so each test build needs a new code. Installing and selecting it from adb:
+GameNative's Contents Manager imports it, and the dropdown shows it as `<name>-<code>`. GameNative drops a bundle whose
+`versionName` is already installed, even with a new code, so each test build needs a new name. Installing and selecting it from adb:
 [GAMENATIVE.md](GAMENATIVE.md).
 
 ## The Turnip driver
@@ -110,7 +111,9 @@ Driver Version. From adb: `tools/gn_driver.py import turnip-main-c78a9e9.zip tur
 
 ## History
 
-The first FEX builds of 2026-10-06 carried patches 0001 and 0002 and were packaged as `fexcore-aoe-smcfix.wcp`
-(`versionCode` 8, DLL 5,586,944 bytes, targeting `libarm64ecfex.dll` and `libwow64fex.dll`). That bundle never ran:
-the device was locked when it was pushed, and 0001 later turned out to stop the game at start-up. The package lineage
+On 2026-10-06, after an unpatched build (`2610-aoe-1`), a build with patches 0001 and 0002 was packaged as
+`fexcore-aoe-smcfix.wcp` (`versionCode` 8, 1.39 MB, DLL 5,586,944 bytes; it targeted `libarm64ecfex.dll` and
+`libwow64fex.dll`, not `xtajit64.dll`). When the notes were written it had not reached the device, which was locked
+([GAMENATIVE.md](GAMENATIVE.md), "Before any scripted UI work"); patch 0001, built later with 0003, stops the game at
+start-up. The package lineage
 from then to v1.4.0 is in [STORY.md](../STORY.md#the-fex-packages).

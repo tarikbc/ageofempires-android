@@ -24,7 +24,7 @@ In the order they were found:
 | [SYSCALL-RETURN.md](how-it-works/SYSCALL-RETURN.md) | patch 0006 | Registers after a raw x64 `syscall`, as on Windows; not the cause either |
 | [HOOK-CHECK.md](how-it-works/HOOK-CHECK.md) | patch 0007 | The start-up API hook check passes: the stop 2 to 3.5 minutes in is gone |
 | [WATCHDOG.md](how-it-works/WATCHDOG.md) | patches 0009, 0010 | The protection's watchdog no longer fires: the game is playable |
-| [INSTRUCTION-STEPPER.md](how-it-works/INSTRUCTION-STEPPER.md) | patches 0012 to 0014 | Code run one instruction at a time no longer recompiles every step: 26.7 → 43.7 FPS |
+| [INSTRUCTION-STEPPER.md](how-it-works/INSTRUCTION-STEPPER.md) | patches 0012 to 0014 | Code run one instruction at a time no longer recompiles every step: 26.7 → 43.7 FPS with 0012 and 0013 |
 | [POWER-INFORMATION.md](how-it-works/POWER-INFORMATION.md) | patch 0016 | The game's per-frame CPU-speed query answered from a cache: late game faster |
 | [GPU-DRIVER.md](how-it-works/GPU-DRIVER.md) | Turnip from Mesa main | No more CPU-GPU lock step on fence checks: 41 → 52 FPS |
 | [VKD3D-SUBMIT.md](how-it-works/VKD3D-SUBMIT.md) | `VKD3D_CONFIG=no_staggered_submit` | More than one command buffer in flight: 52 → 58 FPS |
@@ -47,8 +47,8 @@ Patches 0002 (dropped) and 0015 (a FEX bug fix) are described in [patches/fex](.
 
 | Page | Covers |
 |---|---|
-| [PERFORMANCE.md](research/PERFORMANCE.md) | Every speed measurement after the fixes, in date order, with notes on what is comparable |
-| [LOG.md](research/LOG.md) | The working log of 2026-10-06 to 2026-10-08: status history, verified facts, hypotheses, traps, tools |
+| [PERFORMANCE.md](research/PERFORMANCE.md) | The speed measurements after the fixes, in date order, with notes on what is comparable |
+| [LOG.md](research/LOG.md) | The working log of 2026-10-06 to 2026-10-09: status history, verified facts, hypotheses, traps, tools |
 | [LEDGER.md](research/LEDGER.md) | What was tried against the protection's stops, and what each gave |
 | [UPSTREAM.md](research/UPSTREAM.md) | What was reported to FEX, Wine and Mesa, and where it stands |
 | [archive/](research/archive) | The investigation notes of 2026-10-06 and 07, each with a verdict line ([index](research/archive/README.md)) |

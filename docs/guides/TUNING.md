@@ -13,7 +13,7 @@ kept. The setup itself (where to click) is in the [README](../../README.md#setup
 | FEX package | container, Emulation | `aoe4-perf6-30` | The protection fixes and the speed patches ([patches/fex](../../patches/fex)) |
 | Graphics driver | container, Graphics | `turnip-main-c78a9e9` | +27 % FPS ([GPU-DRIVER.md](../how-it-works/GPU-DRIVER.md)) |
 | `VKD3D_CONFIG` | container, Environment | `no_staggered_submit` | +12 % FPS in the skirmish, a less even late game ([VKD3D-SUBMIT.md](../how-it-works/VKD3D-SUBMIT.md)) |
-| `FEX_EXP_SKIP_CALLRET_RESET` | container, Environment | `1` | Turns on patch 0009. On 2026-10-07, before patches 0012 to 0014, the match HUD read 8.0 FPS without it and 22.8 to 29.5 with it ([LOG.md](../research/LOG.md), "Speed before 0012/0013"). Not re-measured on the current package |
+| `FEX_EXP_SKIP_CALLRET_RESET` | container, Environment | `1` | Turns on patch 0009. On 2026-10-07, before patches 0012 to 0014, the match HUD read 8.0 FPS without it and 22.8 to 29.5 with it, both with TSO off ([LOG.md](../research/LOG.md), "Speed before 0012/0013"). Not re-measured on the current package |
 | `WINEDEBUG` | container, Environment | `-all` | Keeps Wine's debug output off even when GameNative's Wine debug setting is on (below) |
 | Power profile, CPU | container power profile | scaling, 307 MHz to 3187 MHz, `SCHEDUTIL` | Holding the maximum gave no FPS and no lower temperature; a cap near 2 GHz cost the late game 36.0 → 27.8 FPS (below) |
 | Power profile, GPU | container power profile | levels 8 and 8 (680 MHz) | About +2 FPS in the late game, nothing in the early game (below) |
@@ -27,7 +27,8 @@ refreshes** (0 of 4,103 frames off a step): 2,568 frames took one refresh and 1,
 18 ms was shown for 33.4 ms.
 
 With both settings at 120 (`settings put system peak_refresh_rate 120.0`, the same for `min_refresh_rate`, or the
-refresh-rate tile in quick settings), skirmish benchmark of 2026-10-07 with the v1.0.0 package and Turnip R4:
+refresh-rate tile in quick settings), skirmish benchmark of 2026-10-07 (the settings round, 15:59 to 18:43, FEX build
+`6990a221`, the v1.0.0 package) with Turnip R4:
 
 | | FPS minute 1 / 5 | median frame | frames > 50 ms (per 90 s) |
 |---|---|---|---|
@@ -46,8 +47,8 @@ game already running at 60 Hz, the main screen stayed at 60 Hz after the setting
 
 ## Power profile
 
-GameNative applies the container's power profile (`.config/.power-profile`, edited in its Power Control tab) at every
-game start. It sets the CPU limits per core group and the GPU power levels (GameNative writes sysfs level = 8 minus
+GameNative applies the container's power profile (`.config/.power-profile`) at every game start. The tests wrote it
+with `tools/wincopy.py`; GameNative's Power Control tab has controls for it (read in its source, not tried). It sets the CPU limits per core group and the GPU power levels (GameNative writes sysfs level = 8 minus
 the value).
 
 **CPU: let it scale.** Until 2026-10-07 20:00 the profile held every CPU core at its maximum clock (`minCpuFreq` =
@@ -72,7 +73,7 @@ game it gave about 2 FPS (36.7 / 36.5 to 39.0 / 38.6), so it is in use since 202
 
 GameNative 1.2.1 sets `WINEDEBUG` itself and then merges the container's `envVars`, which win: `-all` when Settings →
 Debug → Wine debug is off, else `+` and the channels listed on that screen (`XServerScreen.kt`). Read from
-GameNative's own logcat line `Env Vars (Final Guest)` at three "Open container" starts on 2026-10-07:
+GameNative's own logcat line `Env Vars (Final Guest)` at three "Open container" starts on 2026-10-07, 20:39 to 20:43:
 
 | Container `envVars` | `WINEDEBUG` given to Wine |
 |---|---|
@@ -80,8 +81,9 @@ GameNative's own logcat line `Env Vars (Final Guest)` at three "Open container" 
 | without it | `+warn` |
 | with it again | `-all` |
 
-GameNative's Wine debug setting was on here with the channel `warn`, so without the variable Wine would print its
-warnings. Leftover debug channels slowed the whole game on 2026-10-06
+GameNative's Wine debug setting was on here with the channel `warn` (its `wine_debug.log` was written at that
+start), so without the variable Wine would print its warnings. The container's config was put back byte for byte
+afterwards. Leftover debug channels slowed the whole game on 2026-10-06
 ([archive/WINEDEBUG-LEFTOVER.md](../research/archive/WINEDEBUG-LEFTOVER.md)). With Wine debug off in GameNative the
 variable should change nothing (from the code; not tested).
 
@@ -110,14 +112,15 @@ test against 41.0 for R4 the same hour ([GPU-DRIVER.md](../how-it-works/GPU-DRIV
 ## Measured and not kept
 
 Each change was tested alone against a baseline of the same session and reverted. "Skirmish" is the automated
-benchmark (FPS at two match minutes), "late game" the replay windows at 46:13 and 48:23. The details of each test are
-in [PERFORMANCE.md](../research/PERFORMANCE.md) under its date.
+benchmark (FPS at two match minutes), "late game" the replay windows at 46:13 and 48:23. Most tests are detailed in
+[PERFORMANCE.md](../research/PERFORMANCE.md) under their date; the 2026-10-07 settings round is on this page, and the
+driver options in [GPU-DRIVER.md](../how-it-works/GPU-DRIVER.md).
 
 | Change | Test, date | Result | Against |
 |---|---|---|---|
 | FEX TSO off (`FEX_TSOENABLED=0`) | skirmish, 2026-10-07 | 42.7 / 42.2 | 43.8 to 45.6 |
 | | late game, 2026-10-08 | 39.4 / 39.3; the render thread ran a tenth less and waited more | 39.8 / 39.7 |
-| Main thread on the prime core 7, all others on cores 0 to 6 | skirmish, 2026-10-07 | 44.6, 53 frames > 50 ms | 45.3, 3 frames |
+| Main thread on the prime core 7, all others on cores 0 to 6 (`tools/agent.py affin 4fb0884 80 7f`, live) | skirmish, 2026-10-07 | 44.6, 53 frames > 50 ms and 2 > 100 ms; not checked whether the masks took effect (a mask outside the game's process mask is refused) | 45.3, 3 and 0 frames |
 | | late game, 2026-10-08 | 38.3 / 38.8 | 39.0 / 38.6 |
 | Main thread on core 7, render thread on core 6, all others on cores 0 to 5 | late game, 2026-10-08 | 38.9 / 39.0; the render thread lost its core half as often | 39.0 / 38.6 |
 | Every game thread allowed on all 8 cores (`agent.py procaffin ff`, live) | late game, 2026-10-08 | 37.6 / 37.0, fewer long frames | 36.7 / 36.5; within the spread, so the package does not set it |
@@ -134,9 +137,9 @@ in [PERFORMANCE.md](../research/PERFORMANCE.md) under its date.
 | Turnip without the same-context timestamp wait before each submit | skirmish, 2026-10-08 | 56.4 / 56.6 | 58.6 / 58.1 |
 | Turnip `tu_emulate_second_queue=true` | skirmish, 2026-10-08 | 57.7 / 57.7, 269 frames over 33 ms per window | 124 to 152 frames over 33 ms |
 | vkd3d-proton 3.0.1-4559a01d (R4 driver) | skirmish, 2026-10-08 | 40.3 / 40.2 | 41.0 / 41.1 |
-| `VKD3D_FRAME_RATE=60` | skirmish, 2026-10-09 | 55.6 / 55.8, 39 / 40 frames over 40 ms | the hour's baseline: 38 / 40 frames over 40 ms |
-| `VKD3D_SWAPCHAIN_LATENCY_FRAMES=2` | skirmish, 2026-10-09 | 56.6 / 56.0, 33 / 47 frames over 40 ms | the hour's baseline: 38 / 40 frames over 40 ms |
-| `MESA_VK_WSI_PRESENT_MODE=fifo` (the container uses mailbox) | skirmish, 2026-10-09 | 56.9 / 57.1 but 335 / 312 frames over 33 ms | 56.4 / 56.3 and 112 / 124 frames over 33 ms |
+| `VKD3D_FRAME_RATE=60` | skirmish, 2026-10-09 | 55.6 / 55.8, 39 / 40 frames over 40 ms | that hour's baseline, not recorded in the docs; the session's release-FEX runs read 56.4 to 56.6 FPS, 23 to 37 frames over 40 ms |
+| `VKD3D_SWAPCHAIN_LATENCY_FRAMES=2` | skirmish, 2026-10-09 | 56.6 / 56.0, 33 / 47 frames over 40 ms | as above |
+| `MESA_VK_WSI_PRESENT_MODE=fifo` (the container uses mailbox) | skirmish, 2026-10-09 | 56.9 / 57.1 but 335 / 312 frames over 33 ms | 56.4 / 56.3 and 112 / 124 frames over 33 ms (the release-FEX run of that session) |
 | GameNative's wrapper without present wait (`WRAPPER_DISABLE_PRESENT_WAIT=1`) | skirmish, 2026-10-07 (R4) | 37.0, GPU 55 to 58 % busy | 43.8 to 45.6 |
 | | skirmish, 2026-10-08 (repo's driver) | 58.8 / 57.0, frames over 40 ms within the spread | 24 to 67 frames over 40 ms in identical runs |
 | Cache for unpacked BCn textures (`WRAPPER_USE_BCN_CACHE=1`) | skirmish, 2026-10-07 | 43.7 / 43.2 | no change |
@@ -148,7 +151,8 @@ Patch experiments inside FEX that were not kept are in [LEDGER.md](../research/L
 
 - Container `envVars` set by the user win over the values GameNative computes for the graphics driver: GameNative
   merges `container.envVars` after them (`XServerScreen.kt`, `envVars.putAll(container.envVars)`).
-- BCn textures: GameNative sets `WRAPPER_EMULATE_BCN=3` ("auto") for its wrapper. In the wrapper source read on
-  2026-10-09 (`src/vulkan/wrapper/wrapper_physical_device.c` in the Winlator-bionic Mesa fork), "auto" turns emulation
-  off when the driver is Turnip, which supports BCn natively. Whether GameNative's wrapper build is exactly that code
-  was not checked; the BCn cache made no difference, which fits.
+- BCn textures: a GameNative debug log of this game from 2026-09-21 shows `WRAPPER_EMULATE_BCN=3`, GameNative's
+  "auto". Analysis, 2026-10-09: in the wrapper source of the Winlator-bionic Mesa fork
+  (`src/vulkan/wrapper/wrapper_physical_device.c`), "auto" turns emulation off when the driver is Turnip, which
+  supports BCn natively. Whether GameNative's wrapper build is exactly that code was not checked; the BCn cache made
+  no difference, which fits.

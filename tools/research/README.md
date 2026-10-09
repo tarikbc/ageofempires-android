@@ -10,7 +10,8 @@ The Python scripts find their helpers through the working directory: run them fr
 
 ## Index
 
-**Analysis tools still in use** (the speed work, 2026-10-08 and 09; listed in [tools/README.md](../README.md)):
+**Analysis tools still in use** (the speed work, 2026-10-08 and 09; the GPU and stutter readers are also listed in
+[tools/README.md](../README.md)):
 `frametimes_graph.py` (the README graph), `stutter_align.py`, `present_chain.py`, `pipeline_timeline.py`,
 `freq_in_frames.py`, `fexstats_align.py`, `gn_chain.py`, `at_analyze.py`, `sysprof.py`, `ntdll_syscall_table.py`, and
 the GPU-trace readers `turnip_stages.py`, `turnip_lrz_reasons.py`, `turnip_renderstages.cfg`, `turnip_gpu_timeline.py`,
@@ -22,7 +23,7 @@ the GPU-trace readers `turnip_stages.py`, `turnip_lrz_reasons.py`, `turnip_rende
 `ntdllcheck.c`, `memscan.c`, `bpguard.c`, `bp_run.py`, `dumprange.c`, `disasm.py`, `impmap.py`, `callers.py`,
 `run_experiment.py`, `smctest.c`, `smctest2.c`, `parse_aegistrace.py`, `blkparse.py`, `blkmem.py`, `dettable.py`.
 
-**Not named in any doc** (kept as the record of that time): `cfgkey.py` and `srcfg.py` (read keys in the live and the
+**Not named in any doc** (kept as the record of that time): `cfgkey.py` and `srcfg.py` (patch keys in the live and the
 source container config), `conns.py`, `eager_lazy_test.py` (the eager-versus-lazy decryption test behind AEGIS.md's
 "eager restore" finding), `filescan.c` (a byte pattern in files), `findhash.py` (reads `text.bin`), `hcount.c` (handle
 counts over time), `protmon.c` (the protection map over time), `timing3.bat` (runs `timingtest.exe` three times), and

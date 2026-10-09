@@ -1,4 +1,4 @@
-# What the GPU waited for: vkd3d-proton's staggered submissions (+12 %, 2026-10-08)
+# What the GPU waited for: vkd3d-proton's staggered submissions (+12 %, 2026-10-08, 15:40 to 16:30)
 
 **Result:** `VKD3D_CONFIG=no_staggered_submit` in the container's environment gives **58.6 / 58.1 FPS** in the skirmish
 benchmark (minutes 1 / 3) against 52.3 / 52.3 the same afternoon with the same driver, median frame 16.9 ms, the GPU
@@ -61,5 +61,6 @@ On top of `no_staggered_submit`:
   dispatcher path): 56.4 / 56.6 FPS, no gain, not kept.
 - The GPU's inter-frame power collapse (`/sys/class/kgsl/kgsl-3d0/ifpc`) is on and fires about 16 times per second
   in the match with the new setting; the knob is root-only on the Thor, so it was not tested.
-- Turnip's `tu_emulate_second_queue=true` (two Vulkan queues, so vkd3d-proton's queues do not alias): same FPS, more
-  frames of three refreshes; [PERFORMANCE.md](../research/PERFORMANCE.md), "The hitches at 58 FPS".
+Later, in the hitches session (19:40 to 20:50): Turnip's `tu_emulate_second_queue=true` (two Vulkan queues, so
+vkd3d-proton's queues do not alias) gave the same FPS and more frames of three refreshes
+([PERFORMANCE.md](../research/PERFORMANCE.md), "the hitches at 58 FPS").

@@ -7,7 +7,7 @@ spread. Shipped in `aoe4-perf6-30` (DLL `7e707379`, release v1.4.0).
 ## The problem
 
 The protection's loop raises exceptions on purpose and handles them itself (see [WATCHDOG.md](WATCHDOG.md) for how
-patch 0010 made each one cheap enough for its watchdog). The rate grew as the loop got faster: 6,600 to 8,200 per
+patch 0010 made each one cheap enough for its watchdog). The rate changed with the build and the scene: 6,600 to 8,200 per
 second in the first runs with patch 0010, 17,600 in the skirmish before patch 0012 and 37,900 after it
 ([INSTRUCTION-STEPPER.md](INSTRUCTION-STEPPER.md)), about 25,000 in the late game with v1.2.0, and about **44,000 per
 second** in the skirmish with the v1.3.0 driver and the vkd3d-proton setting.
@@ -24,8 +24,8 @@ faults (SIGILL)** raised by JIT code. Each one cost a `hlt` host trap, Wine's si
 [Patch 0017](../../patches/fex/0017-trapless-guest-faults.patch) changes two places:
 
 - **No host trap.** FEXCore's guest-signal stubs (SIGILL, SIGTRAP, SIGSEGV in `Dispatcher.cpp`) load a per-thread
-  pointer, `Pointers.GuestSignalTrapNative`. When the frontend has set it, the stub branches there instead of executing
-  `hlt`. The ARM64EC frontend's `FastTrapEntry` builds the guest exception the way `RethrowGuestException` does.
+  pointer, `Pointers.GuestSignalTrapNative`. When the frontend has set it, the stub branches there instead of trapping
+  (`hlt` for SIGILL, `brk` for SIGTRAP). The ARM64EC frontend's `FastTrapEntry` builds the guest exception the way `RethrowGuestException` does.
 - **Fast raise.** The frontend then enters `KiUserExceptionDispatcher` directly, with the exception frame on the
   guest stack in the layout FEX already uses for emulated syscalls. The unix `NtRaiseException` stays as the fallback.
 
@@ -50,10 +50,11 @@ Release check of the package `aoe4-perf6-30` (the same DLL), 02:29 to 02:48: win
 gave 57.8, 57.4, 57.4 and 54.7 FPS (the base grows over the match), no stop in 19 minutes, and the counters still read
 43,582 trap-less exceptions and 43,396 fast raises per second.
 
-**Why 56 and not 58.6 for the old package:** before this session the benchmark's thermal sampler ran two `cat`
-processes per thermal zone (95 zones) every 3 s, which took up to 30 ms of a big core inside measured frames. It was
-changed to shell builtins at the start of this session, and the baselines above were measured the same night. Numbers
-from before and after that change are not comparable; inside this table they are.
+**Why 56 and not 58.6 for the old package:** the benchmark's thermal sampler was changed at the start of this
+session. It had run two `cat` processes per thermal zone (95 zones) every 3 s, which took up to 30 ms of a big core
+inside measured frames; now it uses shell builtins. The same setup then read 56.4 to 56.6 FPS against 58.6 the day
+before; the cause of that difference was not isolated. Numbers from before and after the change are not comparable;
+inside this table they are.
 
 ## Not tested yet
 

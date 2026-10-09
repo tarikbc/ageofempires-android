@@ -18,7 +18,7 @@ Thor with GameNative 1.2.1. How the versions connect: [docs/STORY.md](docs/STORY
 | Skirmish, 0017 against the previous package, same session | 58.3 / 57.8 FPS against 56.4 / 56.3 and 56.6 / 56.5; frames of 25 ms 813 / 825 against 999 to 1,039 |
 | Skirmish, `no_staggered_submit` (2026-10-08, v1.3.0 driver) | 58.6 / 58.1 FPS against 52.3 / 52.3 |
 | Late game, `no_staggered_submit` (without 0017) | 47.3 and 48.5 FPS against 46.1, but 57 to 86 frames over 50 ms per window against 15 |
-| Release check | windows at minutes 1, 5, 10, 15: 57.8, 57.4, 57.4, 54.7 FPS; no stop in a 19-minute run |
+| Release check | windows at minutes 1, 5, 10, 15: 57.8, 57.4, 57.4, 54.7 FPS; no stop in a 19-minute run (the release note says 15 minutes, the last measured window) |
 
 | File | SHA-256 |
 |---|---|
@@ -63,7 +63,7 @@ Thor with GameNative 1.2.1. How the versions connect: [docs/STORY.md](docs/STORY
 |---|---|
 | `fexcore-aoe4-perf5.wcp` (DLL SHA-1 `b5e6e357d638590026128a368393ced2bb9a94b2`) | `20a32eabd5c3cb50082aa0a8f0fb835d66123b05339c48af4284364f6f90119f` |
 
-AoE II DE was first run with this package, a few hours after the release ([AOE2-DE.md](docs/guides/AOE2-DE.md)).
+AoE II DE was first run with this package, less than two hours after the release ([AOE2-DE.md](docs/guides/AOE2-DE.md)).
 
 ## v1.1.0, 2026-10-07: same speed, less hiding
 
