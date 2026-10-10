@@ -26,7 +26,11 @@ Everything else stayed as GameNative's "known config" set it: container variant 
 `Wrapper` with `turnip_v26.0.0_R6`, DXVK. The display was at 120 Hz.
 
 Before the first working start, the game's own VC++ 2022 runtime was installed into the container (see below).
-Whether the package still needs it was not tested.
+Whether the package still needs it was not tested here; a user on a newer GameNative version reports that it is
+needed (2026-10-10), so the README lists it as a step.
+
+Other devices (user reports, 2026-10-10, not tested here): a Galaxy S25 (Snapdragon 8 Elite) runs the game with this
+setup and the driver `Turnip gen8 v30`.
 
 ## What was wrong
 

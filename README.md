@@ -92,20 +92,31 @@ manual import, and research says it is the same build as GameNative's official `
 
 ### 3. Age of Empires II: DE: the container
 
-GameNative fills in a "known config" for this game. Keep its graphics settings (`Wrapper`, `turnip_v26.0.0_R6`,
-DXVK) and change:
+GameNative fills in a "known config" for this game. Keep its graphics settings (on the Thor `Wrapper`,
+`turnip_v26.0.0_R6`, DXVK; for other GPUs see the note below) and change:
 
 | Tab | Setting | Value |
 |---|---|---|
-| General | Wine Version | `proton-11.0-99-arm64ec-1` |
+| General | Wine Version | `proton-11.0-1-arm64ec-1` (not `11.0-2`; see the note below) |
 | General | Exec Arguments | `SKIPINTRO` |
 | Emulation | FEXCore Version | **`aoe4-perf5-23`** |
 | Environment | add `FEX_TSOENABLED` | `0` (about 30 % more FPS in big battles; remove it if the game crashes) |
 | Environment | add `FEX_EXP_SKIP_CALLRET_RESET` | `1` |
 | Environment | add `WINEDEBUG` | `-all` |
 
-Before the tested setup, the game's own VC++ 2022 runtime was installed into the container (GameNative 1.2.1 skips
-it); whether that is still needed was not tested. Details: [AOE2-DE.md](docs/guides/AOE2-DE.md).
+Then install the game's own **VC++ 2022 runtime** into the container: run `VC_redist.x64.exe` and `VC_redist.x86.exe`
+from `_CommonRedist\vcredist\2022\` in the game folder. GameNative installs the runtimes 2005 to 2019 from that
+folder, but not 2022. The tested setup had it, and a user reports that newer GameNative versions need it too.
+
+- **Wine version:** the Thor ran `proton-11.0-99-arm64ec-1`, a manual import that research says is the same build
+  as GameNative's official `proton-11.0-1-arm64ec-1` ([WINE-SOURCE.md](docs/guides/WINE-SOURCE.md)).
+  `proton-11.0-2-arm64ec-1` was not tested; one report of a game stuck at the splash screen used it (with the
+  GameNative 1.3.0 test release).
+- **Other GPUs:** `turnip_v26.0.0_R6` was tested only on the Thor's Adreno 740. A user on a Galaxy S25 (Snapdragon
+  8 Elite) runs the game with the driver `Turnip gen8 v30`. On other GPUs, use the driver GameNative recommends for
+  yours.
+
+Details: [AOE2-DE.md](docs/guides/AOE2-DE.md).
 
 ### 4. Device settings
 
