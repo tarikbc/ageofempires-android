@@ -18,6 +18,7 @@ Use the new file names and package versions when reporting results.
 The known comparison package is [v1.6.0's perf5 download](https://github.com/tarikbc/ageofempires-android/releases/download/v1.6.0/fexcore-aoe4-perf5.wcp).
 Its selected version is `aoe4-perf5-23`. It ends at patch 0016.
 The v1.6.0 perf7 package includes 0017 and is a different baseline.
+The candidate includes 0017; perf5 does not. This comparison measures the full package change and does not isolate patch 0020.
 
 ## One comparison window
 
