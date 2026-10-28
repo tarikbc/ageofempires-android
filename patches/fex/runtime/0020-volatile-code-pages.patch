@@ -1,0 +1,926 @@
+--- a/FEXCore/Source/Interface/Context/Context.h
++++ b/FEXCore/Source/Interface/Context/Context.h
+@@ -152,9 +152,13 @@
+   uint64_t GetGuestBlockEntry(FEXCore::Core::InternalThreadState* Thread) override;
+ 
+   uint64_t RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPC) override;
+-  void AddVolatileCodeRegion(uint64_t Base, uint64_t Size) override;
++  void AddVolatileCodeRegion(uint64_t Base, uint64_t Size, bool CodePage = false) override;
+   bool IsVolatileCode(uint64_t Address) const override;
++  bool IsVolatileRange(uint64_t Base, uint64_t Size) const override;
++  bool IsVolatileCodePage(uint64_t Address) const;
++  int32_t VolatileRegionIndex(uint64_t Address) const;
+   uintptr_t CompileVolatileBlock(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP);
++  uintptr_t VolatileFastLookup(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP);
+   uintptr_t TryReuseBlock(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, uint64_t MaxInst);
+   uint32_t ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadState* Thread, bool WasInJIT, const uint64_t* HostGPRs, uint64_t PSTATE) override;
+   void SetFlagsFromCompactedEFLAGS(FEXCore::Core::InternalThreadState* Thread, uint32_t EFLAGS) override;
+@@ -522,8 +526,12 @@
+   struct VolatileCodeRegion {
+     uint64_t Base;
+     uint64_t End;
+-  };
+-  VolatileCodeRegion VolatileCodeRegions[4] {};
++    // Patch 0020: a single page of otherwise ordinary code (an image page the guest keeps rewriting), compiled in
++    // bigger blocks than the slots of a private volatile region.
++    bool CodePage;
++  };
++  static constexpr uint32_t MaxVolatileCodeRegions = 64;
++  VolatileCodeRegion VolatileCodeRegions[MaxVolatileCodeRegions] {};
+   std::atomic<uint32_t> NumVolatileCodeRegions {0};
+   std::mutex VolatileCodeMutex;
+   struct VolatileCacheEntry {
+@@ -535,7 +543,19 @@
+     uint8_t Bytes[15];
+   };
+   fextl::vector<VolatileCacheEntry> VolatileCache;
+-  std::mutex VolatileCacheMutex;
++  std::shared_mutex VolatileCacheMutex;
++  // Patch 0020: volatile blocks of any shape, keyed by their guest RIP and the hash of the bytes they were compiled from.
++  struct VolatileRipEntry {
++    const void* Buffer;
++    uint64_t Generation;
++    uint64_t RIP;
++    uint64_t Hash;
++    uintptr_t Host;
++    // The guest byte ranges the block was decoded from (its sub-blocks, sorted by address).
++    fextl::vector<std::pair<uint64_t, uint32_t>> Ranges;
++  };
++  fextl::vector<VolatileRipEntry> VolatileRipCache;
++  std::shared_mutex VolatileRipMutex;
+   struct ReuseEntry {
+     uint64_t Hash;
+     uintptr_t Host;
+--- a/FEXCore/Source/Interface/Core/Core.cpp
++++ b/FEXCore/Source/Interface/Core/Core.cpp
+@@ -154,31 +154,116 @@
+   return Enabled;
+ }
+ 
++static inline void HashMix(uint64_t& H, uint64_t V) {
++  H ^= V;
++  H *= 0xff51afd7ed558ccdULL;
++  H ^= H >> 32;
++}
++
++static inline void HashGuestRange(uint64_t& H, uint64_t Entry, uint64_t Size) {
++  HashMix(H, Entry);
++  HashMix(H, Size);
++  const auto* P = reinterpret_cast<const uint8_t*>(Entry);
++  uint64_t i = 0;
++  for (; i + 8 <= Size; i += 8) {
++    uint64_t V;
++    memcpy(&V, P + i, sizeof(V));
++    HashMix(H, V);
++  }
++  uint64_t Tail = 0;
++  if (i < Size) {
++    memcpy(&Tail, P + i, Size - i);
++  }
++  HashMix(H, Tail ^ (Size - i) << 56);
++}
++
+ static uint64_t HashDecodedBlocks(const FEXCore::Frontend::Decoder::DecodedBlockInformation* BlockInfo) {
+   uint64_t H = 0x9E3779B97F4A7C15ULL ^ BlockInfo->Blocks.size();
+-  auto Mix = [&H](uint64_t V) {
+-    H ^= V;
+-    H *= 0xff51afd7ed558ccdULL;
+-    H ^= H >> 32;
+-  };
+   for (const auto& Block : BlockInfo->Blocks) {
+-    Mix(Block.Entry);
+-    Mix(Block.Size);
+-    const auto* P = reinterpret_cast<const uint8_t*>(Block.Entry);
+-    uint64_t i = 0;
+-    for (; i + 8 <= Block.Size; i += 8) {
+-      uint64_t V;
+-      memcpy(&V, P + i, sizeof(V));
+-      Mix(V);
+-    }
+-    uint64_t Tail = 0;
+-    if (i < Block.Size) {
+-      memcpy(&Tail, P + i, Block.Size - i);
+-    }
+-    Mix(Tail ^ (Block.Size - i) << 56);
++    HashGuestRange(H, Block.Entry, Block.Size);
++    // Identical bytes can require different code after a page becomes volatile or loses executable permission.
++    HashMix(H, Block.ForceFullSMCDetection);
++    HashMix(H, static_cast<uint64_t>(Block.BlockStatus));
++    HashMix(H, Block.FailExaminedSize);
++    // A rejected entry has Size == 0, but its generated SMC check depends on the examined instruction bytes.
++    // NOEXEC/PARTIAL_DECODE bytes may be inaccessible and must not be read here.
++    if (!Block.Size && Block.FailExaminedSize &&
++        (Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::INVALID_INST ||
++         Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::UNIMPLEMENTED_INST)) {
++      HashGuestRange(H, Block.Entry, Block.FailExaminedSize);
++    }
+   }
+   return H;
+ }
++
++// Patch 0020: hash the stored guest byte ranges; the compile's decode policy is checked separately.
++static uint64_t HashRanges(const fextl::vector<std::pair<uint64_t, uint32_t>>& Ranges) {
++  uint64_t H = 0x9E3779B97F4A7C15ULL ^ Ranges.size();
++  for (const auto& [Entry, Size] : Ranges) {
++    HashGuestRange(H, Entry, Size);
++  }
++  return H;
++}
++
++// Patch 0020: a small direct-mapped cache per thread in front of VolatileRipCache. It is read and written only by its
++// thread, so a hit takes no lock and touches no shared cache line: it checks that the translation belongs to the
++// thread's current code buffer, that no memory stopped being executable since the entry was validated (the frontend's
++// executable-range epoch), and, like every other visit of volatile code, that the guest bytes still hash the same.
++namespace {
++constexpr size_t VolatileL0Size = 128;
++constexpr size_t VolatileL0MaxRanges = 12;
++struct VolatileL0Entry {
++  uint64_t RIP;
++  uintptr_t Host;
++  const void* Buffer;
++  uint64_t Generation;
++  uint64_t Epoch;
++  uint64_t Hash;
++  uint32_t NumRanges;
++  uint32_t RangeSize[VolatileL0MaxRanges];
++  uint64_t RangeEntry[VolatileL0MaxRanges];
++};
++struct VolatileL0Cache {
++  VolatileL0Entry Entries[VolatileL0Size];
++};
++
++size_t VolatileL0Slot(uint64_t RIP) {
++  return static_cast<size_t>((RIP * 0x9E3779B97F4A7C15ULL) >> 57) & (VolatileL0Size - 1);
++}
++
++uint64_t HashL0Ranges(const VolatileL0Entry& E) {
++  uint64_t H = 0x9E3779B97F4A7C15ULL ^ E.NumRanges;
++  for (uint32_t i = 0; i < E.NumRanges; i++) {
++    HashGuestRange(H, E.RangeEntry[i], E.RangeSize[i]);
++  }
++  return H;
++}
++
++void VolatileL0Fill(FEXCore::Core::InternalThreadState* Thread, uint64_t RIP, uintptr_t Host, const void* Buffer, uint64_t Generation,
++                    uint64_t Epoch, uint64_t Hash, const fextl::vector<std::pair<uint64_t, uint32_t>>& Ranges) {
++  if (!Epoch || !Host || Ranges.empty() || Ranges.size() > VolatileL0MaxRanges) {
++    return;
++  }
++  if (!Thread->VolatileL0) {
++    Thread->VolatileL0 = FEXCore::Allocator::calloc(1, sizeof(VolatileL0Cache));
++    if (!Thread->VolatileL0) {
++      return;
++    }
++  }
++  auto& E = static_cast<VolatileL0Cache*>(Thread->VolatileL0)->Entries[VolatileL0Slot(RIP)];
++  E.RIP = RIP;
++  E.Host = Host;
++  E.Buffer = Buffer;
++  E.Generation = Generation;
++  E.Epoch = Epoch;
++  E.Hash = Hash;
++  E.NumRanges = static_cast<uint32_t>(Ranges.size());
++  for (size_t i = 0; i < Ranges.size(); i++) {
++    E.RangeEntry[i] = Ranges[i].first;
++    E.RangeSize[i] = Ranges[i].second;
++  }
++}
++} // namespace
+ 
+ struct GetFrameBlockInfoResult {
+   const CPU::CPUBackend::JITCodeHeader* InlineHeader;
+@@ -518,6 +603,10 @@
+ void ContextImpl::DestroyThread(FEXCore::Core::InternalThreadState* Thread) {
+   FEXCore::Allocator::VirtualProtect(&Thread->InterruptFaultPage, sizeof(Thread->InterruptFaultPage),
+                                      Allocator::ProtectOptions::Read | Allocator::ProtectOptions::Write);
++  if (Thread->VolatileL0) {
++    FEXCore::Allocator::free(Thread->VolatileL0);
++    Thread->VolatileL0 = nullptr;
++  }
+   delete Thread;
+ }
+ 
+@@ -722,15 +811,23 @@
+           Thread->OpDispatcher->_GuestOpcode(InstAddress - GuestRIP);
+         }
+ 
+-        if (Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL || Block.ForceFullSMCDetection) {
++        // A rejected instruction has InstSize == 0. Validate the accessible bytes that made it invalid, but do not
++        // read bytes that failed an execute-permission check (NOEXEC/PARTIAL_DECODE); those faults rely on permissions.
++        // A zero-size invalid tail only exits to its address; it is not executed in this block and is not part
++        // of the volatile byte ranges. Only an invalid entry emits a trap here and needs its examined bytes checked.
++        const auto CodeValidationSize = DecodedInfo->InstSize ? DecodedInfo->InstSize :
++          (Block.NumInstructions == 1 &&
++           (Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::INVALID_INST ||
++            Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::UNIMPLEMENTED_INST)) ? Block.FailExaminedSize : 0;
++        if ((Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL || Block.ForceFullSMCDetection) && CodeValidationSize) {
+           auto ExistingCodePtr = reinterpret_cast<uint8_t*>(Block.Entry + BlockInstructionsLength);
+           auto InstAddressReg = Thread->OpDispatcher->_EntrypointOffset(GPRSize, InstAddress - GuestRIP);
+ 
+-          auto Value = FEXCore::Utils::crc32(ExistingCodePtr, DecodedInfo->InstSize);
++          auto Value = FEXCore::Utils::crc32(ExistingCodePtr, CodeValidationSize);
+           auto CRC = WantsDiskCachePatching ?
+-                       Thread->OpDispatcher->_PatchableGuestCRC(IR::OpSize::i64Bit, Value, (int64_t)ExistingCodePtr, DecodedInfo->InstSize) :
++                       Thread->OpDispatcher->_PatchableGuestCRC(IR::OpSize::i64Bit, Value, (int64_t)ExistingCodePtr, CodeValidationSize) :
+                        Thread->OpDispatcher->Constant(Value);
+-          auto CodeChanged = Thread->OpDispatcher->_ValidateCode(CRC, InstAddressReg, DecodedInfo->InstSize);
++          auto CodeChanged = Thread->OpDispatcher->_ValidateCode(CRC, InstAddressReg, CodeValidationSize);
+ 
+           auto InvalidateCodeCond = Thread->OpDispatcher->CondJump(CodeChanged);
+ 
+@@ -939,21 +1036,70 @@
+   return false;
+ }
+ 
+-void ContextImpl::AddVolatileCodeRegion(uint64_t Base, uint64_t Size) {
++void ContextImpl::AddVolatileCodeRegion(uint64_t Base, uint64_t Size, bool CodePage) {
+   std::scoped_lock lk(VolatileCodeMutex);
+   if (IsVolatileCode(Base)) {
+     return;
+   }
+   const uint32_t N = NumVolatileCodeRegions.load(std::memory_order_relaxed);
+-  if (N >= 4) {
++  // Patch 0020: up to 64 regions; private regions (patch 0012) keep their old limit of 4.
++  if (N >= MaxVolatileCodeRegions) {
+     return;
+   }
+-  VolatileCodeRegions[N] = {Base, Base + Size};
+-  VolatileCodeStats.RegionBase[N] = Base;
+-  VolatileCodeStats.RegionSize[N] = Size;
++  if (!CodePage) {
++    uint32_t Private = 0;
++    for (uint32_t i = 0; i < N; i++) {
++      Private += !VolatileCodeRegions[i].CodePage;
++    }
++    if (Private >= 4) {
++      return;
++    }
++  }
++  VolatileCodeRegions[N] = {Base, Base + Size, CodePage};
++  if (N < 4) {
++    VolatileCodeStats.RegionBase[N] = Base;
++    VolatileCodeStats.RegionSize[N] = Size;
++  }
+   VolatileCodeStats.Regions = N + 1;
+   NumVolatileCodeRegions.store(N + 1, std::memory_order_release);
+ }
++
++int32_t ContextImpl::VolatileRegionIndex(uint64_t Address) const {
++  const uint32_t N = NumVolatileCodeRegions.load(std::memory_order_acquire);
++  for (uint32_t i = 0; i < N; i++) {
++    if (Address >= VolatileCodeRegions[i].Base && Address < VolatileCodeRegions[i].End) {
++      return static_cast<int32_t>(i);
++    }
++  }
++  return -1;
++}
++
++bool ContextImpl::IsVolatileCodePage(uint64_t Address) const {
++  const uint32_t N = NumVolatileCodeRegions.load(std::memory_order_acquire);
++  for (uint32_t i = 0; i < N; i++) {
++    if (Address >= VolatileCodeRegions[i].Base && Address < VolatileCodeRegions[i].End) {
++      return VolatileCodeRegions[i].CodePage;
++    }
++  }
++  return false;
++}
++
++bool ContextImpl::IsVolatileRange(uint64_t Base, uint64_t Size) const {
++  if (!Size || NumVolatileCodeRegions.load(std::memory_order_acquire) == 0) {
++    return false;
++  }
++  const uint64_t End = Base + Size;
++  for (uint64_t Page = Base & FEXCore::Utils::FEX_PAGE_MASK; Page < End; Page += FEXCore::Utils::FEX_PAGE_SIZE) {
++    if (!IsVolatileCode(Page)) {
++      return false;
++    }
++  }
++  return true;
++}
++
++// Patch 0020 v6: the Target of a content-cache key for a block whose exit target is only known at run time. No direct
++// jmp can produce it (it would be a jump to the last byte of the address space).
++static constexpr uint64_t VolatileDynamicTarget = ~0ULL;
+ 
+ static uint64_t VolatileKeyHash(const uint8_t* Bytes, uint8_t Len, uint64_t Target) {
+   uint64_t H = 0xcbf29ce484222325ULL ^ Target;
+@@ -967,10 +1113,90 @@
+ // form [one position-independent instruction][jmp rel8/rel32 out of the region] produce the same host code wherever they
+ // are (the JIT resolves the exit to an absolute target), so they are cached by content for the thread's current code
+ // buffer. Anything else is compiled for this one visit.
++static bool VolatileRipCacheEnabled() {
++  static const bool Enabled = [] {
++    const char* Value = getenv("FEX_EXP_VOLRIP");
++    return !Value || Value[0] != '0';
++  }();
++  return Enabled;
++}
++
++static uint64_t VolatileRipSlot(uint64_t RIP) {
++  uint64_t H = RIP * 0x9E3779B97F4A7C15ULL;
++  return H ^ (H >> 29);
++}
++
++uintptr_t ContextImpl::VolatileFastLookup(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP) {
++  auto* L0 = static_cast<VolatileL0Cache*>(Thread->VolatileL0);
++  if (!L0) {
++    return 0;
++  }
++  const auto& E = L0->Entries[VolatileL0Slot(GuestRIP)];
++  if (E.RIP != GuestRIP || !E.Host || E.Buffer != Thread->CPUBackend->GetCurrentCodeBufferPtr() ||
++      E.Generation != Thread->CPUBackend->GetCurrentCodeBufferGeneration()) {
++    return 0;
++  }
++  if (Thread->CurrentFrame->State.flags[X86State::RFLAG_TF_RAW_LOC] || E.Epoch != SyscallHandler->GetExecutableRangeEpoch()) {
++    return 0;
++  }
++  if (HashL0Ranges(E) != E.Hash) {
++    return 0;
++  }
++  Thread->VolatileEntryRIP = GuestRIP;
++  return E.Host;
++}
++
+ uintptr_t ContextImpl::CompileVolatileBlock(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP) {
+   Thread->VolatileEntryRIP = GuestRIP;
+ 
+-  Thread->FrontendDecoder->SetupDecodeInstructionsAtEntry(Thread, GuestRIP, 2);
++  // Patch 0020: a volatile code page holds ordinary code, so it is compiled in multiblocks like any other code (loops
++  // stay inside one block), unlike the two-instruction slots of a private volatile region. A block is identified by its
++  // RIP and the hash of the bytes of all its sub-blocks, which is checked again on every entry.
++  const int32_t RegionIndex = VolatileRegionIndex(GuestRIP);
++  const bool CodePage = RegionIndex >= 0 && VolatileCodeRegions[RegionIndex].CodePage;
++  const uint64_t VolatileMaxInst = CodePage ? 1000 : 2;
++  const bool TFSet = Thread->CurrentFrame->State.flags[X86State::RFLAG_TF_RAW_LOC];
++
++  // Fast path: hash the bytes of each cached version of this RIP directly, without decoding.
++  // The epoch is read before the executable range, so an entry put in the per-thread cache is never newer than it.
++  const uint64_t RangeEpoch = SyscallHandler->GetExecutableRangeEpoch();
++  if (CodePage && !TFSet && VolatileRipCacheEnabled()) {
++    const auto Range = SyscallHandler->QueryGuestExecutableRange(Thread, GuestRIP);
++    const void* Buffer = Thread->CPUBackend->GetCurrentCodeBufferPtr();
++    const uint64_t Generation = Thread->CPUBackend->GetCurrentCodeBufferGeneration();
++    uintptr_t Host = 0;
++    if (Range.Size && GuestRIP >= Range.Base) {
++      const uint64_t RangeEnd = Range.Base + Range.Size;
++      std::shared_lock lk(VolatileRipMutex);
++      if (!VolatileRipCache.empty()) {
++        const uint64_t H = VolatileRipSlot(GuestRIP);
++        for (size_t i = 0; i < 16; i++) {
++          const auto& E = VolatileRipCache[(H + i) & (VolatileRipCache.size() - 1)];
++          if (!E.Host || E.RIP != GuestRIP || E.Buffer != Buffer || E.Generation != Generation || E.Ranges.empty()) {
++            continue;
++          }
++          // Every byte the block was compiled from must still be in the executable range of its entry.
++          bool InRange = true;
++          for (const auto& [Entry, Size] : E.Ranges) {
++            if (Entry < Range.Base || Entry + Size > RangeEnd) {
++              InRange = false;
++              break;
++            }
++          }
++          if (InRange && HashRanges(E.Ranges) == E.Hash) {
++            Host = E.Host;
++            VolatileL0Fill(Thread, GuestRIP, Host, Buffer, Generation, RangeEpoch, E.Hash, E.Ranges);
++            break;
++          }
++        }
++      }
++    }
++    if (Host) {
++      return Host;
++    }
++  }
++
++  Thread->FrontendDecoder->SetupDecodeInstructionsAtEntry(Thread, GuestRIP, VolatileMaxInst);
+   Thread->FrontendDecoder->DecodeLoop(reinterpret_cast<const uint8_t*>(GuestRIP));
+   const auto* BlockInfo = Thread->FrontendDecoder->GetDecodedBlockInfo();
+ 
+@@ -978,15 +1204,35 @@
+   uint8_t Len = 0;
+   uint8_t Bytes[15] {};
+   uint64_t Target = 0;
+-  if (BlockInfo->Blocks.size() == 1) {
++  // Code compiled with the trap flag set (single-step checks) or with full SMC checks (they embed the guest address of
++  // every instruction) is not the same wherever it sits, so neither is shared by content.
++  const bool ShareByContent = !TFSet && Config.SMCChecks != FEXCore::Config::CONFIG_SMC_FULL;
++  if (!CodePage && BlockInfo->Blocks.size() == 1) {
+     const auto& Block = BlockInfo->Blocks[0];
++    auto PositionDependent = [](const FEXCore::X86Tables::DecodedOperand& Op) {
++      return Op.IsRIPRelative() || Op.IsRIPRelativeRelocation() || Op.IsLiteralRelocation() || Op.IsGPRIndirectRelocation() ||
++             Op.IsSIBRelocation() || Op.IsLiteralPatchable();
++    };
++    // Patch 0020 v6: a lone instruction whose exit target comes from the guest state at run time: ret / ret imm16 (the
++    // stack) or jmp r/m without a RIP-relative operand. Its host code reads nothing of its own address (RETOp pops the
++    // target and exits through the call-ret stack or the dispatcher; JUMPAbsoluteOp exits through the dispatcher), so
++    // every copy of the same bytes shares one translation, keyed by the bytes and the dynamic-target sentinel.
++    auto DynamicExit = [&](const FEXCore::X86Tables::DecodedInst& I) {
++      if (!I.TableInfo || I.PC != GuestRIP || I.InstSize == 0 || I.InstSize > 15 || Block.Size != I.InstSize) {
++        return false;
++      }
++      const auto Dispatch = I.TableInfo->OpcodeDispatcher.OpDispatch;
++      if (Dispatch == &IR::OpDispatchBuilder::RETOp) {
++        return true;
++      }
++      if (Dispatch == &IR::OpDispatchBuilder::JUMPAbsoluteOp) {
++        return !PositionDependent(I.Dest) && !PositionDependent(I.Src[0]) && !PositionDependent(I.Src[1]) && !PositionDependent(I.Src[2]);
++      }
++      return false;
++    };
+     if (Block.Entry == GuestRIP && Block.BlockStatus == FEXCore::Frontend::Decoder::DecodedBlockStatus::SUCCESS && Block.NumInstructions == 2) {
+       const auto& I0 = Block.DecodedInstructions[0];
+       const auto& I1 = Block.DecodedInstructions[1];
+-      auto PositionDependent = [](const FEXCore::X86Tables::DecodedOperand& Op) {
+-        return Op.IsRIPRelative() || Op.IsRIPRelativeRelocation() || Op.IsLiteralRelocation() || Op.IsGPRIndirectRelocation() ||
+-               Op.IsSIBRelocation() || Op.IsLiteralPatchable();
+-      };
+       const auto* P0 = reinterpret_cast<const uint8_t*>(GuestRIP);
+       if (I0.TableInfo && I1.TableInfo && I0.PC == GuestRIP && I0.InstSize > 0 && I0.InstSize <= 15 &&
+           !(I0.TableInfo->Flags & (FEXCore::X86Tables::InstFlags::FLAGS_SETS_RIP | FEXCore::X86Tables::InstFlags::FLAGS_BLOCK_END)) &&
+@@ -1008,18 +1254,32 @@
+           Target = GuestRIP + I0.InstSize + I1.InstSize + Disp;
+           Len = I0.InstSize;
+           memcpy(Bytes, P0, Len);
+-          Eligible = !IsVolatileCode(Target);
++          // The host code is [translate(I0)][exit to Target]; given the bytes of I0 (position independent) and the
++          // absolute Target it is the same wherever the block sits, so it is shared by content. A volatile Target is
++          // fine too: an exit to volatile code is never backpatched (see ExitFunctionLink), so it re-resolves Target
++          // through the dispatcher on every execution, exactly as a fresh compile would.
++          Eligible = ShareByContent;
+         }
+       }
+-    }
+-  }
++    } else if (Block.Entry == GuestRIP && Block.BlockStatus == FEXCore::Frontend::Decoder::DecodedBlockStatus::SUCCESS &&
++               Block.NumInstructions == 1 && DynamicExit(Block.DecodedInstructions[0])) {
++      Len = static_cast<uint8_t>(Block.DecodedInstructions[0].InstSize);
++      memcpy(Bytes, reinterpret_cast<const uint8_t*>(GuestRIP), Len);
++      Target = VolatileDynamicTarget;
++      Eligible = ShareByContent;
++    }
++  }
++
++  // Patch 0020 v6: the decode the key was taken from. The compile below decodes again, and only a translation of the
++  // same bytes may go into the cache under this key (another thread can rewrite a slot in between).
++  const uint64_t ClassifyDecodeHash = Eligible ? HashDecodedBlocks(BlockInfo) : 0;
+ 
+   if (Eligible) {
+     const void* Buffer = Thread->CPUBackend->GetCurrentCodeBufferPtr();
+     const uint64_t Generation = Thread->CPUBackend->GetCurrentCodeBufferGeneration();
+     uintptr_t Host = 0;
+     {
+-      std::scoped_lock lk(VolatileCacheMutex);
++      std::shared_lock lk(VolatileCacheMutex);
+       if (!VolatileCache.empty()) {
+         const uint64_t H = VolatileKeyHash(Bytes, Len, Target);
+         for (size_t i = 0; i < 8; i++) {
+@@ -1041,10 +1301,58 @@
+     }
+   }
+ 
++  // Patch 0020: any other volatile block goes into the RIP cache after it is compiled. A block that ends in an invalid
++  // instruction (a trap the guest placed on purpose) is as cacheable as any other: its code depends on its bytes only.
++  bool RipCacheable = false;
++  uint64_t ProbeDecodeHash = 0;
++  uint64_t ProbeHash = 0;
++  fextl::vector<std::pair<uint64_t, uint32_t>> ProbeRanges;
++  // Only blocks of volatile code pages: the slots of a private volatile region (code run one instruction at a time,
++  // see patch 0012) hold a new instruction at a new address on almost every visit and would only flush the cache.
++  if (CodePage && !Eligible && !TFSet && VolatileRipCacheEnabled() && !BlockInfo->Blocks.empty() && BlockInfo->Blocks.size() <= 256 &&
++      BlockInfo->Blocks[0].Entry == GuestRIP) {
++    using Status = FEXCore::Frontend::Decoder::DecodedBlockStatus;
++    const auto Range = SyscallHandler->QueryGuestExecutableRange(Thread, GuestRIP);
++    const uint64_t RangeEnd = Range.Base + Range.Size;
++    RipCacheable = Range.Size && GuestRIP >= Range.Base;
++    for (const auto& Block : BlockInfo->Blocks) {
++      if (!RipCacheable) {
++        break;
++      }
++      if (Block.Size >= 65536 || !(Block.BlockStatus == Status::SUCCESS || Block.BlockStatus == Status::INVALID_INST ||
++                                   Block.BlockStatus == Status::UNIMPLEMENTED_INST)) {
++        RipCacheable = false;
++        break;
++      }
++      if (Block.Size) {
++        ProbeRanges.emplace_back(Block.Entry, static_cast<uint32_t>(Block.Size));
++      }
++      if (Block.BlockStatus != Status::SUCCESS && Block.Entry == GuestRIP && Block.NumInstructions == 1) {
++        // The entry starts with an instruction FEX could not decode: a trap the guest placed on purpose, compiled as an
++        // exception raised at the entry. That depends on exactly the bytes the decoder examined to reject it, which
++        // therefore belong to the block's identity. The bytes after them do not, and must stay out: they can change on
++        // every visit while the trap itself stays the same (v4 hashed 15 bytes and missed every time).
++        // An invalid instruction after other instructions only ends the block; the exit there is compiled on its own.
++        const uint64_t Len = Block.FailExaminedSize ? Block.FailExaminedSize : 15;
++        if (GuestRIP + Len > RangeEnd) {
++          RipCacheable = false;
++          break;
++        }
++        ProbeRanges.emplace_back(GuestRIP, static_cast<uint32_t>(Len));
++      }
++    }
++    if (RipCacheable && !ProbeRanges.empty()) {
++      ProbeDecodeHash = HashDecodedBlocks(BlockInfo);
++      ProbeHash = HashRanges(ProbeRanges);
++    } else {
++      RipCacheable = false;
++    }
++  }
++
+   // Compile for this visit only: no lookup cache entry, no executable-range tracking (so no write trap).
+-  Thread->FrontendDecoder->SetupDecodeInstructionsAtEntry(Thread, GuestRIP, 2);
++  Thread->FrontendDecoder->SetupDecodeInstructionsAtEntry(Thread, GuestRIP, VolatileMaxInst);
+   FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedJITCount, 1);
+-  auto [CompiledCode, DebugData, StartAddr, Length, NeedsAddGuestCodeRanges] = CompileCode(Thread, GuestRIP, 2);
++  auto [CompiledCode, DebugData, StartAddr, Length, NeedsAddGuestCodeRanges] = CompileCode(Thread, GuestRIP, VolatileMaxInst);
+   auto CodePtr = CompiledCode.EntryPoints[GuestRIP];
+   if (CodePtr == nullptr) {
+     return 0;
+@@ -1057,7 +1365,10 @@
+   Thread->FrontendDecoder->ValidateDisownedOrFree();
+   Thread->OpDispatcher->ValidateDisownedOrFree();
+ 
+-  if (Eligible) {
++  if (Eligible && !(CodeReuseEnabled() && Thread->ReuseDecodeHash == ClassifyDecodeHash)) {
++    // The bytes changed between the classification and the compile: correct for this visit, not for the key.
++    __atomic_fetch_add(&VolatileCodeStats.Ineligible, 1, __ATOMIC_RELAXED);
++  } else if (Eligible) {
+     const void* Buffer = Thread->CPUBackend->GetCurrentCodeBufferPtr();
+     const uint64_t Generation = Thread->CPUBackend->GetCurrentCodeBufferGeneration();
+     std::scoped_lock lk(VolatileCacheMutex);
+@@ -1085,6 +1396,36 @@
+     __atomic_fetch_add(&VolatileCodeStats.Misses, 1, __ATOMIC_RELAXED);
+   } else {
+     __atomic_fetch_add(&VolatileCodeStats.Ineligible, 1, __ATOMIC_RELAXED);
++    // Thread->ReuseDecodeHash is the hash of the decode CompileCode just compiled (GenerateIR sets it); a different
++    // value means the bytes changed in between, and the code is not kept.
++    if (RipCacheable && CodeReuseEnabled() && Thread->ReuseDecodeHash == ProbeDecodeHash && HashRanges(ProbeRanges) == ProbeHash) {
++      const void* Buffer = Thread->CPUBackend->GetCurrentCodeBufferPtr();
++      const uint64_t Generation = Thread->CPUBackend->GetCurrentCodeBufferGeneration();
++      std::unique_lock lk(VolatileRipMutex);
++      if (VolatileRipCache.empty()) {
++        VolatileRipCache.resize(65536);
++      }
++      const uint64_t H = VolatileRipSlot(GuestRIP);
++      // Prefer a free or stale slot, or this exact version; otherwise replace the last slot probed.
++      size_t Slot = (H + 15) & (VolatileRipCache.size() - 1);
++      for (size_t i = 0; i < 16; i++) {
++        const size_t Idx = (H + i) & (VolatileRipCache.size() - 1);
++        const auto& E = VolatileRipCache[Idx];
++        if (!E.Host || E.Buffer != Buffer || E.Generation != Generation || (E.RIP == GuestRIP && E.Hash == ProbeHash && E.Ranges == ProbeRanges)) {
++          Slot = Idx;
++          break;
++        }
++      }
++      auto& E = VolatileRipCache[Slot];
++      E.Buffer = Buffer;
++      E.Generation = Generation;
++      E.RIP = GuestRIP;
++      E.Hash = ProbeHash;
++      E.Host = reinterpret_cast<uintptr_t>(CodePtr);
++      E.Ranges = std::move(ProbeRanges);
++      // RipCacheable was decided against the executable range queried after RangeEpoch was read.
++      VolatileL0Fill(Thread, GuestRIP, E.Host, Buffer, Generation, RangeEpoch, E.Hash, E.Ranges);
++    }
+   }
+   return reinterpret_cast<uintptr_t>(CodePtr);
+ }
+@@ -1151,6 +1492,14 @@
+ 
+   static_cast<ContextImpl*>(Thread->CTX)->SyscallHandler->PreCompile();
+ 
++  // Patch 0020: volatile code is never in the lookup caches and is checked against the guest bytes on every visit, so
++  // the invalidation lock protects nothing for it; a hit in the thread's own cache returns without taking it.
++  if (Thread->VolatileL0) {
++    if (auto Host = VolatileFastLookup(Thread, GuestRIP)) {
++      return Host;
++    }
++  }
++
+   // Invalidate might take a unique lock on this, to guarantee that during invalidation no code gets compiled
+   auto lk = GuardSignalDeferringSection<std::shared_lock>(CodeInvalidationMutex, Thread);
+ 
+@@ -1178,7 +1527,9 @@
+   {
+     FEXCORE_PROFILE_ACCUMULATION(Thread, AccumulatedDiskCacheLookupTime);
+     Hit = DiskCache.Lookup(Thread, Region, GuestRIP, DiskCacheGuestCodeKey);
+-    if (Hit && !DiskCache.IsValidating()) {
++    // Persisted code can predate volatile-page promotion and omit the decoder's boundary/SMC policy.
++    if (Hit && !DiskCache.IsValidating() &&
++        std::none_of(Hit->GuestPages.begin(), Hit->GuestPages.end(), [&](auto Page) { return IsVolatileCode(Page); })) {
+       auto LoadedCode = Thread->CPUBackend->LoadCachedCode(Hit->HostCode);
+       if (LoadedCode.BlockBegin) {
+         for (auto& CodePage : Hit->GuestPages) {
+--- a/FEXCore/Source/Interface/Core/Frontend.cpp
++++ b/FEXCore/Source/Interface/Core/Frontend.cpp
+@@ -128,6 +128,7 @@
+ }
+ 
+ std::optional<uint8_t> Decoder::PeekByte(uint8_t Offset) {
++  ExaminedSize = std::max<uint8_t>(ExaminedSize, InstructionSize + Offset + 1);
+   uint64_t ByteAddress = reinterpret_cast<uint64_t>(InstStream.InstStream + InstructionSize + Offset);
+   if (CheckRangeExecutable(ByteAddress, 1)) {
+     return InstStream.AdjustedInstStream[InstructionSize + Offset];
+@@ -141,6 +142,7 @@
+ 
+   uint64_t Res = 0;
+   uint64_t Address = reinterpret_cast<uint64_t>(InstStream.InstStream + InstructionSize);
++  ExaminedSize = std::max<uint8_t>(ExaminedSize, InstructionSize + Size);
+   LastFieldReadOffset = (uint8_t)InstructionSize;
+   LastFieldReadSize = Size;
+   if (CheckRangeExecutable(Address, Size)) {
+@@ -1078,6 +1080,7 @@
+   // Will be set if DecodeInstructionImpl tries to read non-executable memory
+   HitNonExecutableRange = false;
+   HitBadRelocation = false;
++  ExaminedSize = 0;
+   auto ErrorDuringDecoding = DecodeInstructionImpl(PC);
+ 
+   if (ErrorDuringDecoding != DecodedBlockStatus::SUCCESS || HitNonExecutableRange || HitBadRelocation) [[unlikely]] {
+@@ -1141,8 +1144,15 @@
+       return;
+     }
+ 
++    if (!StopAtVolatileCode) {
++      // Patch 0020: in a volatile block the code after a call is not part of the block, so the return goes through the
++      // dispatcher and the code is checked against the guest bytes again.
++      return;
++    }
+     AddBranchTarget(InstEnd);
+-    BlockInfo.EntryPoints.emplace(InstEnd);
++    if (!CTX->IsVolatileCode(InstEnd)) {
++      BlockInfo.EntryPoints.emplace(InstEnd);
++    }
+     return;
+   }
+ 
+@@ -1292,6 +1302,10 @@
+   if (VisitedBlocks.contains(Target)) {
+     return;
+   }
++  if (StopAtVolatileCode && CTX->IsVolatileCode(Target)) {
++    // Patch 0020: leave it to an exit; volatile code is compiled on its own.
++    return;
++  }
+ 
+   auto BlockSuccIt = std::lower_bound(BlockInfo.Blocks.begin(), BlockInfo.Blocks.end(), Target,
+                                       [](const auto& a, uint64_t Address) { return a.Entry < Address; });
+@@ -1319,6 +1333,7 @@
+           .NumInstructions = BlockIt->NumInstructions - SplitIdx,
+           .DecodedInstructions = BlockIt->DecodedInstructions + SplitIdx,
+           .BlockStatus = BlockIt->BlockStatus,
++          .FailExaminedSize = BlockIt->FailExaminedSize,
+         };
+ 
+         if (BlockIt->DataMasks.size()) {
+@@ -1595,6 +1610,16 @@
+         break;
+       }
+ 
++      // Patch 0020: code in a volatile page is not write-trapped. Ordinary blocks stop before it, even when the
++      // decoder's current page already names that page. An entry instruction can straddle the boundary: keep it,
++      // but validate its bytes at run time so a write to the volatile portion cannot leave stale cached code.
++      if (StopAtVolatileCode && (CTX->IsVolatileCode(OpMinPage) || CTX->IsVolatileCode(OpMaxPage))) {
++        if (!(EntryBlock && BlockIt->NumInstructions == 0)) {
++          break;
++        }
++        BlockIt->ForceFullSMCDetection = true;
++      }
++
+       if (OpMinPage != CurrentCodePage) {
+         CurrentCodePage = OpMinPage;
+         BlockInfo.CodePages.insert(CurrentCodePage);
+@@ -1607,6 +1632,7 @@
+ 
+       LastFieldReadSize = 0;
+       BlockIt->BlockStatus = DecodeInstruction(OpAddress);
++      BlockIt->FailExaminedSize = BlockIt->BlockStatus == DecodedBlockStatus::SUCCESS ? 0 : ExaminedSize;
+       if (HitBadRelocation) {
+         BlockInfo.TotalInstructionCount = 0;
+         BlockInfo.Blocks = {*BlockIt};
+@@ -1790,6 +1816,7 @@
+ 
+   EntryBlock = true;
+   FinalInstruction = false;
++  StopAtVolatileCode = !CTX->IsVolatileCode(PC);
+ }
+ 
+ } // namespace FEXCore::Frontend
+--- a/FEXCore/Source/Interface/Core/Frontend.h
++++ b/FEXCore/Source/Interface/Core/Frontend.h
+@@ -49,6 +49,8 @@
+     DecodedBlockStatus BlockStatus;
+     bool IsEntryPoint {};
+     bool ForceFullSMCDetection {};
++    // Patch 0020: when BlockStatus is not SUCCESS, how many bytes of the failing instruction the decoder looked at.
++    uint8_t FailExaminedSize {};
+     fextl::vector<DataMask> DataMasks;
+   };
+ 
+@@ -138,6 +140,8 @@
+   uint64_t CurrentCodePage {};
+   bool EntryBlock {};
+   bool FinalInstruction {};
++  // Patch 0020: a decode that does not start in volatile code stops before it (volatile code is compiled on its own).
++  bool StopAtVolatileCode {};
+   uint64_t MaxInst {};
+   bool Paused {};
+   int64_t BlockResume = -1;
+@@ -181,6 +185,8 @@
+ 
+   static constexpr size_t MAX_INST_SIZE = 15;
+   uint8_t InstructionSize {};
++  // Patch 0020: bytes of the current instruction read or peeked so far (see FailExaminedSize).
++  uint8_t ExaminedSize {};
+   // Contains the full decoded instruction, unless it is a `Thunk` instruction.
+   std::array<uint8_t, MAX_INST_SIZE> Instruction;
+   uint8_t LastEscapePrefix {};
+--- a/FEXCore/include/FEXCore/Core/Context.h
++++ b/FEXCore/include/FEXCore/Core/Context.h
+@@ -85,8 +85,10 @@
+ 
+   ///< Volatile code regions: guest memory that is rewritten and executed so often that it is not write-trapped and its
+   ///< blocks are never cached by address.
+-  FEX_DEFAULT_VISIBILITY virtual void AddVolatileCodeRegion(uint64_t Base, uint64_t Size) = 0;
++  FEX_DEFAULT_VISIBILITY virtual void AddVolatileCodeRegion(uint64_t Base, uint64_t Size, bool CodePage = false) = 0;
+   FEX_DEFAULT_VISIBILITY virtual bool IsVolatileCode(uint64_t Address) const = 0;
++  ///< Patch 0020: true if every page of [Base, Base + Size) is volatile.
++  FEX_DEFAULT_VISIBILITY virtual bool IsVolatileRange(uint64_t Base, uint64_t Size) const = 0;
+ 
+   ///< State reconstruction helpers
+   ///< Reconstructs the guest RIP from the passed in thread context and related Host PC.
+--- a/FEXCore/include/FEXCore/Debug/InternalThreadState.h
++++ b/FEXCore/include/FEXCore/Debug/InternalThreadState.h
+@@ -118,6 +118,8 @@
+   uint64_t VolatileEntryRIP {};
+   // Hash of the guest bytes of the last decoded compile unit (see ContextImpl::TryReuseBlock).
+   uint64_t ReuseDecodeHash {};
++  // Patch 0020: this thread's small cache of volatile blocks, checked before any lock (owned by ContextImpl).
++  void* VolatileL0 {};
+ 
+   uintptr_t JITGuardPage {};
+   uint64_t JITGuardOverflowArgument {};
+--- a/FEXCore/include/FEXCore/HLE/SyscallHandler.h
++++ b/FEXCore/include/FEXCore/HLE/SyscallHandler.h
+@@ -37,6 +37,11 @@
+   virtual void MarkOvercommitRange(uint64_t Start, uint64_t Length) {}
+   virtual void UnmarkOvercommitRange(uint64_t Start, uint64_t Length) {}
+   virtual ExecutableRangeInfo QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) = 0;
++  // Patch 0020: a value that changes whenever some memory stops being executable, or 0 if the frontend does not track
++  // it. While it is unchanged, guest bytes found inside an executable range are still inside one.
++  virtual uint64_t GetExecutableRangeEpoch() const {
++    return 0;
++  }
+   virtual std::optional<ExecutableFileSectionInfo> LookupExecutableFileSection(Core::InternalThreadState* Thread, uint64_t GuestAddr) = 0;
+ 
+   virtual void PreCompile() {}
+--- a/Source/Windows/ARM64EC/Module.cpp
++++ b/Source/Windows/ARM64EC/Module.cpp
+@@ -946,6 +946,10 @@
+ 
+   FEXCore::HLE::ExecutableRangeInfo QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) override {
+     return InvalidationTracker->QueryExecutableRange(Address);
++  }
++
++  uint64_t GetExecutableRangeEpoch() const override {
++    return InvalidationTracker ? InvalidationTracker->ExecutableRangeEpoch() : 0;
+   }
+ 
+   void PreCompile() override {
+--- a/Source/Windows/Common/InvalidationTracker.cpp
++++ b/Source/Windows/Common/InvalidationTracker.cpp
+@@ -7,6 +7,7 @@
+ #include <FEXCore/Config/Config.h>
+ #include <FEXCore/Debug/InternalThreadState.h>
+ #include "InvalidationTracker.h"
++#include <FEXCore/Utils/SpinWaitLock.h>
+ #include <windef.h>
+ #include <winternl.h>
+ 
+@@ -75,12 +76,15 @@
+       if (DEPDisabled) {
+         DEPPromotedIntervals.Remove(ProtInterval);
+       }
++      ExecutableRangeRemoved();
+       return true;
+     }
+ 
+     return false;
+   }();
+ 
++  // Protection changes must reset decoder permissions, including for volatile pages. Ordinary cached entry
++  // instructions can also span into a volatile page, so their translations must be invalidated here.
+   if (NeedsInvalidate) {
+     // IntervalsLock cannot be held during invalidation
+     InvalidateIntervalInternal(AlignedBase, AlignedSize);
+@@ -98,6 +102,7 @@
+   }
+ 
+   DEPDisabled = DisableDEP;
++  ExecutableRangeRemoved();
+ 
+   if (DisableDEP) {
+     DEPPromotedIntervals.Clear();
+@@ -193,6 +198,7 @@
+     std::unique_lock Lock(IntervalsLock);
+     XIntervals.Remove({SectionBase, SectionBase + SectionSize});
+     RWXIntervals.Remove({SectionBase, SectionBase + SectionSize});
++    ExecutableRangeRemoved();
+   }
+ 
+   return {SectionBase, SectionSize};
+@@ -214,6 +220,7 @@
+     std::unique_lock Lock(IntervalsLock);
+     XIntervals.Remove({AlignedBase, AlignedBase + AlignedSize});
+     RWXIntervals.Remove({AlignedBase, AlignedBase + AlignedSize});
++    ExecutableRangeRemoved();
+   }
+ }
+ 
+@@ -265,17 +272,41 @@
+     return;
+   }
+   const size_t Idx = (Page >> 12) & 1023;
++  const uint64_t Now = FEXCore::Utils::SpinWaitLock::GetCycleCounter();
+   if (VolatileFaultPage[Idx] != Page) {
+     VolatileFaultPage[Idx] = Page;
+     VolatileFaultCount[Idx] = 0;
++    VolatileFaultStart[Idx] = Now;
+   }
+   if (++VolatileFaultCount[Idx] < 16) {
+     return;
+   }
+ 
+   MEMORY_BASIC_INFORMATION Info;
+-  if (NtQueryVirtualMemory(NtCurrentProcess(), reinterpret_cast<void*>(Page), MemoryBasicInformation, &Info, sizeof(Info), nullptr) ||
+-      Info.Type != MEM_PRIVATE) {
++  if (NtQueryVirtualMemory(NtCurrentProcess(), reinterpret_cast<void*>(Page), MemoryBasicInformation, &Info, sizeof(Info), nullptr)) {
++    return;
++  }
++  if (Info.Type != MEM_PRIVATE) {
++    // Patch 0020: a page of an image (or a mapping) that takes 16 write faults within one second becomes a volatile
++    // code page on its own: no write trap, its blocks compiled on every visit and cached by RIP and content.
++    static const bool PagesEnabled = [] {
++      const char* Value = getenv("FEX_EXP_VOLPAGE");
++      return !Value || Value[0] != '0';
++    }();
++    const uint64_t Window = FEXCore::Utils::SpinWaitLock::CycleCounterFrequency;
++    if (!PagesEnabled || Now - VolatileFaultStart[Idx] > Window) {
++      // Too slow: start counting again.
++      VolatileFaultCount[Idx] = 0;
++      VolatileFaultStart[Idx] = Now;
++      return;
++    }
++    CTX.AddVolatileCodeRegion(Page, FEXCore::Utils::FEX_PAGE_SIZE, true);
++    if (!CTX.IsVolatileCode(Page)) {
++      return;
++    }
++    LogMan::Msg::IFmt("Volatile code page: {:X}", Page);
++    // The fault handler already gave the guest its write permission back on this page.
++    InvalidateIntervalInternalLocked(Page, FEXCore::Utils::FEX_PAGE_SIZE);
+     return;
+   }
+   const uint64_t Base = reinterpret_cast<uint64_t>(Info.AllocationBase);
+--- a/Source/Windows/Common/InvalidationTracker.h
++++ b/Source/Windows/Common/InvalidationTracker.h
+@@ -3,6 +3,7 @@
+ 
+ #include <FEXCore/Utils/IntervalList.h>
+ #include <FEXCore/HLE/SyscallHandler.h>
++#include <atomic>
+ #include <mutex>
+ #include <shared_mutex>
+ #include <unordered_map>
+@@ -41,6 +42,12 @@
+ 
+   FEXCore::HLE::ExecutableRangeInfo QueryExecutableRange(uint64_t Address);
+ 
++  // Patch 0020: changes whenever some memory stops being executable. A check that guest bytes lie in an executable
++  // range stays true while this is unchanged (memory becoming executable cannot make such a check false).
++  uint64_t ExecutableRangeEpoch() const {
++    return RangeEpoch.load(std::memory_order_acquire);
++  }
++
+   // The SMC write trap changes the protection of guest pages behind the guest's back. These two report what the
+   // guest itself set, so the trap cannot be observed through NtQueryVirtualMemory or through the old protection
+   // returned by NtProtectVirtualMemory. Neither ever blocks: if a lock is busy, the input is returned unchanged.
+@@ -67,6 +74,11 @@
+   FEXCore::IntervalList<uint64_t> XIntervals;
+   FEXCore::IntervalList<uint64_t> RWXIntervals;
+   std::shared_mutex IntervalsLock;
++  // Incremented (with IntervalsLock held exclusively) after every removal from XIntervals.
++  std::atomic<uint64_t> RangeEpoch {1};
++  void ExecutableRangeRemoved() {
++    RangeEpoch.fetch_add(1, std::memory_order_acq_rel);
++  }
+   FEXCore::Context::Context& CTX;
+   const std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*>& Threads;
+   bool SMCDetectionDisabled {false};                    // Protected by IntervalsLock
+@@ -84,6 +96,8 @@
+   void DetectVolatileRegion(uint64_t FaultAddress);
+   uint64_t VolatileFaultPage[1024] {};
+   uint32_t VolatileFaultCount[1024] {};
++  // Patch 0020: when the first of the counted faults on a page happened (cycle counter).
++  uint64_t VolatileFaultStart[1024] {};
+ 
+   bool MonoBackpatcherDetectionPending {false};
+   uint64_t MonoBase {0};

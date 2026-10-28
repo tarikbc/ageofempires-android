@@ -43,6 +43,7 @@ Patches 0002 (dropped) and 0015 (a FEX bug fix) are described in [patches/fex](.
 | [BUILDING.md](guides/BUILDING.md) | Building the FEX package, the Turnip driver and the probes on a Mac |
 | [GAMENATIVE.md](guides/GAMENATIVE.md) | Driving GameNative over adb, the container config, installing packages and drivers, recovering from a bad build |
 | [AOE2-DE.md](guides/AOE2-DE.md) | Age of Empires II: DE with this package: the start-up crash, the setup that works, speed |
+| [AOE2-VOLPAGE-TESTING.md](guides/AOE2-VOLPAGE-TESTING.md) | Volatile-code prerelease packages, one comparison window, and the stable release gate |
 | [WINE-SOURCE.md](guides/WINE-SOURCE.md) | Which Wine build the Thor runs, its source, and what it lacks |
 
 ## Research
