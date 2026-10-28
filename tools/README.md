@@ -1,6 +1,7 @@
 # Tools
 
-Scripts that run on a Mac with the Thor connected over adb. How they fit together: [TESTING.md](../docs/guides/TESTING.md).
+Most scripts run on a Mac with the Thor connected over adb. How they fit together: [TESTING.md](../docs/guides/TESTING.md).
+The source regression checks run on the host without the Thor.
 
 ## Testing and measuring
 
@@ -22,6 +23,7 @@ Scripts that run on a Mac with the Thor connected over adb. How they fit togethe
 | [`threadwaits.py`](threadwaits.py) | CPU use, waits per second and preemptions per second of each game thread, from `/proc` |
 | [`excrate.py`](excrate.py) | Handled exceptions per second in the game, from patch 0010's counters |
 | [`thor_fan.py`](thor_fan.py) | Reads the Thor's fan mode or sets it to Smart or Custom (the quick-settings Fan tile) |
+| [`tests/test_volatile_patches.py`](tests/test_volatile_patches.py) | Host checks for the applied volatile-code patch series: memory boundaries, decoder policy, module queries, and exception codes |
 
 ## GameNative and packaging
 

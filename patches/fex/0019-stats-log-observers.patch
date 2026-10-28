@@ -1,0 +1,439 @@
+--- a/FEXCore/Source/Interface/Core/Core.cpp
++++ b/FEXCore/Source/Interface/Core/Core.cpp
+@@ -131,6 +131,12 @@
+   uint64_t AllocTicks[32];
+   uint64_t AllocSize[32];
+ } VolatileCodeStats = {0x3145444F434C4F56ULL, 0, {}, {}, 0, 0, 0, 0, {}, {}};
++}
++
++// Patch 0019 (diagnostic): observers the Windows frontend's statistics log can set.
++extern "C" {
++void (*FEXVolatileCompileObserver)(uint64_t GuestRIP) = nullptr;
++void (*FEXDiskCacheHitObserver)(uint64_t GuestRIP) = nullptr;
+ }
+ 
+ // Experiment: reuse of translations when the same guest bytes come back (see TryReuseBlock).
+@@ -1042,6 +1048,9 @@
+   }
+ 
+   // Compile for this visit only: no lookup cache entry, no executable-range tracking (so no write trap).
++  if (FEXVolatileCompileObserver) {
++    FEXVolatileCompileObserver(GuestRIP);
++  }
+   Thread->FrontendDecoder->SetupDecodeInstructionsAtEntry(Thread, GuestRIP, 2);
+   FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedJITCount, 1);
+   auto [CompiledCode, DebugData, StartAddr, Length, NeedsAddGuestCodeRanges] = CompileCode(Thread, GuestRIP, 2);
+@@ -1201,6 +1210,9 @@
+         LOGMAN_THROW_A_FMT(CachedHostCode != 0, "Couldn't find GuestRIP in Disk Cache entrypoints!");
+ 
+         FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedDiskCacheHitCount, 1);
++        if (FEXDiskCacheHitObserver) {
++          FEXDiskCacheHitObserver(GuestRIP);
++        }
+         Thread->FrontendDecoder->DelayedDisownBuffer();
+ 
+         Thread->FrontendDecoder->ValidateDisownedOrFree();
+--- a/Source/Windows/ARM64EC/Module.cpp
++++ b/Source/Windows/ARM64EC/Module.cpp
+@@ -813,6 +813,9 @@
+   NtRaiseExceptionNative(&GuestRec, &GuestContext, FirstChance);
+ }
+ 
++// Patch 0019 (diagnostic): the statistics log sees each guest exception FEX raises (code, guest RIP, fast or slow path).
++void (*GuestExceptionObserver)(uint32_t Code, uint64_t Rip, bool Fast) = nullptr;
++
+ struct FastTrapStatsType {
+   uint64_t Marker; // "FASTTRP1"
+   uint64_t Taken;
+@@ -865,6 +868,9 @@
+     GuestContext.Pc -= 1;
+   }
+   __atomic_fetch_add(&FastTrapStats.Taken, 1, __ATOMIC_RELAXED);
++  if (GuestExceptionObserver) {
++    GuestExceptionObserver(GuestRec.ExceptionCode, GuestContext.Pc, true);
++  }
+   FastRaiseOrNative(GuestRec, GuestContext, FirstChance);
+   __builtin_unreachable();
+ }
+@@ -894,6 +900,9 @@
+   } else if (GuestRec.ExceptionCode == EXCEPTION_BREAKPOINT) {
+     // INT3 will set RIP to the instruction following it, undo this (any edge cases with multibyte instructions that trigger breakpoints are bugs present in Windows also)
+     GuestContext.Pc -= 1;
++  }
++  if (GuestExceptionObserver) {
++    GuestExceptionObserver(GuestRec.ExceptionCode, GuestContext.Pc, false);
+   }
+ 
+   // Patch 0017 (fast raise): place the dispatcher frame on the guest stack below the x64 red zone and enter
+@@ -1207,6 +1216,19 @@
+ extern "C" NTSTATUS WINAPI NtResumeThread(HANDLE, PULONG);
+ extern "C" NTSTATUS WINAPI NtOpenThread(PHANDLE, ACCESS_MASK, const OBJECT_ATTRIBUTES*, const CLIENT_ID*);
+ 
++extern "C" {
++struct VolatileCodeStatsT {
++  uint64_t Marker, Regions, RegionBase[4], RegionSize[4], Hits, Misses, Ineligible, CodeBufferAllocs, AllocTicks[32], AllocSize[32];
++};
++extern VolatileCodeStatsT VolatileCodeStats;
++struct CodeReuseStatsT {
++  uint64_t Marker, Stored, Lookups, Hits, Mismatch, OtherBuffer, Clears;
++};
++extern CodeReuseStatsT CodeReuseStats;
++extern void (*FEXVolatileCompileObserver)(uint64_t GuestRIP);
++extern void (*FEXDiskCacheHitObserver)(uint64_t GuestRIP);
++}
++
+ namespace StatsLog {
+ constexpr uint32_t MaxSlots = 4096;
+ constexpr uint32_t MaxSampledThreads = 4;
+@@ -1373,9 +1395,21 @@
+   ModuleRec M;
+   M.Base = reinterpret_cast<uint64_t>(MBI.AllocationBase);
+   if (MBI.Type != MEM_IMAGE) {
+-    M.Base = reinterpret_cast<uint64_t>(MBI.BaseAddress);
+-    M.End = M.Base + MBI.RegionSize;
+-    M.Name = "anon";
++    // Whole allocation: walk the regions that share its allocation base.
++    uint64_t End = reinterpret_cast<uint64_t>(MBI.BaseAddress) + MBI.RegionSize;
++    for (int i = 0; i < 4096; i++) {
++      MEMORY_BASIC_INFORMATION Next {};
++      if (NtQueryVirtualMemoryNative(NtCurrentProcess(), reinterpret_cast<void*>(End), MemoryBasicInformation, &Next, sizeof(Next), nullptr) < 0 ||
++          reinterpret_cast<uint64_t>(Next.AllocationBase) != M.Base || Next.State == MEM_FREE) {
++        break;
++      }
++      End = reinterpret_cast<uint64_t>(Next.BaseAddress) + Next.RegionSize;
++    }
++    if (!M.Base) {
++      M.Base = reinterpret_cast<uint64_t>(MBI.BaseAddress);
++    }
++    M.End = End;
++    M.Name = fextl::fmt::format("anon@{:x}/{:x}", M.Base, M.End - M.Base);
+     Modules.push_back(std::move(M));
+     return &Modules.back();
+   }
+@@ -1426,9 +1460,6 @@
+   if (!M) {
+     return fextl::fmt::format("{:x}", Address);
+   }
+-  if (M->Name == "anon") {
+-    return fextl::fmt::format("anon:{:x}", Address);
+-  }
+   return fextl::fmt::format("{}+{:x}", M->Name, Address - M->Base);
+ }
+ 
+@@ -1438,6 +1469,249 @@
+   fextl::string Out;
+   for (size_t i = 0; i < Items.size() && i < Count; i++) {
+     Out += fextl::fmt::format(" {}:{}%", Describe(Items[i].first), Total ? (Items[i].second * 100 + Total / 2) / Total : 0);
++  }
++  return Out;
++}
++
++// Patch 0019 (diagnostic): where the SMC write faults land, which code is compiled for one visit in volatile regions
++// (patch 0012), and which blocks are loaded back from the disk cache after an invalidation.
++struct PageStat {
++  uint64_t Page;
++  uint32_t Count;
++  uint32_t FromJIT;
++  uint64_t WriterRIP;
++  uint64_t HostPc;
++};
++struct RipStat {
++  uint64_t Rip;
++  uint64_t Count;
++};
++constexpr size_t PageTableSize = 4096;
++constexpr size_t RipTableSize = 8192;
++PageStat PageTable[PageTableSize];
++RipStat VolTable[RipTableSize];
++RipStat DCTable[RipTableSize];
++uint64_t Faults {}, PageOverflow {}, VolCompiles {}, VolOverflow {}, DCHits {}, DCOverflow {};
++std::mutex SMCMutex;
++std::mutex RipMutex;
++
++size_t HashSlot(uint64_t Key, size_t Size) {
++  return static_cast<size_t>((Key * 0x9E3779B97F4A7C15ULL) >> 40) & (Size - 1);
++}
++
++void OnSMCFault(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPc, uint64_t FaultAddress) {
++  const uint64_t Page = FaultAddress & ~uint64_t {0xfff};
++  const bool FromJIT = CTX->IsAddressInCodeBuffer(Thread, HostPc);
++  const uint64_t Writer = CTX->RestoreRIPFromHostPC(Thread, HostPc);
++  std::scoped_lock Lock(SMCMutex);
++  Faults++;
++  const size_t H = HashSlot(Page, PageTableSize);
++  for (size_t i = 0; i < 32; i++) {
++    auto& E = PageTable[(H + i) & (PageTableSize - 1)];
++    if (E.Page == Page || E.Page == 0) {
++      E.Page = Page;
++      E.Count++;
++      E.FromJIT += FromJIT;
++      E.WriterRIP = Writer;
++      E.HostPc = HostPc;
++      return;
++    }
++  }
++  PageOverflow++;
++}
++
++void AddRip(RipStat* Table, uint64_t Rip, uint64_t& Overflow) {
++  const size_t H = HashSlot(Rip, RipTableSize);
++  for (size_t i = 0; i < 32; i++) {
++    auto& E = Table[(H + i) & (RipTableSize - 1)];
++    if (E.Rip == Rip || E.Rip == 0) {
++      E.Rip = Rip;
++      E.Count++;
++      return;
++    }
++  }
++  Overflow++;
++}
++
++void OnVolatileCompile(uint64_t Rip) {
++  std::scoped_lock Lock(RipMutex);
++  VolCompiles++;
++  AddRip(VolTable, Rip, VolOverflow);
++}
++
++struct ExceptionStat {
++  uint64_t Rip;
++  uint64_t Count;
++  uint32_t Code;
++};
++ExceptionStat ExcTable[RipTableSize];
++uint64_t ExcCount {}, ExcSlow {}, ExcOverflow {};
++std::mutex ExcMutex;
++
++void OnGuestException(uint32_t Code, uint64_t Rip, bool Fast) {
++  std::scoped_lock Lock(ExcMutex);
++  ExcCount++;
++  ExcSlow += !Fast;
++  const size_t H = HashSlot(Rip ^ (static_cast<uint64_t>(Code) << 32), RipTableSize);
++  for (size_t i = 0; i < 32; i++) {
++    auto& E = ExcTable[(H + i) & (RipTableSize - 1)];
++    if (!E.Count || (E.Rip == Rip && E.Code == Code)) {
++      E.Rip = Rip;
++      E.Code = Code;
++      E.Count++;
++      return;
++    }
++  }
++  ExcOverflow++;
++}
++
++void OnDiskCacheHit(uint64_t Rip) {
++  std::scoped_lock Lock(RipMutex);
++  DCHits++;
++  AddRip(DCTable, Rip, DCOverflow);
++}
++
++fextl::string ProtName(ULONG Prot) {
++  switch (Prot & 0xff) {
++  case PAGE_NOACCESS: return "---";
++  case PAGE_READONLY: return "r--";
++  case PAGE_READWRITE: return "rw-";
++  case PAGE_WRITECOPY: return "rc-";
++  case PAGE_EXECUTE: return "--x";
++  case PAGE_EXECUTE_READ: return "r-x";
++  case PAGE_EXECUTE_READWRITE: return "rwx";
++  case PAGE_EXECUTE_WRITECOPY: return "rcx";
++  default: return fextl::fmt::format("{:x}", Prot);
++  }
++}
++
++fextl::string PageInfo(uint64_t Page) {
++  MEMORY_BASIC_INFORMATION MBI {};
++  if (NtQueryVirtualMemoryNative(NtCurrentProcess(), reinterpret_cast<void*>(Page), MemoryBasicInformation, &MBI, sizeof(MBI), nullptr) < 0) {
++    return "?";
++  }
++  // The guest's view: patch 0004 reports the protection the guest set, not the trap.
++  const ULONG Visible = InvalidationTracker ? InvalidationTracker->GuestVisibleProtection(Page, MBI.Protect) : MBI.Protect;
++  return fextl::fmt::format("{}{}{}", MBI.Type == MEM_IMAGE ? "img " : MBI.Type == MEM_MAPPED ? "map " : "prv ", ProtName(Visible),
++                            CTX->IsVolatileCode(Page) ? " volatile" : "");
++}
++
++uint64_t LastVolRegions {};
++struct {
++  uint64_t VolHits, VolMisses, VolInelig, CodeBufs, RStored, RLookups, RHits, RMismatch, ROther, RClears, PFilt, PCorr, QFilt, QCorr;
++} LastGlobal {};
++
++fextl::string Round2Report() {
++  fextl::string Out;
++  fextl::vector<PageStat> Pages;
++  uint64_t F, POver;
++  {
++    std::scoped_lock Lock(SMCMutex);
++    F = Faults;
++    POver = PageOverflow;
++    for (auto& E : PageTable) {
++      if (E.Page) {
++        Pages.push_back(E);
++      }
++    }
++    memset(PageTable, 0, sizeof(PageTable));
++    Faults = 0;
++    PageOverflow = 0;
++  }
++  fextl::vector<RipStat> Vol, DC;
++  uint64_t VC, VO, DH, DO;
++  {
++    std::scoped_lock Lock(RipMutex);
++    VC = VolCompiles;
++    VO = VolOverflow;
++    DH = DCHits;
++    DO = DCOverflow;
++    for (auto& E : VolTable) {
++      if (E.Rip) {
++        Vol.push_back(E);
++      }
++    }
++    for (auto& E : DCTable) {
++      if (E.Rip) {
++        DC.push_back(E);
++      }
++    }
++    memset(VolTable, 0, sizeof(VolTable));
++    memset(DCTable, 0, sizeof(DCTable));
++    VolCompiles = VolOverflow = DCHits = DCOverflow = 0;
++  }
++  if (F) {
++    std::sort(Pages.begin(), Pages.end(), [](const PageStat& A, const PageStat& B) { return A.Count > B.Count; });
++    Out += fextl::fmt::format("S faults={} pages={} overflow={} top:", F, Pages.size(), POver);
++    for (size_t i = 0; i < Pages.size() && i < 8; i++) {
++      const auto& E = Pages[i];
++      Out += fextl::fmt::format(" [{} ({}) n={} jit={} w={}{}]", Describe(E.Page), PageInfo(E.Page), E.Count, E.FromJIT,
++                                Describe(E.WriterRIP), E.FromJIT == E.Count ? fextl::string() : fextl::fmt::format(" host={}", Describe(E.HostPc)));
++    }
++    Out += "\n";
++  }
++  auto Top = [](fextl::vector<RipStat>& V, size_t N) {
++    std::sort(V.begin(), V.end(), [](const RipStat& A, const RipStat& B) { return A.Count > B.Count; });
++    fextl::string R;
++    for (size_t i = 0; i < V.size() && i < N; i++) {
++      R += fextl::fmt::format(" {}:{}", Describe(V[i].Rip), V[i].Count);
++    }
++    return R;
++  };
++  if (VC) {
++    Out += fextl::fmt::format("V compiles={} rips={} overflow={} top:{}\n", VC, Vol.size(), VO, Top(Vol, 10));
++  }
++  if (DH) {
++    Out += fextl::fmt::format("D hits={} rips={} overflow={} top:{}\n", DH, DC.size(), DO, Top(DC, 10));
++  }
++  {
++    fextl::vector<ExceptionStat> Exc;
++    uint64_t EC, ES, EO;
++    {
++      std::scoped_lock Lock(ExcMutex);
++      EC = ExcCount;
++      ES = ExcSlow;
++      EO = ExcOverflow;
++      for (auto& E : ExcTable) {
++        if (E.Count) {
++          Exc.push_back(E);
++        }
++      }
++      memset(ExcTable, 0, sizeof(ExcTable));
++      ExcCount = ExcSlow = ExcOverflow = 0;
++    }
++    if (EC) {
++      std::sort(Exc.begin(), Exc.end(), [](const ExceptionStat& A, const ExceptionStat& B) { return A.Count > B.Count; });
++      Out += fextl::fmt::format("X exceptions={} slow={} sites={} overflow={} top:", EC, ES, Exc.size(), EO);
++      for (size_t i = 0; i < Exc.size() && i < 10; i++) {
++        Out += fextl::fmt::format(" {:08x}@{}:{}", Exc[i].Code, Describe(Exc[i].Rip), Exc[i].Count);
++      }
++      Out += "\n";
++    }
++  }
++  auto Ld = [](const uint64_t& V) {
++    return __atomic_load_n(&V, __ATOMIC_RELAXED);
++  };
++  decltype(LastGlobal) Cur {Ld(VolatileCodeStats.Hits),   Ld(VolatileCodeStats.Misses),  Ld(VolatileCodeStats.Ineligible),
++                            Ld(VolatileCodeStats.CodeBufferAllocs), Ld(CodeReuseStats.Stored), Ld(CodeReuseStats.Lookups),
++                            Ld(CodeReuseStats.Hits),     Ld(CodeReuseStats.Mismatch),  Ld(CodeReuseStats.OtherBuffer),
++                            Ld(CodeReuseStats.Clears),   Ld(SmcHideStats.ProtectsFiltered), Ld(SmcHideStats.ProtectsCorrected),
++                            Ld(SmcHideStats.QueriesFiltered), Ld(SmcHideStats.QueriesCorrected)};
++  Out += fextl::fmt::format("R volcache hit={} miss={} inelig={} codebufs={} reuse stored={} lookups={} hits={} mismatch={} other={} "
++                            "clears={} protect={}/{} query={}/{}\n",
++                            Cur.VolHits - LastGlobal.VolHits, Cur.VolMisses - LastGlobal.VolMisses, Cur.VolInelig - LastGlobal.VolInelig,
++                            Cur.CodeBufs - LastGlobal.CodeBufs, Cur.RStored - LastGlobal.RStored, Cur.RLookups - LastGlobal.RLookups,
++                            Cur.RHits - LastGlobal.RHits, Cur.RMismatch - LastGlobal.RMismatch, Cur.ROther - LastGlobal.ROther,
++                            Cur.RClears - LastGlobal.RClears, Cur.PFilt - LastGlobal.PFilt, Cur.PCorr - LastGlobal.PCorr,
++                            Cur.QFilt - LastGlobal.QFilt, Cur.QCorr - LastGlobal.QCorr);
++  LastGlobal = Cur;
++  const uint64_t Regions = Ld(VolatileCodeStats.Regions);
++  if (Regions != LastVolRegions) {
++    for (uint64_t i = LastVolRegions; i < Regions && i < 4; i++) {
++      const uint64_t Base = Ld(VolatileCodeStats.RegionBase[i]);
++      Out += fextl::fmt::format("VR {} base={:x} size={:x} {} ({})\n", i, Base, Ld(VolatileCodeStats.RegionSize[i]), Describe(Base), PageInfo(Base));
++    }
++    LastVolRegions = Regions;
+   }
+   return Out;
+ }
+@@ -1534,6 +1808,7 @@
+     }
+     Out += "\n";
+   }
++  Out += Round2Report();
+   Write(Out);
+ }
+ 
+@@ -1576,7 +1851,11 @@
+     }
+     if (Now - LastReport >= 1.0) {
+       for (auto& R : Recs) {
+-        const auto Cur = Read(R.Stats, CPUTime(R.Handle));
++        auto Cur = Read(R.Stats, CPUTime(R.Handle));
++        if (Cur.CPU100ns < R.Last.CPU100ns) {
++          // The query failed (thread gone): keep the last value.
++          Cur.CPU100ns = R.Last.CPU100ns;
++        }
+         R.Delta = {Cur.CPU100ns - R.Last.CPU100ns,
+                    Cur.JITCycles - R.Last.JITCycles,
+                    Cur.JITCount - R.Last.JITCount,
+@@ -1674,7 +1953,11 @@
+   }
+   Enabled = true;
+   StartCycles = FEXCore::SHMStats::GetCycleCounter();
+-  Write(fextl::fmt::format("# fexstats 1 exe={} pid={} start={} UTC hz={} counter={}Hz (patch 0018)\n", ExeName, GetCurrentProcessId(),
++  FEX::Windows::SMCFaultObserver = &OnSMCFault;
++  FEXVolatileCompileObserver = &OnVolatileCompile;
++  FEXDiskCacheHitObserver = &OnDiskCacheHit;
++  Exception::GuestExceptionObserver = &OnGuestException;
++  Write(fextl::fmt::format("# fexstats 2 exe={} pid={} start={} UTC hz={} counter={}Hz (patches 0018 0019)\n", ExeName, GetCurrentProcessId(),
+                            UTCClock(), SampleHz, FEXCore::Utils::SpinWaitLock::CycleCounterFrequency));
+   LoggerThread = FEXCore::Threads::Thread::Create(LoggerMain, nullptr, {.Internal = true}, "FEX stats");
+ }
+--- a/Source/Windows/Common/InvalidationTracker.cpp
++++ b/Source/Windows/Common/InvalidationTracker.cpp
+@@ -221,6 +221,8 @@
+   ProtectRWXIntervalsInternal(Address, Size, false);
+ }
+ 
++void (*SMCFaultObserver)(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPC, uint64_t FaultAddress) = nullptr;
++
+ bool InvalidationTracker::HandleRWXAccessViolation(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPc, uint64_t FaultAddress) {
+   const auto [NeedsInvalidate, UntrapProt] = [&](uint64_t Address) -> std::pair<bool, ULONG> {
+     std::shared_lock Lock(IntervalsLock);
+@@ -231,6 +233,9 @@
+   }(FaultAddress);
+ 
+   if (NeedsInvalidate) {
++    if (SMCFaultObserver) {
++      SMCFaultObserver(Thread, HostPc, FaultAddress);
++    }
+     // IntervalsLock cannot be held during invalidation
+     {
+       std::scoped_lock Lock(CTX.GetCodeInvalidationMutex());
+--- a/Source/Windows/Common/InvalidationTracker.h
++++ b/Source/Windows/Common/InvalidationTracker.h
+@@ -17,6 +17,9 @@
+ }
+ 
+ namespace FEX::Windows {
++// Patch 0019 (diagnostic): called for every write fault on a trapped code page, before it is handled.
++extern void (*SMCFaultObserver)(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPC, uint64_t FaultAddress);
++
+ /**
+  * @brief Handles SMC and regular code invalidation
+  */
