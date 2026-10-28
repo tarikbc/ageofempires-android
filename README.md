@@ -134,6 +134,12 @@ folder, but not 2022. The tested setup had it, and a user reports that newer Gam
 A user's tuned setup (faster loading, a steady 40 FPS with a 40 FPS cap) is in
 [AOE2-DE.md](docs/guides/AOE2-DE.md), with the other details.
 
+An optional [AoE II test prerelease](https://github.com/tarikbc/ageofempires-android/releases/tag/v1.7.0-rc.1)
+adds the reviewed volatile-code changes from PR #36.
+It includes a runtime variant without the optional logger and a research variant for diagnostics.
+Host checks pass; Android game testing remains pending.
+Use the [comparison protocol](docs/guides/AOE2-VOLPAGE-TESTING.md) before replacing a setup that works.
+
 ### 4. Device settings
 
 - **Display at 120 Hz** (the Thor's refresh-rate tile), set **before** the game starts. At 60 Hz a frame that misses

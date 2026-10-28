@@ -91,7 +91,8 @@ hash all still match. In a loading match it served ~73 % of volatile visits (~13
 ## Diagnostics (patches 0018 and 0019)
 
 This research series requires both diagnostic patches before 0020. Logging starts only when `FEX_EXP_STATSLOG` is set.
-Keep the current release packages unchanged. A future production package needs a separate runtime-only patch series and game tests.
+The [runtime variant](../../patches/fex/runtime/README.md) provides the same runtime fixes without those optional diagnostics.
+Both variants need game tests before a stable release.
 
 - **0018** writes a per-second log (`FEX_EXP_STATSLOG=<folder>`, `1` = the Download folder; `FEX_EXP_STATSHZ` sets the
   sampling rate): per-thread CPU, JIT time and count, SMC faults, exception time, and a sampled RIP histogram of the
@@ -135,3 +136,6 @@ The tests compile the affected production source fragments with small compatibil
 They check boundary reads, crossing entry instructions, inaccessible image headers, and complete exception codes.
 They also check reuse policy, disk-cache filtering, protection changes, and failed-decode validation.
 They do not execute Windows/FEX or measure game performance.
+
+For the runtime source, add `--runtime-only`. That mode rejects optional diagnostics and skips their three tests.
+Use the [game comparison protocol](../guides/AOE2-VOLPAGE-TESTING.md) to record results from either test package.

@@ -1,5 +1,8 @@
 # FEX patches
 
+The optional [runtime variant of 0020](runtime/README.md) applies after the v1.6.0 set without diagnostic patches 0018 and 0019.
+The root research series below remains available for diagnostics. Game tests of both corrected variants remain pending.
+
 | Patch | Status |
 |---|---|
 | `0001` + `0003` | Hide the trap by replacing it with `ForceFullSMCDetection`. `smctest` shows `RWX`, but the game stops at start-up; `SMCChecks=full` stops the same way, so the validation path is the problem ([KILL-REMEASURED.md](../../docs/research/archive/KILL-REMEASURED.md)). |

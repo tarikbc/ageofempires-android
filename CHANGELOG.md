@@ -4,6 +4,19 @@ Every release, with what changed, the files and the speed measured for it. AoE I
 skirmish benchmark (FPS at two match minutes, 90 s windows) and the late-game replay (minutes 46 and 48), on the AYN
 Thor with GameNative 1.2.1. How the versions connect: [docs/STORY.md](docs/STORY.md).
 
+## v1.7.0-rc.1, 2026-10-28: AoE II volatile-code test builds
+
+- Two test WCPs contain the reviewed changes from [PR #36](https://github.com/tarikbc/ageofempires-android/pull/36).
+- `aoe2-volpage6-runtime-42` excludes optional logger and observer patches 0018/0019.
+- `aoe2-volpage6-reviewed-41` retains the research diagnostics, with logging off by default.
+- The runtime source passes seven host regression cases and the diagnostic-absence check.
+  The research source passes all ten host regression cases. Both ARM64EC builds pass.
+- The prerelease assets include checksums, build details, the source references, and the FEX license.
+- Android game tests and a confirmed loading-time comparison remain pending.
+  The earlier community timing report applies to the contributor's original build, before the review fixes.
+
+The stable release remains v1.6.0. Follow the [test protocol](docs/guides/AOE2-VOLPAGE-TESTING.md) before a stable update.
+
 ## v1.6.0, 2026-10-12: no driver-version dialog, patch 0017 fixed
 
 - **No more "unable to determine your video card's installed driver version" dialog.** Add

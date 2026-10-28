@@ -74,6 +74,33 @@ GameNative's Contents Manager imports it, and the dropdown shows it as `<name>-<
 `versionName` is already installed, even with a new code, so each test build needs a new name. Installing and selecting it from adb:
 [GAMENATIVE.md](GAMENATIVE.md).
 
+### AoE II test variants
+
+The [runtime variant](../../patches/fex/runtime/README.md) adds one standalone patch after the v1.6.0 set above.
+It excludes optional diagnostic patches 0018 and 0019.
+The [research variant](../how-it-works/VOLATILE-CODE-PAGES.md) requires root patches 0018, 0019, and 0020 instead.
+Use a fresh source checkout for each variant.
+
+Check the runtime source before packaging:
+
+```sh
+python3 tools/tests/test_volatile_patches.py /path/to/runtime/FEX --runtime-only
+```
+
+This command rejects optional diagnostic code and runs the seven runtime regression cases.
+The normal command runs all ten cases against the research source.
+Both commands compile production source fragments on the host. They do not execute the game.
+
+Test package profiles:
+
+| Variant | versionName | versionCode |
+|---|---|---|
+| Research | `aoe2-volpage6-reviewed` | 41 |
+| Runtime | `aoe2-volpage6-runtime` | 42 |
+
+The prerelease assets include package checksums, DLL checksums, source references, and build details.
+Follow the [game test protocol](AOE2-VOLPAGE-TESTING.md) before a stable release.
+
 ## The Turnip driver
 
 [`tools/build_turnip.sh MESA_SRC NAME`](../../tools/build_turnip.sh) on a Mac: Android NDK r27 (the `darwin-x86_64`
