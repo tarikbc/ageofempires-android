@@ -37,10 +37,11 @@ The earlier 40 FPS report used a 40 FPS cap. It does not establish the maximum F
 
 ## First Thor result (2026-10-31)
 
-One candidate run on the AYN Thor in the 4v4 replay benchmark, no FPS cap: 53.7 FPS and 48 frames over 50 ms,
-against 46.7 and 48.5 FPS and 133 and 128 frames with perf5. The first start with the candidate did not reach the
-game; the second did. Details in [AOE2-DE.md](AOE2-DE.md), "Where the main thread's time goes". A second candidate
-run and a 30-minute play test are still pending.
+Two candidate runs and three perf5 runs on the AYN Thor in the 4v4 replay benchmark, no FPS cap. The candidate ran
+at 53.7 and 55.6 FPS with 48 and 21 frames over 50 ms; perf5 at 41.4 to 48.5 FPS with 128 to 230. The replay
+loaded in 13 s with the candidate and 45 s with perf5. The first start after each FEXCore change did not reach the
+game, with either package; later starts worked. Details in [AOE2-DE.md](AOE2-DE.md), "Where the main thread's time
+goes". A 30-minute play test is still pending.
 
 ## Result record
 
