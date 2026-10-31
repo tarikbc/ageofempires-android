@@ -184,6 +184,10 @@ other start worked. So this is not a volpage6 fault. The cause is not known (`WI
 about 60 s after the game process appeared with perf5, and within 40 s with volpage6 (one start each, read from
 screenshots).
 
+**30 minutes with volpage6.** The whole replay at normal speed (35 minutes) ran to its end without a crash, at 58.5
+to 59.9 FPS in seven windows with the camera at the start position; details in
+[AOE2-VOLPAGE-TESTING.md](AOE2-VOLPAGE-TESTING.md).
+
 **Main thread on the prime core: slower.** With volpage6, in one session, the main thread alone on core 7 (3.19 GHz)
 and every other thread on cores 0 to 6 (`agent.py affin 2d6edc4 80 7f`; `agent.py threads` showed the masks set):
 

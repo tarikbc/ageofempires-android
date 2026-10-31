@@ -41,7 +41,15 @@ Two candidate runs and three perf5 runs on the AYN Thor in the 4v4 replay benchm
 at 53.7 and 55.6 FPS with 48 and 21 frames over 50 ms; perf5 at 41.4 to 48.5 FPS with 128 to 230. The replay
 loaded in 13 s with the candidate and 45 s with perf5. Twice the first start after a FEXCore change did not reach the
 game, once with each package; a third change started at once, and later starts worked. Details in [AOE2-DE.md](AOE2-DE.md), "Where the main thread's time
-goes". A 30-minute play test is still pending.
+goes".
+
+**30-minute test (2026-10-31, candidate):** the whole 4v4 replay at normal speed, 35 minutes on the Thor from game
+minute 0 to its end at 54:27, with a check every 5 minutes. The game process ran throughout and the replay ended
+with "Finished replaying game."; no crash or visible fault. FPS per 90 s window: 59.9, 59.9, 59.9, 59.9, 59.4,
+59.1, 58.5, with 0 to 4 frames over 50 ms (camera at the start position, not the army window). Before that, a live
+game against two Hardest A.I.s (a save from 2026-10-08, game minutes 31 to 41) ran 8 minutes at 59.9 FPS with no
+frame over 50 ms, until the A.I.s defeated the idle player; a defeat stops the simulation. A replay does not test
+player input or the network, so a played online match is still untested.
 
 ## Result record
 
