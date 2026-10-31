@@ -133,6 +133,10 @@ game at full clocks". A fresh game start applies the container's power profile a
 players' names and IDs, so it stays out of the repo. `probes/lsgame.exe` lists the game's `My Games` folder into
 `D:\aoe\ls.txt`, also without a window.
 
+AoE II DE has its own replay benchmark, a 54-minute 4v4: steps and results in
+[AOE2-DE.md](AOE2-DE.md), "Late-game benchmark from a replay". `replay.py clock --aoe2` and `replay.py aoe2speed`
+are its clock crop and speed buttons; `threadcpu.py` finds `AoE2DE_s.exe` as well as `RelicCardinal.exe`.
+
 ## Lining long frames up with a scheduler trace
 
 The compositor's present times (`frametimes.py`) are on `CLOCK_MONOTONIC`; ftrace runs on the boot clock by default,

@@ -19,11 +19,14 @@ def sh(cmd):
     return subprocess.run(["adb", "-s", SERIAL, "shell", cmd], capture_output=True, text=True).stdout
 
 
+GAME_EXES = ("RelicCardinal.exe", "AoE2DE_s.exe")  # AoE IV, AoE II DE
+
+
 def game_pid():
     for line in sh("ps -A -o PID,NAME").splitlines():
-        if line.rstrip().endswith("RelicCardinal.exe"):
+        if line.rstrip().endswith(GAME_EXES):
             return line.split()[0]
-    sys.exit("RelicCardinal.exe is not running")
+    sys.exit("neither RelicCardinal.exe nor AoE2DE_s.exe is running")
 
 
 def sample(pid):
