@@ -138,6 +138,52 @@ Near the armies, about one frame in 35 took 50 ms or more. The game's main threa
 less than half of its time, so the main thread limits this part too, as in the Ranked Benchmark Test. A second
 thread, `WidgetManager`, used about 44 % of one core. The CPU's hottest sensor read about 96 °C.
 
+### Where the main thread's time goes, and the volpage6 package (2026-10-31)
+
+`tools/agent.py` (`target AoE2DE_s.exe`, then `sample '#<tid>' 4000 5`) sampled the main thread 4,000 times, 5 ms
+apart, in the army window. The main thread is the thread that starts at `exe+2d6edc4`; its id changes per start
+(`agent.py threads`). With `aoe4-perf5-23`:
+
+| Where | Samples | What |
+|---|---|---|
+| `AoE2DE_s.exe` | 66 % | Spread over 518 functions (from the exe's `.pdata`); none above 2.5 % |
+| Anti-tamper page `exe+f77000` to `exe+f7a000` | 3.5 % | The page patch 0020 marks volatile ([VOLATILE-CODE-PAGES.md](../how-it-works/VOLATILE-CODE-PAGES.md)) |
+| `ucrtbase.dll` | 6.7 % | Most calls come from that page, with pointers into it as the first argument; the rest is the game's `memcpy` and `longjmp` |
+| No module | 4.5 % | Code outside every module, such as the protection's private buffer |
+| `ntdll.dll`, `kernel32.dll` | 7.4 %, 4.0 % | Game calls; the first argument is often the process heap (`0x170000`) |
+| `win32u.dll`, `d3d11.dll` | 6.2 %, 2.9 % | The window loop (`USER32!UpdateWindow`) and Direct3D. Samples in system calls include waits |
+| `libarm64ecfex.dll` | 1.1 % | FEX itself |
+
+So the anti-tamper code still runs during play, not only while a match loads. The test package
+`aoe2-volpage6-runtime-42` ([v1.7.0-rc.1](https://github.com/tarikbc/ageofempires-android/releases/tag/v1.7.0-rc.1),
+SHA-256 checked) in the same container, same window:
+
+| Package | Run | FPS | frames > 50 ms | Main thread | GPU busy | Replay load |
+|---|---|---|---|---|---|---|
+| `aoe4-perf5-23` | 1 (morning) | 46.7 | 133 | 87 % | 44 % | not timed |
+| `aoe4-perf5-23` | 2 (morning, Play Again) | 48.5 | 128 | 87 % | 46 % | not timed |
+| `aoe4-perf5-23` | 3 (afternoon) | 41.4 | 230 | 86 % | 40 % | 45 s |
+| `aoe2-volpage6-runtime-42` | 1 | 53.7 | 48 | 84 % | 50 % | 13 s |
+| `aoe2-volpage6-runtime-42` | 2 (afternoon) | 55.6 | 21 | 87 % | 54 % | 13 s |
+
+perf5 ran at 41.4 to 48.5 FPS, volpage6 at 53.7 and 55.6: about +15 % FPS (means 45.5 and 54.7), with 21 to 48
+frames over 50 ms instead of 128 to 230. The replay loaded about 3.5 times faster (13 s against 45 s, from Load
+Replay to the clock running). The perf5 run 3 window started at 49:45 instead of about 49:05, because the seek
+went past minute 49; the other windows started between 49:03 and 49:07.
+
+In the main-thread samples (minute 49 with perf5, minute 53 with volpage6) the anti-tamper work nearly goes:
+
+| Package | Anti-tamper page | ucrtbase | No module |
+|---|---|---|---|
+| `aoe4-perf5-23` | 3.5 % | 6.7 % | 4.5 % |
+| `aoe2-volpage6-runtime-42` | 0.4 % | 3.4 % | 0.3 % |
+
+**Starts.** The first start after each change of the container's FEXCore version showed a black screen and no game
+process (once to volpage6, once back to perf5); every later start worked (two with volpage6, one with perf5). So
+this is not a volpage6 fault. The cause is not known (`WINEDEBUG=-all`, no log). A working start reached the main menu
+about 60 s after the game process appeared with perf5, and within 40 s with volpage6 (one start each, read from
+screenshots).
+
 ## Notes
 
 - **Input:** the controller's A button did nothing in the game's menus, and GameNative's touch screen moves the
