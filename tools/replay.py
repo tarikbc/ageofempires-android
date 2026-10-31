@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Late-game benchmark from a replay on the Thor (docs/guides/TESTING.md, "Late-game benchmark from a replay").
 
-    replay.py clock                      crop the replay's game clock and speed into replay_clock.png (to read)
+    replay.py clock [--aoe2]             crop the replay's game clock and speed into replay_clock.png (to read)
     replay.py speed up|down [N]          press RIGHT (faster) or LEFT (slower) N times; steps 1/2X 1X 2X 4X 8X
+    replay.py aoe2speed normal|fast|fastest   click AoE II DE's replay speed button (mclick.exe in D:\\aoe2)
     replay.py window LABEL [--out DIR]   90 s of compositor frame times with temperatures, then 20 s of per-thread
                                          CPU; one line appended to DIR/replay_results.tsv (default ./bench_out)
 
-Start the replay in the game first: profile (LS), Match History, the match, X "View Replay"; X again in the replay
-locks the camera to the player's recorded view. Nothing runs inside the game for the measurement.
+AoE IV: start the replay in the game first: profile (LS), Match History, the match, X "View Replay"; X again in the
+replay locks the camera to the player's recorded view. AoE II DE: Single Player, Load Game, Replays tab, the replay,
+Load Replay (docs/guides/AOE2-DE.md). Nothing runs inside the game for the measurement.
 """
 import os
 import subprocess
@@ -24,11 +26,15 @@ SERIAL = "64ff2273"
 DISPLAY = "4630946441858561667"  # the Thor's main screen for screencap -d
 
 
-def clock(path="replay_clock.png"):
+def clock(path="replay_clock.png", aoe2=False):
     from PIL import Image
     png = subprocess.run(["adb", "-s", SERIAL, "exec-out", "screencap", "-p", "-d", DISPLAY], capture_output=True).stdout
     im = Image.open(BytesIO(png)).convert("RGB")
     w, h = im.size
+    if aoe2:  # "00:07:34 (Normal - 1.7) (Standard)" at the top centre holds both
+        im.crop((int(w * 0.41), 0, int(w * 0.70), int(h * 0.03))).save(path)
+        print(path)
+        return
     parts = [im.crop((int(w * 0.88), int(h * 0.19), int(w * 0.99), int(h * 0.25))),  # game clock
              im.crop((int(w * 0.49), int(h * 0.71), int(w * 0.54), int(h * 0.76)))]  # speed above the play button
     out = Image.new("RGB", (sum(p.width for p in parts) + 10, max(p.height for p in parts)))
@@ -43,6 +49,16 @@ def speed(direction, n=1):
     for _ in range(n):
         thor_pad.press(dev, "RIGHT" if direction == "up" else "LEFT")
         time.sleep(0.8)
+
+
+# AoE II DE's replay buttons, bottom left, in desktop pixels of the 1280 x 720 container screen
+AOE2_SPEED = {"normal": (103, 688), "fast": (128, 688), "fastest": (152, 688)}
+
+
+def aoe2speed(name):
+    import run_watch as rw
+    x, y = AOE2_SPEED[name]
+    rw.winexec("D:\\aoe2\\mclick.exe", f"c:{x},{y}")
 
 
 def window(label, out):
@@ -69,9 +85,11 @@ def main():
     if not args:
         sys.exit(__doc__)
     if args[0] == "clock":
-        clock()
+        clock(aoe2="--aoe2" in args)
     elif args[0] == "speed":
         speed(args[1], int(args[2]) if len(args) > 2 else 1)
+    elif args[0] == "aoe2speed":
+        aoe2speed(args[1])
     elif args[0] == "window":
         window(args[1], args[args.index("--out") + 1] if "--out" in args else "bench_out")
     else:

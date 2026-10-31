@@ -39,8 +39,8 @@ the container's CPU list set to cores 3 to 7 (the Snapdragon 8 Gen 2's big cores
 cores), the FEXCore preset PERFORMANCE and `TU_DEBUG=noconform,noubwc`, at 1024 × 768. Result: faster loading and a
 steady 40 FPS with the frame rate capped at 40, so it shows nothing about the top speed. With `FEX_TSOENABLED=0` the
 preset adds little (README, section 3). The CPU list and the async cache were not measured here; for AoE IV,
-moving its 8 `rcss worker` threads to cores 3 to 7 gave more long frames ([TUNING.md](TUNING.md)). AoE II DE is no
-longer installed on the test Thor (2026-10-12), so these reports are not retested.
+moving its 8 `rcss worker` threads to cores 3 to 7 gave more long frames ([TUNING.md](TUNING.md)). AoE II DE was not
+installed on the test Thor from 2026-10-12 to 2026-10-31, and these reports are not retested.
 
 ## What was wrong
 
@@ -102,6 +102,42 @@ The game's main thread used 95 % of one core in the benchmark and the GPU 26 to 
 `FEX_TSOENABLED=0` turns off FEX's x86 memory-order emulation: faster, but multi-threaded code can then misbehave.
 The 17-minute skirmish above ran with it and did not crash; if the game crashes, remove that variable first.
 
+## Late-game benchmark from a replay (2026-10-31)
+
+A tester's replay of a 54-minute online 4v4 (Mountain Pass, large map, population 200 per player, Imperial Age) is
+far heavier than the skirmish above. The tester saw large frame drops late in that game. The replay holds the
+players' names, so it stays out of the repo.
+
+**Setup.** AoE II DE was installed again on the Thor on 2026-10-31: build 101.103.57257.0 (#188329), the build of
+the replay (a replay plays only on its own build), with the same three DLCs and the container settings above.
+GameNative 1.2.1. The game's VC++ 2022 installers did not start this time (exit code `0xC0000135`, a DLL not found);
+the game ran without them. The display mode was **Full desktop** (Options, Graphics): the game then fills the
+1280 × 720 screen without the window frame (see Notes).
+
+**Steps.** All clicks go through `mclick.exe` in `D:\aoe2\` (`tools/replay.py aoe2speed` for the speed buttons):
+
+1. Copy the `.aoe2record` file to `%USERPROFILE%\Games\Age of Empires 2 DE\<SteamID>\savegame\` (a batch file run
+   through `winhandler` with `copy`, or GameNative's container file explorer).
+2. Single Player, Load Game, the **Replays** tab, the replay, Load Replay.
+3. Run to minute 49 at the fastest speed (`replay.py aoe2speed fastest`, then `replay.py clock --aoe2` to read the
+   clock); it took 5.5 minutes. Then `replay.py aoe2speed normal`.
+4. Click the minimap at desktop (1180, 673): the camera goes to the red player's base, next to the armies. The
+   replay has no recorded camera, so View Lock does not follow a player; the minimap click gives the same view.
+5. `replay.py window LABEL` (90 s of frame times, then 20 s of per-thread CPU).
+
+**Results** (`aoe4-perf5-23`, the three variables above, display at 120 Hz):
+
+| Window | Camera | FPS | frames > 50 ms | Main thread | GPU busy |
+|---|---|---|---|---|---|
+| Minutes 39 to 42 | Empty ground at the top of the map | 58.8 | 15 | 80 % | 49 % |
+| Minutes 45 to 48 | Same | 59.6 | 2 | 82 % | 50 % |
+| Minutes 49 to 51 | Red player's base, next to the armies | 46.7 | 133 | 87 % | 44 % |
+| Same, second run from a new load | Same | 48.5 | 128 | 87 % | 46 % |
+
+Near the armies, about one frame in 35 took 50 ms or more. The game's main thread used 87 % of one core and the GPU
+less than half of its time, so the main thread limits this part too, as in the Ranked Benchmark Test. A second
+thread, `WidgetManager`, used about 44 % of one core. The CPU's hottest sensor read about 96 °C.
+
 ## Notes
 
 - **Input:** the controller's A button did nothing in the game's menus, and GameNative's touch screen moves the
@@ -109,7 +145,8 @@ The 17-minute skirmish above ran with it and did not crash; if the game crashes,
   [`tools/probes/mclick.c`](../../tools/probes/mclick.c) (cursor moves, clicks and keys with `SendInput`). Playing
   with touch or a mouse was not tried.
 - **Window frame:** from the second start on, the game showed in a window with a title bar and offered only
-  1272 × 694; the first start was full screen at 1280 × 720. Not resolved.
+  1272 × 694; the first start was full screen at 1280 × 720. On 2026-10-31 the game again showed the frame with
+  Display Mode "Full screen"; **Full desktop** (Options, Graphics) fills the 1280 × 720 screen without it.
 - **Multiplayer** was not tested. One start showed "Reconnect to Multiplayer Services".
 - **Autosave:** the single long frames (about 800 ms) fit the game's single-player autosave stutter that players
   report on PC; not checked.
