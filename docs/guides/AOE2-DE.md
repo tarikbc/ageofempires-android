@@ -178,11 +178,23 @@ In the main-thread samples (minute 49 with perf5, minute 53 with volpage6) the a
 | `aoe4-perf5-23` | 3.5 % | 6.7 % | 4.5 % |
 | `aoe2-volpage6-runtime-42` | 0.4 % | 3.4 % | 0.3 % |
 
-**Starts.** The first start after each change of the container's FEXCore version showed a black screen and no game
-process (once to volpage6, once back to perf5); every later start worked (two with volpage6, one with perf5). So
-this is not a volpage6 fault. The cause is not known (`WINEDEBUG=-all`, no log). A working start reached the main menu
+**Starts.** Twice the first start after a change of the container's FEXCore version showed a black screen and no
+game process (once to volpage6, once back to perf5); a third change (back to volpage6) started at once, and every
+other start worked. So this is not a volpage6 fault. The cause is not known (`WINEDEBUG=-all`, no log). A working start reached the main menu
 about 60 s after the game process appeared with perf5, and within 40 s with volpage6 (one start each, read from
 screenshots).
+
+**Main thread on the prime core: slower.** With volpage6, in one session, the main thread alone on core 7 (3.19 GHz)
+and every other thread on cores 0 to 6 (`agent.py affin 2d6edc4 80 7f`; `agent.py threads` showed the masks set):
+
+| Setup | FPS | frames > 50 ms | Main thread | `WidgetManager` | CPU sensors, mean |
+|---|---|---|---|---|---|
+| Main thread on core 7, the rest on cores 0 to 6 | 43.0 | 133 | 81 % | 52 % | 88.7 °C |
+| All threads on all cores (same session, next replay load) | 50.0 | 79 | 86 % | 47 % | 86.3 °C |
+
+Pinning cost about 14 %. Without it the main thread ran on core 6 or 7; with it the other busy threads share fewer
+big cores. The control ran below the earlier volpage6 runs (53.7 and 55.6, CPU sensors 85.0 °C); the cause is
+not known. The AoE IV test of the same masks also gave nothing ([TUNING.md](TUNING.md)).
 
 ## Notes
 
