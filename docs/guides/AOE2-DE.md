@@ -138,6 +138,36 @@ Near the armies, about one frame in 35 took 50 ms or more. The game's main threa
 less than half of its time, so the main thread limits this part too, as in the Ranked Benchmark Test. A second
 thread, `WidgetManager`, used about 44 % of one core. The CPU's hottest sensor read about 96 °C.
 
+### Where the main thread's time goes, and the volpage6 package (2026-10-31)
+
+`tools/agent.py` (`target AoE2DE_s.exe`, then `sample '#<tid>' 4000 5`) sampled the main thread 4,000 times, 5 ms
+apart, in the army window. The main thread is the thread that starts at `exe+2d6edc4`; its id changes per start
+(`agent.py threads`). With `aoe4-perf5-23`:
+
+| Where | Samples | What |
+|---|---|---|
+| `AoE2DE_s.exe` | 66 % | Spread over 518 functions (from the exe's `.pdata`); none above 2.5 % |
+| Anti-tamper page `exe+f77000` to `exe+f7a000` | 3.5 % | The page patch 0020 marks volatile ([VOLATILE-CODE-PAGES.md](../how-it-works/VOLATILE-CODE-PAGES.md)) |
+| `ucrtbase.dll` | 6.7 % | Most calls come from that page, with pointers into it as the first argument; the rest is the game's `memcpy` and `longjmp` |
+| No module | 4.5 % | Code outside every module, such as the protection's private buffer |
+| `ntdll.dll`, `kernel32.dll` | 7.4 %, 4.0 % | Game calls; the first argument is often the process heap (`0x170000`) |
+| `win32u.dll`, `d3d11.dll` | 6.2 %, 2.9 % | The window loop (`USER32!UpdateWindow`) and Direct3D. Samples in system calls include waits |
+| `libarm64ecfex.dll` | 1.1 % | FEX itself |
+
+So the anti-tamper code still runs during play, not only while a match loads. The test package
+`aoe2-volpage6-runtime-42` ([v1.7.0-rc.1](https://github.com/tarikbc/ageofempires-android/releases/tag/v1.7.0-rc.1),
+SHA-256 checked) in the same container, same window:
+
+| Package | FPS | frames > 50 ms | Main thread | GPU busy | Anti-tamper page | ucrtbase | No module |
+|---|---|---|---|---|---|---|---|
+| `aoe4-perf5-23`, two runs | 46.7, 48.5 | 133, 128 | 87 % | 44 to 46 % | 3.5 % | 6.7 % | 4.5 % |
+| `aoe2-volpage6-runtime-42`, one run | 53.7 | 48 | 84 % | 50 % | 0.4 % | 3.4 % | 0.3 % |
+
+About +12 % FPS and 60 % fewer long frames in one run; a second run was not done. The samples were taken at minute
+49 (perf5) and minute 53 (volpage6). The replay loaded in 13 s and 10 s (Play Again) with volpage6; the perf5 load
+was not timed. The **first** start with volpage6 showed a black screen and no game process after 75 s; the second
+start worked. The cause is not known (`WINEDEBUG=-all`, no log).
+
 ## Notes
 
 - **Input:** the controller's A button did nothing in the game's menus, and GameNative's touch screen moves the

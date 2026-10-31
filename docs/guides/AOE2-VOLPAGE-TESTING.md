@@ -35,6 +35,13 @@ Repeat only if a crash, login delay, update, or other interruption makes the com
 Keep background apps and cooling settings consistent. Record any changed condition.
 The earlier 40 FPS report used a 40 FPS cap. It does not establish the maximum FPS.
 
+## First Thor result (2026-10-31)
+
+One candidate run on the AYN Thor in the 4v4 replay benchmark, no FPS cap: 53.7 FPS and 48 frames over 50 ms,
+against 46.7 and 48.5 FPS and 133 and 128 frames with perf5. The first start with the candidate did not reach the
+game; the second did. Details in [AOE2-DE.md](AOE2-DE.md), "Where the main thread's time goes". A second candidate
+run and a 30-minute play test are still pending.
+
 ## Result record
 
 | Field | Result |
